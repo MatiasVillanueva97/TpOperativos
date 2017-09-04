@@ -7,13 +7,11 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //Identificadores de procesos
-/*
-#define NUM_PROCESO_CONSOLA 1
-#define NUM_PROCESO_KERNEL 2
-#define NUM_PROCESO_MEMORIA 3
-#define NUM_PROCESO_CPU 4
-#define NUM_PROCESO_FS 5
-*/
+
+#define NUM_PROCESO_MASTER 1
+#define NUM_PROCESO_YAMA 2
+#define NUM_PROCESO_FS 3
+
 //////////////////////////////////////////////////////////////////////////////
 //Identificadores de colas de PCB's
 /*
