@@ -7,7 +7,7 @@ Grupo **Mi Grupo 1234** - 2ºC 2017.
 
 Nombre | Padrón | Mail |
 :---: | :---: | :---: |
-Agustín de la Dedicación | 1472161 | Agusdld@gmail.com |
+Agustín de la Dedicación | 1472161 | agusdld@gmail.com |
 Hernán Domingo | xxxxxxx | hernan.domingo.22@gmail.com |
 Guillermo Fernández | 1163206 | gafernandez2525@gmail.com |
 Nahuel Oyhanarte | 1545668 | noyhanarte@gmail.com |
