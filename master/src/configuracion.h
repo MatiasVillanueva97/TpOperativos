@@ -1,6 +1,6 @@
 typedef struct config {
-	char *IP_YAMA;
-	char *PUERTO_YAMA;
+	char *YAMA_IP;
+	char *YAMA_PUERTO;
 } datosConfig;
 
 int configFileH(char *pathFileConfig, datosConfig *datosConexion) {
@@ -12,12 +12,12 @@ int configFileH(char *pathFileConfig, datosConfig *datosConexion) {
 	}
 
 	// busco sus keys
-	datosConexion->IP_YAMA = config_get_string_value(file, "IP_YAMA");
-	datosConexion->PUERTO_YAMA = config_get_string_value(file, "PUERTO_YAMA");
+	datosConexion->YAMA_IP = config_get_string_value(file, "YAMA_IP");
+	datosConexion->YAMA_PUERTO = config_get_string_value(file, "YAMA_PUERTO");
 
 	printf("\nMis datos de configuración son los siguientes:");
-	printf("\nIP_YAMA: %s", datosConexion->IP_YAMA);
-	printf("\nPUERTO_YAMA: %s", datosConexion->PUERTO_YAMA);
+	printf("\nYAMA_IP: %s", datosConexion->YAMA_IP);
+	printf("\nYAMA_PUERTO: %s", datosConexion->YAMA_PUERTO);
 
 	printf("\n");
 	return 1;

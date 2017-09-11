@@ -64,8 +64,8 @@ int conectarseAYama(datosConfigClient *datosConexionMaster) {
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
-	datosConexionMaster->ip = datosConfig.IP_YAMA;
-	datosConexionMaster->puerto = datosConfig.PUERTO_YAMA;
+	datosConexionMaster->ip = datosConfig.YAMA_IP;
+	datosConexionMaster->puerto = datosConfig.YAMA_PUERTO;
 	if (!initializeClient(datosConexionMaster)) {
 		printf("Error al inicializar el cliente.\n");
 		return 0;
