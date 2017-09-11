@@ -10,7 +10,7 @@ all: filesystem master yama
 .PHONY: all filesystem master yama
 
 filesystem:
-	mkdir -p flesystem/$(BIN_PATH)
+	mkdir -p filesystem/$(BIN_PATH)
 	$(COMPILER) filesystem/$(SRC_PATH)/filesystem.c -o fileSystem/$(BIN_PATH)/filesystem $(COMMONS) $(THREAD)
 
 master:
