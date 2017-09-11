@@ -23,7 +23,6 @@ int main(int argc, char *argv[]) {
 	datosConfig datosConfig;
 	datosConfigServer datosConexionYama;
 	datosConfigClient datosConexionFileSystem;
-	int fsConectada;
 	int preparadoEnviarFs = 0;
 	char *pathArchivoConfig = "../src/config.txt";
 	char message[PACKAGESIZE];	//TODO: definir un protocolo de mensajes para evitar el tamaño fijo de mensajes
@@ -39,8 +38,7 @@ int main(int argc, char *argv[]) {
 	// Conexión a FileSystem
 	datosConexionFileSystem.ip = datosConfig.IP_FS;
 	datosConexionFileSystem.puerto = datosConfig.PUERTO_FS;
-	fsConectada = initializeClient(&datosConexionFileSystem);
-	if (fsConectada) {
+	if (!initializeClient(&datosConexionFileSystem)) {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 		preparadoEnviarFs=1;
 	}

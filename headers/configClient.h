@@ -9,7 +9,6 @@ typedef struct configClient {
 } datosConfigClient;
 
 int initializeClient(datosConfigClient *datosConexionClient) {
-	int respConn;
 	// Uso getaddrinfo() para obtener los datos de la direccion de red y guardarlos en serverInfo.
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
@@ -20,13 +19,19 @@ int initializeClient(datosConfigClient *datosConexionClient) {
 	getaddrinfo(datosConexionClient->ip, datosConexionClient->puerto, &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
 
 	// Obtengo un socket, utilizando la estructura serverInfo ya generada.
-	datosConexionClient->serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+	if((datosConexionClient->serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol))<0){
+		perror("socket");
+		return -1;
+	}
 
 	// Me conecto al server usando el file descriptor del socket previo.
-	respConn=connect(datosConexionClient->serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen);
+	if(connect(datosConexionClient->serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen)<0){
+		perror("connect");
+		return -1;
+	}
 	freeaddrinfo(serverInfo);	// No lo necesitamos mas
 
-	return !respConn; // Niego para que devuelva <> 0 en SUCCESS
+	return 0;
 }
 
 void cerrarClient(datosConfigClient *datosConexionClient) {
