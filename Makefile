@@ -11,7 +11,7 @@ all: filesystem master yama
 
 filesystem:
 	mkdir -p filesystem/$(BIN_PATH)
-	$(COMPILER) filesystem/$(SRC_PATH)/filesystem.c -o fileSystem/$(BIN_PATH)/filesystem $(COMMONS) $(THREAD)
+	$(COMPILER) filesystem/$(SRC_PATH)/filesystem.c -o filesystem/$(BIN_PATH)/filesystem $(COMMONS) $(THREAD)
 
 master:
 	mkdir -p master/$(BIN_PATH)
