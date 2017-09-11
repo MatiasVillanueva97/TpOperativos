@@ -10,17 +10,16 @@ all: filesystem master yama
 .PHONY: all filesystem master yama
 
 filesystem:
-	mkdir -p FileSystem/$(BIN_PATH)
-	$(COMPILER) FileSystem/$(SRC_PATH)/filesystem.c -o FileSystem/$(BIN_PATH)/filesystem $(COMMONS) $(THREAD)
+	mkdir -p flesystem/$(BIN_PATH)
+	$(COMPILER) filesystem/$(SRC_PATH)/filesystem.c -o fileSystem/$(BIN_PATH)/filesystem $(COMMONS) $(THREAD)
 
 master:
-	mkdir -p Master/$(BIN_PATH)
-	$(COMPILER) Master/$(SRC_PATH)/master.c -o Master/$(BIN_PATH)/master $(COMMONS) $(THREAD)
+	mkdir -p master/$(BIN_PATH)
+	$(COMPILER) master/$(SRC_PATH)/master.c -o master/$(BIN_PATH)/master $(COMMONS) $(THREAD)
 	
 yama:
-	mkdir -p Yama/$(BIN_PATH)
-	$(COMPILER) Yama/$(SRC_PATH)/yama.c -o Yama/$(BIN_PATH)/yama $(COMMONS) $(THREAD)
-
+	mkdir -p yama/$(BIN_PATH)
+	$(COMPILER) yama/$(SRC_PATH)/yama.c -o yama/$(BIN_PATH)/yama $(COMMONS) $(THREAD)
 
 clean: 
 	rm -rf FileSystem/$(BIN_PATH)
