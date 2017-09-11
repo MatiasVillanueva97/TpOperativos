@@ -22,6 +22,6 @@ yama:
 	$(COMPILER) yama/$(SRC_PATH)/yama.c -o yama/$(BIN_PATH)/yama $(COMMONS) $(THREAD)
 
 clean: 
-	rm -rf FileSystem/$(BIN_PATH)
-	rm -rf Master/$(BIN_PATH)
-	rm -rf Yama/$(BIN_PATH)
+	rm -rf fileSystem/$(BIN_PATH)
+	rm -rf master/$(BIN_PATH)
+	rm -rf yama/$(BIN_PATH)

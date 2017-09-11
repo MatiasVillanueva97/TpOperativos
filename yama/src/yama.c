@@ -47,12 +47,12 @@ int main(int argc, char *argv[]) {
 
 
 	datosConexionYama.puerto = datosConfig.PUERTO;
-	if(!initializeServer(&datosConexionYama)){
+	if(initializeServer(&datosConexionYama)<0){
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
 	puts("Ya estoy preparado para recibir conexiones\n");
-	if(!aceptarConexion(&datosConexionYama)){
+	if(aceptarConexion(&datosConexionYama)<0){
 		puts("Hubo un error al aceptar conexiones\n");
 		return EXIT_FAILURE;
 	}
