@@ -7,21 +7,29 @@ Grupo **Mi Grupo 1234** - 2ºC 2017.
 
 Nombre | Padrón | Mail |
 :---: | :---: | :---: |
-Agustín de la Dedicación | 1472161 | agusdld@gmail.com |
-Hernán Domingo | xxxxxxx | hernan.domingo.22@gmail.com |
+Agustín de la Dedicación | 1472161 | Agusdld@gmail.com |
+Hernán Domingo | 1306315 | hernan.domingo.22@gmail.com |
 Guillermo Fernández | 1163206 | gafernandez2525@gmail.com |
 Nahuel Oyhanarte | 1545668 | noyhanarte@gmail.com |
-Mathias Sanchez | xxxxxxx | mathisoad2@gmail.com |
+Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
 
 ## Requisitos
-...
+1. Tener instalado gcc
+2. Tener instaladas la commons library
+3. Tener instaladas la pthreads library
 
 ## Instrucciones
-1) Importar en Eclipse:
-File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
+1. Clonar este repositorio: git clone https://github.com/sisoputnfrba/tp-2017-2c-Mi-Grupo-1234
+2. Entrar al directorio: cd tp-2017-2c-Mi-Grupo-1234
+3. Compilar usando el Makefile provisto: make all
+4. Ejecutar el proceso FileSystem: ./FileSystem
+5. Ejecutar el proceso YAMA: yama/bin/yama
+6. Ejecutar el proceso Master: master/bin/master
+
+> Para trabajar en Eclipse, importar el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
 
 ## Guía de Estilo
-* Constantes: todo en mayúscula con guíones bajos. Ej.: `#define NUM_PROCESO_MASTER 1`
+* Constantes: todo en mayúsculas con guíones bajos. Ej.: `#define NUM_PROCESO_MASTER 1`
 
 * Nombres de funciones y variables: lowerCamelCase (inicial de cada palabra en mayúscula excepto la primera)   
 Ej.: `preparadoRecibir, iniciarPrograma()`
