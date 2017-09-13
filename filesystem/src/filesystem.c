@@ -34,12 +34,12 @@ int main(int argc, char *argv[]) {
 	}
 
 	datosConexionFileSystem.puerto = datosConfig.PUERTO;
-	if(!initializeServer(&datosConexionFileSystem)){
+	if(initializeServer(&datosConexionFileSystem)<0){
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
 	puts("Ya estoy preparado para recibir conexiones\n");
-	if(!aceptarConexion(&datosConexionFileSystem)){
+	if(aceptarConexion(&datosConexionFileSystem)<0){
 		puts("Hubo un error al aceptar conexiones\n");
 		return EXIT_FAILURE;
 	}

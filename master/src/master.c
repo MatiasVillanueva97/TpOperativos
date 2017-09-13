@@ -87,7 +87,7 @@ void iniciarPrograma() {
 	printf("Ingrese el nombre del archivo fuente\n");
 	//fgets(nombreArchivo, sizeof(nombreArchivo), stdin);
 	scanf("%s", nombreArchivo);
-	string_append_with_format(&pathArchivo, "../../archivos/%s", nombreArchivo);
+	string_append_with_format(&pathArchivo, "../../%s", nombreArchivo);
 
 	fp = fopen(pathArchivo, "r"); // read mode
 

@@ -1,7 +1,7 @@
 #include <netdb.h>
 #include <string.h>
 
-#define BACKLOG 5			// Define cuantas conexiones vamos a mantener pendientes al mismo tiempo
+#define MAX_CONEXIONES 30			// Define cuantas conexiones vamos a mantener pendientes al mismo tiempo
 
 typedef struct configServer {
 	int socketCliente;
@@ -10,7 +10,6 @@ typedef struct configServer {
 } datosConfigServer;
 
 int initializeServer(datosConfigServer *datosConexionServer) {
-	int response=0;
 	// Uso getaddrinfo() para obtener los datos de la direccion de red y guardarlos en serverInfo.
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
@@ -21,30 +20,37 @@ int initializeServer(datosConfigServer *datosConexionServer) {
 	getaddrinfo(NULL, datosConexionServer->puerto, &hints, &serverInfo); // Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
 
 	// Obtengo un socket, utilizando la estructura serverInfo ya generada.
-	datosConexionServer->listenningSocket = socket(serverInfo->ai_family,serverInfo->ai_socktype, serverInfo->ai_protocol);
+	if((datosConexionServer->listenningSocket = socket(serverInfo->ai_family,serverInfo->ai_socktype, serverInfo->ai_protocol))<0){
+		perror("socket");
+		return -1;
+	}
 
 	// Uso el file descriptor previo para decirle al sistema por donde voy a escuchar las conexiones
-	bind(datosConexionServer->listenningSocket, serverInfo->ai_addr,serverInfo->ai_addrlen);
+	if(bind(datosConexionServer->listenningSocket, serverInfo->ai_addr,serverInfo->ai_addrlen)!=0){
+		perror("bind");
+		return -1;
+	}
 	freeaddrinfo(serverInfo); // Ya no lo vamos a necesitar
 
 	// Empiezo a escuchar las conexiones. IMPORTANTE: listen() es una syscall BLOQUEANTE.
-	listen(datosConexionServer->listenningSocket, BACKLOG);	//0:ok - (-1):error
+	if(listen(datosConexionServer->listenningSocket, MAX_CONEXIONES)!=0){	//0:ok - (-1):error
+		perror("listen");
+		return -1;
+	}
 
-	return !response;
+	return 0;
 }
 
 int aceptarConexion(datosConfigServer *datosConexionServer) {
-	int response=0;
-
 	// Acepto la conexión del cliente y abro el *nuevo* socket
 	struct sockaddr_in addr; // Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
-	datosConexionServer->socketCliente = accept(datosConexionServer->listenningSocket, (struct sockaddr *) &addr,&addrlen);
-	if(datosConexionServer->socketCliente==(-1)){	//-1:error
-		response=1;
+	if((datosConexionServer->socketCliente = accept(datosConexionServer->listenningSocket, (struct sockaddr *) &addr,&addrlen))<0){
+		perror("accept");
+		return -1;
 	}
 
-	return !response;	// Niego para que devuelva <> 0 en SUCCESS
+	return 0;
 }
 
 void cerrarServer(datosConfigServer *datosConexionServer) {
