@@ -3,12 +3,14 @@ BIN_PATH=bin
 SRC_PATH=src
 COMMONS=-lcommons
 THREAD=-lpthread
+READLINE=-lreadline
 
 FILESYSTEM=filesystem
 MASTER=master
 YAMA=yama
 WORKER=worker
 DATANODE=datanode
+CONSOLA=consola
 
 default: all
 
