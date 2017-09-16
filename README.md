@@ -18,8 +18,9 @@ Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
 ## Requisitos
 
 1. Tener instalado gcc
-2. Tener instaladas la commons library
+2. Tener instaladas la commons library [link](https://github.com/sisoputnfrba/so-commons-library)
 3. Tener instaladas la pthreads library
+4. Tener instaladas la readline library (sudo apt-get install libreadline6-dev)
 
 
 ## Instrucciones
