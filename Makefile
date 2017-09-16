@@ -10,7 +10,6 @@ MASTER=master
 YAMA=yama
 WORKER=worker
 DATANODE=datanode
-CONSOLA=consola
 
 default: all
 

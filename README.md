@@ -18,19 +18,21 @@ Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
 ## Requisitos
 
 1. Tener instalado gcc
-2. Tener instaladas la commons library [link](https://github.com/sisoputnfrba/so-commons-library)
+2. Tener instaladas la commons library ([link](https://github.com/sisoputnfrba/so-commons-library))
 3. Tener instaladas la pthreads library
 4. Tener instaladas la readline library (sudo apt-get install libreadline6-dev)
 
 
 ## Instrucciones
 
-1. Clonar este repositorio: git clone https://github.com/sisoputnfrba/tp-2017-2c-Mi-Grupo-1234
-2. Entrar al directorio: cd tp-2017-2c-Mi-Grupo-1234
-3. Compilar usando el Makefile provisto: make all
-4. Ejecutar el proceso FileSystem: ./FileSystem
-5. Ejecutar el proceso YAMA: yama/bin/yama
-6. Ejecutar el proceso Master: master/bin/master
+1. Clonar este repositorio: `git clone https://github.com/sisoputnfrba/tp-2017-2c-Mi-Grupo-1234`
+2. Entrar al directorio: `cd tp-2017-2c-Mi-Grupo-1234`
+3. Compilar usando el Makefile provisto: `make`
+4. Ejecutar el proceso FileSystem: `filesystem/bin/filesystem`
+5. Ejecutar el proceso DataNode: `datanode/bin/datanode` (TO DO)
+6. Ejecutar el proceso Worker: `worker/bin/worker` (TO DO)
+7. Ejecutar el proceso YAMA: `yama/bin/yama`
+8. Ejecutar el proceso Master: `master/bin/master`
 
 > Para trabajar en Eclipse, importar el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
 
@@ -54,6 +56,17 @@ Si querés subir algo que no llegaste a revisar, q está _in progress_ y/o que n
 Los primeros se deben generar automáticamente cuando compiles (sino quedan obsoletos), y los segundos son particulares de cada persona/entorno.
 
 > Si no cumplís las reglas -> HAY TABLA. 
+
+
+## Configuración
+
+Proceso | IP | Puerto |
+:---: | :---: | :---: |
+FileSystem | 127.0.0.1 | #### |
+DataNode | 127.0.0.1 | #### |
+Worker | 127.0.0.1 | #### |
+YAMA | 127.0.0.1 | #### |
+Master | 127.0.0.1 | #### |
 
 
 ## Arquitectura
