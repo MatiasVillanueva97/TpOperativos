@@ -34,19 +34,26 @@ Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
 > Para trabajar en Eclipse, importar el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
 
 
-## Reglas
-
-* Por favor, **NO** subas cosas sin probar; nos complicás y retrasás a todos.
-Si querés subir algo que no llegaste a revisar, q está _in progress_ y/o que no estás seguro si funciona para que los demás lo vean hacelo en un branch aparte de master.
-
-* No compiles a mano o usando cosas raras. Sea en Eclipse o en la consola hacelo usando el Makefile provisto, así nos aseguramos que todos lo hacemos de la **misma** manera.
-
 ## Guía de Estilo
 
 * Constantes: todo en mayúsculas con guíones bajos. Ej.: `#define NUM_PROCESO_MASTER 1`
 
 * Nombres de funciones y variables: lowerCamelCase (inicial de cada palabra en mayúscula excepto la primera)   
 Ej.: `preparadoRecibir, iniciarPrograma()`
+
+
+## Reglas
+
+1) Por favor, **NO** subas cosas sin probar; nos complicás y retrasás a todos.
+Si querés subir algo que no llegaste a revisar, q está _in progress_ y/o que no estás seguro si funciona para que los demás lo vean hacelo en un branch aparte de master.
+
+2) No compiles a mano o usando cosas raras. Sea en Eclipse o en la consola hacelo usando el Makefile provisto, así nos aseguramos que todos lo hacemos de la **misma** manera.
+
+3) No subas binarios ni archivos de proyecto/configuración: son innecesarios, contaminan el repo y confunden. 
+Los primeros se deben generar automáticamente cuando compiles (sino quedan obsoletos), y los segundos son particulares de cada persona/entorno.
+
+> Si no cumplís las reglas -> HAY TABLA. 
+
 
 ## Arquitectura
 
