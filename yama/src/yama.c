@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <commons/config.h>
 #include <commons/string.h>
+#include <commons/log.h>
 #include "./configuracion.h"
 #include "../../headers/configServer.h"
 #include "../../headers/configClient.h"
