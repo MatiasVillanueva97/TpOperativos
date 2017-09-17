@@ -5,11 +5,9 @@
 #include <commons/config.h>
 #include <commons/string.h>
 
-
 #define MAX_CONEXIONES 10
 
-
-int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig ,char** datosConfig) {
+int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig, char **datosConfig) {
 	int i;
 	t_config *archivoConfig = config_create(pathArchivoConfig);
 	if (!archivoConfig) {
@@ -25,7 +23,7 @@ int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig ,char** datosCo
 	return EXIT_SUCCESS;
 }
 
-int conectarA(char *IP, int puerto){
+int conectarA(char *IP, char *puerto){
 	// Uso getaddrinfo() para obtener los datos de la direccion de red y guardarlos en serverInfo.
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
@@ -44,7 +42,7 @@ int conectarA(char *IP, int puerto){
 	}
 
 	// Me conecto al server usando el file descriptor del socket previo.
-	if(connect(socket, serverInfo->ai_addr, serverInfo->ai_addrlen)<0){
+	if(connect(socketClient, serverInfo->ai_addr, serverInfo->ai_addrlen)<0){
 		perror("connect");
 		return -1;
 	}
@@ -53,7 +51,7 @@ int conectarA(char *IP, int puerto){
 	return 0;
 }
 
-int inicializarServer(char *IP, int puerto) {
+int inicializarServer(char *IP, char *puerto) {
 	// Uso getaddrinfo() para obtener los datos de la direccion de red y guardarlos en serverInfo.
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;

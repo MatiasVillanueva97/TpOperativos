@@ -11,133 +11,95 @@
 #include <stdbool.h>
 #include <commons/config.h>
 #include <commons/string.h>
-#include "../../headers/configServer.h"
-#include "../../headers/configClient.h"
-//#include "../../headers/handshake.h"
-#include "../../headers/constantes.h"
+#include "../../utils/utils.h"
 
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-typedef struct config {
-	char *YAMA_IP;
-	char *YAMA_PUERTO;
-} datosConfig;
-
-int configFileH(char *pathFileConfig, datosConfig *datosConexion) {
-	// abro el archivo de configuracion
-	t_config *file = config_create(pathFileConfig);
-	if (!file) {
-		printf("\nError: No se encuentra el archivo\nEjecución abortada\n");
-		return 0;
-	}
-
-	// busco sus keys
-	datosConexion->YAMA_IP = config_get_string_value(file, "YAMA_IP");
-	datosConexion->YAMA_PUERTO = config_get_string_value(file, "YAMA_PUERTO");
-
-	printf("\nMis datos de configuración son los siguientes:");
-	printf("\nYAMA_IP: %s", datosConexion->YAMA_IP);
-	printf("\nYAMA_PUERTO: %s", datosConexion->YAMA_PUERTO);
-
-	printf("\n");
-	return 1;
-}
-
-void enviarArchivo(FILE *fp) {
-	int i;
-	char ch, *message = 0;
-	long length;
-	datosConfigClient datosConexionMaster;
-
-	if (!conectarseAYama(&datosConexionMaster)) {
-		//error, tengo que eliminar el thread y retornar
-		puts("error al conectarse a YAMA");
-	}
-
-	//paso el contenido del archivo a una variable tipo string
-	fseek(fp, 0, SEEK_END);
-	length = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	message = malloc(length);
-	if (message) {
-		fread(message, 1, length, fp);
-	}
-	fclose(fp);
-
-	/*printf("contenido del archivo:\n");
-	for (i = 0; i < 10; i++) {
-	 printf("%s", message);
-	 sleep(5);
-	 }*/
-
-	send(datosConexionMaster.serverSocket, message, strlen(message) + 1, 0);
-
-	return;
-
-}
-
-int conectarseAYama(datosConfigClient *datosConexionMaster) {
-	datosConfig datosConfig;
-
-	char *pathArchivoConfig = "../src/config.txt";
-	int preparadoEnviar;
-
-	if (!configFileH(pathArchivoConfig, &datosConfig)) {
-		printf("Hubo un error al leer el archivo de configuración");
-		return 0;
-	}
-	datosConexionMaster->ip = datosConfig.YAMA_IP;
-	datosConexionMaster->puerto = datosConfig.YAMA_PUERTO;
-	if (!initializeClient(datosConexionMaster)) {
-		printf("Error al inicializar el cliente.\n");
-		return 0;
-	}
-	//preparadoEnviar = handshakeClient(datosConexionMaster,	NUM_PROCESO_CONSOLA);
-	preparadoEnviar =1;
-	return preparadoEnviar;
-}
-
-
-void iniciarPrograma() {
-	char nombreArchivo[30];
-	char *pathArchivo = string_new();
-	FILE *fp;
-	pthread_t hiloPrograma;
-	int iRetHiloPrograma;
-
-	printf("\nIniciar Programa\n");
-	printf("Ingrese el nombre del archivo fuente\n");
-	//fgets(nombreArchivo, sizeof(nombreArchivo), stdin);
-	scanf("%s", nombreArchivo);
-	string_append_with_format(&pathArchivo, "../../%s", nombreArchivo);
-
-	fp = fopen(pathArchivo, "r"); // read mode
-
-	if (fp) {
-		//crea un nuevo hilo de programa
-		//iRetHiloPrograma = pthread_create(&hiloPrograma, NULL,(void*) enviarArchivo, (void*) fp);
-
-		enviarArchivo(fp);	//no me funca el hilo, por ahora lo pruebo así, la posta es la línea de arriba que crea un hilo
-	}else{
-		printf("Ocurrió un error al intentar abrir el archivo\n");
-	}
-
-}
+enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
+char* keysConfigMaster[]={"YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO", NULL};
+char* datosConfigMaster[4];
 
 int main(int argc, char *argv[]) {
-	datosConfig datosConfig;
-
-	char *pathArchivoConfig = "../src/config.txt";
-	int preparadoEnviar;
 
 	printf("\n*** Proceso Master ***");
 
-	if (!configFileH(pathArchivoConfig, &datosConfig)) {
+	char *pathArchivoConfig = "../src/config.txt";
+
+	// 1º) leer archivo de config.
+    int archivoConfigOK = leerArchivoConfig(pathArchivoConfig, keysConfigMaster, datosConfigMaster);
+
+    if (!archivoConfigOK) {
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
-	iniciarPrograma();
 
-	printf("\n");
+    // 2º) conectarse a YAMA y aguardar instrucciones
+    //conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
+
+    // 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
+    //int socketWorker = inicializarClient(datosConfigMaster[WORKER_IP], datosConfigMaster[WORKER_PUERTO]);
+    //conectarA(socketWorker);
+
+    // Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
+    // Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
+    // Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
+
 	return EXIT_SUCCESS;
 }
+
+//void enviarArchivo(FILE *fp) {
+//	int i;
+//	char ch, *message = 0;
+//	long length;
+//	datosConfigClient datosConexionMaster;
+//
+//	if (!conectarseAYama(&datosConexionMaster)) {
+//		//error, tengo que eliminar el thread y retornar
+//		puts("error al conectarse a YAMA");
+//	}
+//
+//	//paso el contenido del archivo a una variable tipo string
+//	fseek(fp, 0, SEEK_END);
+//	length = ftell(fp);
+//	fseek(fp, 0, SEEK_SET);
+//	message = malloc(length);
+//	if (message) {
+//		fread(message, 1, length, fp);
+//	}
+//	fclose(fp);
+//
+//	/*printf("contenido del archivo:\n");
+//	for (i = 0; i < 10; i++) {
+//	 printf("%s", message);
+//	 sleep(5);
+//	 }*/
+//
+//	send(datosConexionMaster.serverSocket, message, strlen(message) + 1, 0);
+//
+//	return;
+//
+//}
+
+//void iniciarPrograma() {
+//	char nombreArchivo[30];
+//	char *pathArchivo = string_new();
+//	FILE *fp;
+//	pthread_t hiloPrograma;
+//	int iRetHiloPrograma;
+//
+//	printf("\nIniciar Programa\n");
+//	printf("Ingrese el nombre del archivo fuente\n");
+//	//fgets(nombreArchivo, sizeof(nombreArchivo), stdin);
+//	scanf("%s", nombreArchivo);
+//	string_append_with_format(&pathArchivo, "../../%s", nombreArchivo);
+//
+//	fp = fopen(pathArchivo, "r"); // read mode
+//
+//	if (fp) {
+//		//crea un nuevo hilo de programa
+//		//iRetHiloPrograma = pthread_create(&hiloPrograma, NULL,(void*) enviarArchivo, (void*) fp);
+//
+//		//enviarArchivo(fp);	//no me funca el hilo, por ahora lo pruebo así, la posta es la línea de arriba que crea un hilo
+//	}else{
+//		printf("Ocurrió un error al intentar abrir el archivo\n");
+//	}

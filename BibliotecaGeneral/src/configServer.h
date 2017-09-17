@@ -33,7 +33,7 @@ int initializeServer(datosConfigServer *datosConexionServer) {
 	freeaddrinfo(serverInfo); // Ya no lo vamos a necesitar
 
 	// Empiezo a escuchar las conexiones. IMPORTANTE: listen() es una syscall BLOQUEANTE.
-	if(listen(datosConexionServer->listenningSocket, MAX_CONEXIONES)!=0){	//0:ok - (-1):error
+	if(listen(datosConexionServer->listenningSocket, MAX_CONEXIONES)!=0){
 		perror("listen");
 		return -1;
 	}

@@ -12,11 +12,6 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
-#include "./configuracion.h"
-#include "../../headers/configServer.h"
-#include "../../headers/configClient.h"
-//#include "../../headers/handshake.h"
-#include "../../headers/constantes.h"
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -49,7 +44,6 @@ int main(int argc, char *argv[]) {
 		preparadoEnviarFs=1;
 	}
 
-
 	datosConexionYama.puerto = datosConfig.PUERTO;
 	if(initializeServer(&datosConexionYama)<0){
 	    log_error(logYAMA,"No pude iniciar como servidor");
@@ -81,8 +75,6 @@ int main(int argc, char *argv[]) {
 		// Envia el mensaje a la FileSystem
 		send(datosConexionFileSystem.serverSocket, message,strlen(message) + 1, 0);
 	}
-
-
 
 	cerrarServer(&datosConexionYama);
 	log_info(logYAMA,"Server cerrado");

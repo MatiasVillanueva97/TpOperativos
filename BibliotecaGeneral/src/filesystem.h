@@ -21,5 +21,4 @@ void crearLogger(){
     archivoLog = NULL;
 }
 
-
 #endif /* FILESYSTEM_SRC_FILESYSTEM_H_ */
