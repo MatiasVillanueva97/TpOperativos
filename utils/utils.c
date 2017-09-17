@@ -1,19 +1,28 @@
 #include <netdb.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <commons/config.h>
+#include <commons/string.h>
+
 
 #define MAX_CONEXIONES 10
 
-int leerArchivoConfig(char *pathArchivoConfig, datosConfig *datosConfig) {
-	// abro el archivo de configuracion
+
+int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig ,char** datosConfig) {
+	int i;
 	t_config *archivoConfig = config_create(pathArchivoConfig);
-
-	// busco sus keys
-//	datosConfigMaster-> YAMA_IP = config_get_string_value(archivoConfig, "YAMA_IP");
-//	datosConfigMaster->YAMA_PUERTO =  config_get_int_value(archivoConfig, "YAMA_PUERTO");
-//	datosConfigMaster->WORKER_IP = config_get_string_value(archivoConfig, "WORKER_IP);
-//	datosConfigMaster->WORKER_PUERTO = config_int_string_value(archivoConfig, "WORKER_PUERTO");
-
-	return 1;
+	if (!archivoConfig) {
+		printf("Error: No se encuentra el archivo\nEjecución abortada\n");
+		return EXIT_FAILURE;
+	}
+	i=0;
+	while(keysConfig[i]){
+		datosConfig[i] = config_get_string_value(archivoConfig, keysConfig[i]);
+		//printf("%s: %s \n", keysConfig[i],datosConfigMaster[i]);
+		i++;
+	}
+	return EXIT_SUCCESS;
 }
 
 int conectarA(char *IP, int puerto){
