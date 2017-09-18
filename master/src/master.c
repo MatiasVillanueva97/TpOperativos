@@ -27,12 +27,10 @@ int main(int argc, char *argv[]) {
 	char *nameArchivoConfig = "configMaster.txt";
 
 	// 1º) leer archivo de config.
-    int archivoConfigOK = leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster);
-
-    if (!archivoConfigOK) {
-		printf("Hubo un error al leer el archivo de configuración");
-		return 0;
-	}
+	if (leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster)) {	//leerArchivoConfig devuelve 1 si hay error
+			printf("Hubo un error al leer el archivo de configuración\n");
+			return EXIT_FAILURE;
+		}
 
     // 2º) conectarse a YAMA y aguardar instrucciones
     //conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);

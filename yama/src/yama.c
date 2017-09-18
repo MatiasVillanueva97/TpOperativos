@@ -18,8 +18,8 @@
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
-char* keysConfigMaster[]={"IP_PROPIA", "PUERTO_PROPIO","FS_IP","FS_PUERTO", NULL};
-char* datosConfigMaster[4];
+char* keysConfigYama[]={"IP_PROPIA", "PUERTO_PROPIO","FS_IP","FS_PUERTO", NULL};
+char* datosConfigYama[4];
 
 int main(int argc, char *argv[]) {
     t_log* logYAMA;
@@ -33,8 +33,7 @@ int main(int argc, char *argv[]) {
 
 	char *nameArchivoConfig = "configYama.txt";
 	// 1º) leer archivo de config.
-	int archivoConfigOK = leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster);
-	if (!archivoConfigOK) {
+	if (leerArchivoConfig(nameArchivoConfig, keysConfigYama, datosConfigYama)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}

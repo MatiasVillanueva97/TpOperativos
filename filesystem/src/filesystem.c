@@ -18,8 +18,8 @@
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 enum keys {IP_PROPIA,PUERTO_PROPIO};
-char* keysConfigMaster[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
-char* datosConfigMaster[2];
+char* keysConfigFS[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
+char* datosConfigFS[2];
 
 int main(int argc, char *argv[]) {
 	char message[PACKAGESIZE];
@@ -32,13 +32,12 @@ int main(int argc, char *argv[]) {
    	char *nameArchivoConfig = "configFilesystem.txt";
 
 	// 1º) leer archivo de config.
-	int archivoConfigOK = leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster);
-	if (!archivoConfigOK) {
-		printf("Hubo un error al leer el archivo de configuración");
-		return 0;
+	if (leerArchivoConfig(nameArchivoConfig, keysConfigFS, datosConfigFS)) {	//leerArchivoConfig devuelve 1 si hay error
+		printf("Hubo un error al leer el archivo de configuración\n");
+		return EXIT_FAILURE;
 	}
 
-    // 2º) inicializar server y aguardar conexiones
+	// 2º) inicializar server y aguardar conexiones
 	int listenningSocket=inicializarServer((char*) IP_PROPIA, (char*) PUERTO_PROPIO);
 	if(listenningSocket<0){
 		log_error(logFileSystem,"No pude iniciar como servidor");

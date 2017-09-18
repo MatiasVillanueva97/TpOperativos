@@ -12,15 +12,14 @@
 #include <commons/string.h>
 
 int leerArchivoConfig(char *nameArchivoConfig, char **keysConfig, char **datosConfig) {
-	int i;
-	char *pathArchivoConfig;
-	string_append_with_format(&pathArchivoConfig, "../configTxts/%s", nameArchivoConfig);
+	char *pathArchivoConfig = string_new();
+	string_append_with_format(&pathArchivoConfig, "../../configTxts/%s", nameArchivoConfig);
 	t_config *archivoConfig = config_create(pathArchivoConfig);
 	if (!archivoConfig) {
-		printf("Error: No se encuentra el archivo\nEjecución abortada\n");
+		puts("\nError: No se encuentra el archivo\nEjecución abortada\n");
 		return EXIT_FAILURE;
 	}
-	i=0;
+	int i=0;
 	while(keysConfig[i]){
 		datosConfig[i] = config_get_string_value(archivoConfig, keysConfig[i]);
 		//printf("%s: %s \n", keysConfig[i],datosConfigMaster[i]);
