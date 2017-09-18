@@ -12,6 +12,8 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include "../../utils/utils.h"
+
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -40,7 +42,7 @@ int main(int argc, char *argv[]) {
 	/* ************** conexión como cliente al FS *************** */
 	log_info(logYAMA,"Conexion a FileSystem, IP: %s, Puerto: %s",FS_IP,FS_PUERTO);
 	int socketFS = conectarA(FS_IP, FS_PUERTO);
-	if (!initializeClient(socketFS)) {
+	if (!socketFS) {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 		preparadoEnviarFs=1;
 	}

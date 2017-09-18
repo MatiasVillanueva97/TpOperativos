@@ -12,6 +12,7 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include "../../utils/utils.h"
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -20,7 +21,7 @@ char* keysConfigMaster[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
 char* datosConfigMaster[2];
 
 int main(int argc, char *argv[]) {
-	char *message[PACKAGESIZE];
+	char message[PACKAGESIZE];
     t_log* logFileSystem;
     logFileSystem = log_create("logFile.log", "FILESYSTEM", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 
@@ -37,8 +38,6 @@ int main(int argc, char *argv[]) {
 	}
 
     // 2º) inicializar server y aguardar conexiones
-   // int socketYama = inicializarClient(datosConfigMaster.YAMA_IP, datosConfigMaster->YAMA_PUERTO);
-    //conectarseA(socketYama);
 	int listenningSocket=inicializarServer(IP_PROPIA, PUERTO_PROPIO);
 	if(listenningSocket<0){
 		log_error(logFileSystem,"No pude iniciar como servidor");

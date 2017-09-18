@@ -1,7 +1,7 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-/* ******************** funciones para clientes de conexiones ************************ */
+/* ******************** funciones para archivo de configuración ************************ */
 
 /*
  * lee el archivo de configuración y guarda los datos en un array
