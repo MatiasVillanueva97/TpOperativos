@@ -25,7 +25,6 @@ char* datosConfigMaster[2];
 int main(int argc, char *argv[]) {
 	t_log* logWorker;
 	logWorker = log_create("logFile.log", "WORKER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	datosConfigServer datosConexionComoServer;
 
 	log_info(logWorker,"Iniciando Worker");
 	printf("\n*** Proceso worker ***");
