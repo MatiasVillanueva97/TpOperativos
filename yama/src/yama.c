@@ -41,14 +41,14 @@ int main(int argc, char *argv[]) {
 
 	/* ************** conexión como cliente al FS *************** */
 	log_info(logYAMA,"Conexion a FileSystem, IP: %s, Puerto: %s",FS_IP,FS_PUERTO);
-	int socketFS = conectarA(FS_IP, FS_PUERTO);
+	int socketFS = conectarA((char*) FS_IP,(char*) FS_PUERTO);
 	if (!socketFS) {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 		preparadoEnviarFs=1;
 	}
 
 	/* ************** inicialización como server ************ */
-	int listenningSocket=inicializarServer(IP_PROPIA, PUERTO_PROPIO);
+	int listenningSocket=inicializarServer((char*) IP_PROPIA,(char*) PUERTO_PROPIO);
 	if(listenningSocket<0){
 		log_error(logYAMA,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");

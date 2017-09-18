@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <utils/utils.h>
 #include <commons/config.h>
 #include <commons/string.h>
 #include "../../utils/conexionesSocket.h"
@@ -33,7 +32,7 @@ int main(int argc, char *argv[]) {
     //if (!archivoConfigOK) {
 	//	printf("Hubo un error al leer el archivo de configuración");
 	//	return 0;
-	}
+	//}
 
     // 2º) conectarse a FileSystem
    // int socketFilesystem = inicializarClient(datosConfigDatanode.YAMA_IP, datosConfigDatanode->YAMA_PUERTO);

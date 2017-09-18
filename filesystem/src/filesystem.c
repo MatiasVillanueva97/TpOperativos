@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 	}
 
     // 2º) inicializar server y aguardar conexiones
-	int listenningSocket=inicializarServer(IP_PROPIA, PUERTO_PROPIO);
+	int listenningSocket=inicializarServer((char*) IP_PROPIA, (char*) PUERTO_PROPIO);
 	if(listenningSocket<0){
 		log_error(logFileSystem,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
