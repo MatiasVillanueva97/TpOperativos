@@ -15,54 +15,58 @@
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
+enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
+char* keysConfigMaster[]={"IP_PROPIA", "PUERTO_PROPIO","FS_IP","FS_PUERTO", NULL};
+char* datosConfigMaster[4];
+
 int main(int argc, char *argv[]) {
     t_log* logYAMA;
     logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	datosConfig datosConfig;
-	datosConfigServer datosConexionYama;
-	datosConfigClient datosConexionFileSystem;
 	int preparadoEnviarFs = 0;
-	char *pathArchivoConfig = "../src/config.txt";
 	char message[PACKAGESIZE];	//TODO: definir un protocolo de mensajes para evitar el tamaño fijo de mensajes
-	int preparadoRecibir;
+	int preparadoRecibir=0;
 
 	log_info(logYAMA,"Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***");
 
-	if (!configFileH(pathArchivoConfig, &datosConfig)) {
-	    log_error(logYAMA,"Error al leer el archivo de configuracion");
+	char *nameArchivoConfig = "configYama.txt";
+	// 1º) leer archivo de config.
+	int archivoConfigOK = leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster);
+	if (!archivoConfigOK) {
 		printf("Hubo un error al leer el archivo de configuración");
-		return EXIT_FAILURE;
+		return 0;
 	}
 
-	// Conexión a FileSystem
-	datosConexionFileSystem.ip = datosConfig.IP_FS;
-	datosConexionFileSystem.puerto = datosConfig.PUERTO_FS;
-	log_info(logYAMA,"Conexion a FileSystem, IP: %s, Puerto: %s",datosConexionFileSystem.ip,datosConexionFileSystem.puerto);
-	if (!initializeClient(&datosConexionFileSystem)) {
+	/* ************** conexión como cliente al FS *************** */
+	log_info(logYAMA,"Conexion a FileSystem, IP: %s, Puerto: %s",FS_IP,FS_PUERTO);
+	int socketFS = conectarA(FS_IP, FS_PUERTO);
+	if (!initializeClient(socketFS)) {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 		preparadoEnviarFs=1;
 	}
 
-	datosConexionYama.puerto = datosConfig.PUERTO;
-	if(initializeServer(&datosConexionYama)<0){
-	    log_error(logYAMA,"No pude iniciar como servidor");
+	/* ************** inicialización como server ************ */
+	int listenningSocket=inicializarServer(IP_PROPIA, PUERTO_PROPIO);
+	if(listenningSocket<0){
+		log_error(logYAMA,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
-	log_info(logYAMA,"Preparado para recibir conexiones");
 	puts("Ya estoy preparado para recibir conexiones\n");
-	if(aceptarConexion(&datosConexionYama)<0){
-	    log_error(logYAMA,"Error al aceptar conexiones");
+
+	int socketCliente=aceptarConexion(listenningSocket);
+	if(socketCliente<0){
+		log_error(logYAMA,"Hubo un error al aceptar conexiones");
 		puts("Hubo un error al aceptar conexiones\n");
 		return EXIT_FAILURE;
 	}
-	log_info(logYAMA,"Ya me conecté, ahora estoy esperando mensajes");
+	log_info(logYAMA,"FileSystem conectado, esperando conexiones");
 	puts("Ya me conecté, ahora estoy esperando mensajes\n");
-	//preparadoRecibir=handshakeServer(&datosConexionYama,NUM_PROCESO_FS);
+
+
 	preparadoRecibir=1;
 	//while (preparadoRecibir) {
-		preparadoRecibir = recv(datosConexionYama.socketCliente,(void*) message, PACKAGESIZE, 0);
+		preparadoRecibir = recv(socketCliente,(void*) message, PACKAGESIZE, 0);
 		puts("Impresión por pantalla del contenido del archivo recibido");
 		puts("/* **************************************** */");
 		if (preparadoRecibir) {
@@ -73,10 +77,10 @@ int main(int argc, char *argv[]) {
 
 	if(preparadoEnviarFs) {
 		// Envia el mensaje a la FileSystem
-		send(datosConexionFileSystem.serverSocket, message,strlen(message) + 1, 0);
+		send(socketFS, message,strlen(message) + 1, 0);
 	}
 
-	cerrarServer(&datosConexionYama);
+	cerrarServer(listenningSocket);
 	log_info(logYAMA,"Server cerrado");
 
 	printf("\n");

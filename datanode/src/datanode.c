@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 
     // 2º) conectarse a FileSystem
    // int socketFilesystem = inicializarClient(datosConfigDatanode.YAMA_IP, datosConfigDatanode->YAMA_PUERTO);
-    conectarseA(socketFilesystem);
+    //conectarseA(socketFilesystem);
 
 	return 0;
 }

@@ -23,10 +23,10 @@ int main(int argc, char *argv[]) {
 
 	printf("\n*** Proceso Master ***");
 
-	char *pathArchivoConfig = "../src/config.txt";
+	char *nameArchivoConfig = "configMaster.txt";
 
 	// 1º) leer archivo de config.
-    int archivoConfigOK = leerArchivoConfig(pathArchivoConfig, keysConfigMaster, datosConfigMaster);
+    int archivoConfigOK = leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster);
 
     if (!archivoConfigOK) {
 		printf("Hubo un error al leer el archivo de configuración");
