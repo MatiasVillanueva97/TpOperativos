@@ -5,6 +5,8 @@
  *      Author: utnso
  */
 
+#include "handshake.c"
+
 #ifndef UTILS_HANDSHAKE_H_
 #define UTILS_HANDSHAKE_H_
 

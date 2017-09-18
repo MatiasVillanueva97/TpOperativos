@@ -5,6 +5,8 @@
  *      Author: utnso
  */
 
+#include "archivoConfig.c"
+
 #ifndef UTILS_ARCHIVOCONFIG_H_
 #define UTILS_ARCHIVOCONFIG_H_
 

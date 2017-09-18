@@ -5,6 +5,8 @@
  *      Author: utnso
  */
 
+#include "conexionesSocket.c"
+
 #ifndef UTILS_CONEXIONESSOCKET_H_
 #define UTILS_CONEXIONESSOCKET_H_
 
