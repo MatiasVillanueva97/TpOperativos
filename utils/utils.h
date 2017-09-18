@@ -5,10 +5,10 @@
 
 /*
  * lee el archivo de configuración y guarda los datos en un array
- * recibe el path del archivo de configuración, el puntero al array con las keys a leer y el puntero al array donde guardar los datos
+ * recibe el nombre del archivo de configuración, el puntero al array con las keys a leer y el puntero al array donde guardar los datos
  * devuelve 0 si OK o 1 si ERROR
  */
-int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig, char **datosConfig);
+int leerArchivoConfig(char *nameArchivoConfig, char **keysConfig, char **datosConfig);
 
 /* ******************** funciones para clientes de conexiones ************************ */
 
@@ -17,7 +17,7 @@ int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig, char **datosCo
  * recibe la ip y el puerto del server
  * devuelve el número de socket si OK o -1 si ERROR
  */
-int conectarA(char *IP, char * puerto);
+int conectarA(char *ipServer, char * puertoServer);
 
 /*
  * Cierra la conexión y libera el socket
@@ -40,12 +40,6 @@ int inicializarServer(char *IP, char * puerto);
  * devuelve el nuevo socket a través del cual va a continuar la comunicación con el cliente
  */
 int aceptarConexion(int listenningSocket);
-
-/*
- * Cierra la conexión y libera el socket
- * recibe el socket
- */
-void cerrarClient(int socket);
 
 /*
  * Cierra la conexión y libera el socket

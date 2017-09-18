@@ -8,8 +8,10 @@
 #define MAX_CONEXIONES 10
 
 /* ******************** funciones para archivos de configuración ************************ */
-int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig, char **datosConfig) {
+int leerArchivoConfig(char *nameArchivoConfig, char **keysConfig, char **datosConfig) {
 	int i;
+	char *pathArchivoConfig;
+	string_append_with_format(&pathArchivoConfig, "../configTxts/%s", nameArchivoConfig);
 	t_config *archivoConfig = config_create(pathArchivoConfig);
 	if (!archivoConfig) {
 		printf("Error: No se encuentra el archivo\nEjecución abortada\n");
@@ -25,7 +27,7 @@ int leerArchivoConfig(char *pathArchivoConfig, char **keysConfig, char **datosCo
 }
 
 /* ******************** funciones para clientes de conexiones ************************ */
-int conectarA(char *IP, char *puerto){
+int conectarA(char *ipServer, char *puertoServer){
 	// Uso getaddrinfo() para obtener los datos de la direccion de red y guardarlos en serverInfo.
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
@@ -33,24 +35,24 @@ int conectarA(char *IP, char *puerto){
 	hints.ai_family = AF_UNSPEC; // Permite que la maquina se encargue de verificar si usamos IPv4 o IPv6
 	hints.ai_socktype = SOCK_STREAM; // Indica que usaremos el protocolo TCP
 
-	getaddrinfo(IP, puerto, &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
+	getaddrinfo(ipServer, puertoServer, &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
 
 	// Obtengo un socket, utilizando la estructura serverInfo ya generada.
-	int socketCliente = socket(serverInfo->ai_family,serverInfo->ai_socktype, serverInfo->ai_protocol);
+	int socketServer = socket(serverInfo->ai_family,serverInfo->ai_socktype, serverInfo->ai_protocol);
 
-	if(socketCliente<0){
+	if(socketServer<0){
 		perror("socket");
 		return -1;
 	}
 
 	// Me conecto al server usando el file descriptor del socket previo.
-	if(connect(socketCliente, serverInfo->ai_addr, serverInfo->ai_addrlen)<0){
+	if(connect(socketServer, serverInfo->ai_addr, serverInfo->ai_addrlen)<0){
 		perror("connect");
 		return -1;
 	}
 	freeaddrinfo(serverInfo);	// No lo necesitamos mas
 
-	return socketCliente;
+	return socketServer;
 }
 
 void cerrarClient(int socket){
