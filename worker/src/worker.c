@@ -13,7 +13,8 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
-#include "../../utils/utils.h"
+#include "../../utils/conexionesSocket.h"
+#include "../../utils/archivoConfig.h"
 
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
