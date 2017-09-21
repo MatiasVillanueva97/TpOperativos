@@ -6,15 +6,7 @@
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/log.h>
-#include "../../utils/conexionesSocket.h"
-#include "../../utils/archivoConfig.h"
-#include "../../utils/constantes.h"
+#include "filesystem.h"
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -48,7 +40,7 @@ int main(int argc, char *argv[]) {
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
-	puts("Ya estoy preparado para recibir conexiones\n");
+	puts("Ya estoy preparado para recibir conexiones\n");	//Solo deberia aceptar conexiones de Datanodes hasta que adquiera un estado estable
 
 	int socketCliente=aceptarConexion(listenningSocket);
 	if(socketCliente<0){
