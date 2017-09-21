@@ -11,6 +11,8 @@
 #define NUM_PROCESO_MASTER 1
 #define NUM_PROCESO_YAMA 2
 #define NUM_PROCESO_FS 3
+#define NUM_PROCESO_WORKER 4
+#define NUM_PROCESO_DATANODE 5
 
 //////////////////////////////////////////////////////////////////////////////
 //Identificadores de colas de PCB's
