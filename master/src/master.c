@@ -14,29 +14,35 @@
 #include "../../utils/conexionesSocket.h"
 #include "../../utils/archivoConfig.h"
 
-//#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
+#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
+/*enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
 char* keysConfigMaster[]={"YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO", NULL};
-char* datosConfigMaster[4];
+char* datosConfigMaster[4];*/
 
 int main(int argc, char *argv[]) {
-
+	struct datosConfigMaster datosConfigTxt;
+	char message[PACKAGESIZE];
 	printf("\n*** Proceso Master ***");
 
 	char *nameArchivoConfig = "configMaster.txt";
 
 	// 1º) leer archivo de config.
-	if (leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster)) {	//leerArchivoConfig devuelve 1 si hay error
+	if (leerArchivoConfigMaster(nameArchivoConfig, &datosConfigTxt)) {	//leerArchivoConfig devuelve 1 si hay error
 			printf("Hubo un error al leer el archivo de configuración\n");
 			return EXIT_FAILURE;
 		}
 
     // 2º) conectarse a YAMA y aguardar instrucciones
-    //conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
-
+    int serverSocket=conectarA(datosConfigTxt.YAMA_IP, datosConfigTxt.YAMA_PUERTO);
+    int enviar = 1;
+    while(enviar){
+    		fgets(message, PACKAGESIZE, stdin);			// Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
+    		if (!strcmp(message,"exit\n")) enviar = 0;			// Chequeo que el usuario no quiera salir
+    		if (enviar) send(serverSocket, message, strlen(message) + 1, 0); 	// Solo envio si el usuario no quiere salir.
+    	}
     // 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
-    //int socketWorker = inicializarClient(datosConfigMaster[WORKER_IP], datosConfigMaster[WORKER_PUERTO]);
+    //int socketWorker = inicializarClient(datosConfigTxt.WORKER_IP, datosConfigTxt.WORKER_PUERTO);
     //conectarA(socketWorker);
 
     // Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
@@ -45,60 +51,3 @@ int main(int argc, char *argv[]) {
 
 	return EXIT_SUCCESS;
 }
-
-//void enviarArchivo(FILE *fp) {
-//	int i;
-//	char ch, *message = 0;
-//	long length;
-//	datosConfigClient datosConexionMaster;
-//
-//	if (!conectarseAYama(&datosConexionMaster)) {
-//		//error, tengo que eliminar el thread y retornar
-//		puts("error al conectarse a YAMA");
-//	}
-//
-//	//paso el contenido del archivo a una variable tipo string
-//	fseek(fp, 0, SEEK_END);
-//	length = ftell(fp);
-//	fseek(fp, 0, SEEK_SET);
-//	message = malloc(length);
-//	if (message) {
-//		fread(message, 1, length, fp);
-//	}
-//	fclose(fp);
-//
-//	/*printf("contenido del archivo:\n");
-//	for (i = 0; i < 10; i++) {
-//	 printf("%s", message);
-//	 sleep(5);
-//	 }*/
-//
-//	send(datosConexionMaster.serverSocket, message, strlen(message) + 1, 0);
-//
-//	return;
-//
-//}
-
-//void iniciarPrograma() {
-//	char nombreArchivo[30];
-//	char *pathArchivo = string_new();
-//	FILE *fp;
-//	pthread_t hiloPrograma;
-//	int iRetHiloPrograma;
-//
-//	printf("\nIniciar Programa\n");
-//	printf("Ingrese el nombre del archivo fuente\n");
-//	//fgets(nombreArchivo, sizeof(nombreArchivo), stdin);
-//	scanf("%s", nombreArchivo);
-//	string_append_with_format(&pathArchivo, "../../%s", nombreArchivo);
-//
-//	fp = fopen(pathArchivo, "r"); // read mode
-//
-//	if (fp) {
-//		//crea un nuevo hilo de programa
-//		//iRetHiloPrograma = pthread_create(&hiloPrograma, NULL,(void*) enviarArchivo, (void*) fp);
-//
-//		//enviarArchivo(fp);	//no me funca el hilo, por ahora lo pruebo así, la posta es la línea de arriba que crea un hilo
-//	}else{
-//		printf("Ocurrió un error al intentar abrir el archivo\n");
-//	}

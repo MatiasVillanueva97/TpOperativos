@@ -18,11 +18,12 @@
 
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-enum keys {IP_PROPIA,PUERTO_PROPIO};
+/*enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigWorker[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
-char* datosConfigWorker[2];
+char* datosConfigWorker[2];*/
 
 int main(int argc, char *argv[]) {
+	struct datosConfigWorker datosConfigTxt;
 	t_log* logWorker;
 	logWorker = log_create("logFile.log", "WORKER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 
@@ -31,12 +32,12 @@ int main(int argc, char *argv[]) {
 
 	char *nameArchivoConfig = "configWorker.txt";
 	// 1º) leer archivo de config.
-	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) {	//leerArchivoConfig devuelve 1 si hay error
+	if (leerArchivoConfigWorker(nameArchivoConfig, &datosConfigTxt)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
 
-	int listenningSocket=inicializarServer((char*) IP_PROPIA, (char*) PUERTO_PROPIO);
+	int listenningSocket=inicializarServer(datosConfigTxt.IP_PROPIA, datosConfigTxt.PUERTO_PROPIO);
 	if(listenningSocket<0){
 		log_error(logWorker,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");

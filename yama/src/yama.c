@@ -17,14 +17,15 @@
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
+/*enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
 char* keysConfigYama[]={"IP_PROPIA", "PUERTO_PROPIO","FS_IP","FS_PUERTO", NULL};
-char* datosConfigYama[4];
+char* datosConfigYama[4];*/
 
 int main(int argc, char *argv[]) {
+	struct datosConfigYama datosConfigTxt;
     t_log* logYAMA;
     logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	int preparadoEnviarFs = 0;
+	int preparadoEnviarFs = 1;
 	char message[PACKAGESIZE];	//TODO: definir un protocolo de mensajes para evitar el tamaño fijo de mensajes
 	int preparadoRecibir=0;
 
@@ -33,21 +34,21 @@ int main(int argc, char *argv[]) {
 
 	char *nameArchivoConfig = "configYama.txt";
 	// 1º) leer archivo de config.
-	if (leerArchivoConfig(nameArchivoConfig, keysConfigYama, datosConfigYama)) {	//leerArchivoConfig devuelve 1 si hay error
+	if (leerArchivoConfigYama(nameArchivoConfig, &datosConfigTxt)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
 
 	/* ************** conexión como cliente al FS *************** */
-	log_info(logYAMA,"Conexion a FileSystem, IP: %s, Puerto: %s",FS_IP,FS_PUERTO);
-	int socketFS = conectarA((char*) FS_IP,(char*) FS_PUERTO);
+	log_info(logYAMA,"Conexion a FileSystem, IP: %s, Puerto: %s",datosConfigTxt.FS_IP,datosConfigTxt.FS_PUERTO);
+	int socketFS = conectarA(datosConfigTxt.FS_IP,datosConfigTxt.FS_PUERTO);
 	if (!socketFS) {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
-		preparadoEnviarFs=1;
+		preparadoEnviarFs=0;
 	}
 
 	/* ************** inicialización como server ************ */
-	int listenningSocket=inicializarServer((char*) IP_PROPIA,(char*) PUERTO_PROPIO);
+	int listenningSocket=inicializarServer(datosConfigTxt.IP_PROPIA,datosConfigTxt.PUERTO_PROPIO);
 	if(listenningSocket<0){
 		log_error(logYAMA,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");

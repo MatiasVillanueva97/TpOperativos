@@ -32,7 +32,7 @@ void cerrarClient(int socket);
  * recibe la ip y el puerto por el que va a quedar escuchando el server
  * devuelve el socket a través del cual escuchará nuevas conexiones si OK o -1 si ERROR
  */
-int inicializarServer(char *IP, char * puerto);
+int inicializarServer(char *IP, char *puerto);
 
 /*
  * Acepta la conexión del cliente y abre el *nuevo* socket

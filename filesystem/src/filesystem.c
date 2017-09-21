@@ -14,14 +14,18 @@
 #include <commons/log.h>
 #include "../../utils/conexionesSocket.h"
 #include "../../utils/archivoConfig.h"
+#include "../../utils/constantes.h"
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-enum keys {IP_PROPIA,PUERTO_PROPIO};
+/*enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigFS[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
-char* datosConfigFS[2];
+char* datosConfigFS[2];*/
+
+
 
 int main(int argc, char *argv[]) {
+	struct datosConfigFS datosConfigTxt;
 	char message[PACKAGESIZE];
     t_log* logFileSystem;
     logFileSystem = log_create("logFile.log", "FILESYSTEM", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
@@ -32,13 +36,13 @@ int main(int argc, char *argv[]) {
    	char *nameArchivoConfig = "configFilesystem.txt";
 
 	// 1º) leer archivo de config.
-	if (leerArchivoConfig(nameArchivoConfig, keysConfigFS, datosConfigFS)) {	//leerArchivoConfig devuelve 1 si hay error
+	if (leerArchivoConfigFS(nameArchivoConfig, &datosConfigTxt)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración\n");
 		return EXIT_FAILURE;
 	}
 
 	// 2º) inicializar server y aguardar conexiones
-	int listenningSocket=inicializarServer((char*) IP_PROPIA, (char*) PUERTO_PROPIO);
+	int listenningSocket=inicializarServer(datosConfigTxt.IP_PROPIA, datosConfigTxt.PUERTO_PROPIO);
 	if(listenningSocket<0){
 		log_error(logFileSystem,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
@@ -56,7 +60,7 @@ int main(int argc, char *argv[]) {
 	puts("Ya me conecté, ahora estoy esperando mensajes\n");
 
     // 3º) si estadoEstable -> FORMATEAR
-   // int socketWorker = inicializarClient(datosConfigMaster.WORKER_IP, datosConfigMaster->WORKER_PUERTO);
+    //int socketWorker = inicializarClient(datosConfigMaster.WORKER_IP, datosConfigMaster->WORKER_PUERTO);
     //conectarseA(socketWorker);
 
     // Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
