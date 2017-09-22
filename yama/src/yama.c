@@ -17,12 +17,11 @@
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-/*enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
+enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
 char* keysConfigYama[]={"IP_PROPIA", "PUERTO_PROPIO","FS_IP","FS_PUERTO", NULL};
-char* datosConfigYama[4];*/
+char* datosConfigYama[4];
 
 int main(int argc, char *argv[]) {
-	struct datosConfigYama datosConfigTxt;
     t_log* logYAMA;
     logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1;
@@ -30,25 +29,25 @@ int main(int argc, char *argv[]) {
 	int preparadoRecibir=0;
 
 	log_info(logYAMA,"Iniciando proceso YAMA");
-	printf("\n*** Proceso Yama ***");
+	printf("\n*** Proceso Yama ***\n");
 
 	char *nameArchivoConfig = "configYama.txt";
 	// 1º) leer archivo de config.
-	if (leerArchivoConfigYama(nameArchivoConfig, &datosConfigTxt)) {	//leerArchivoConfig devuelve 1 si hay error
+	if (leerArchivoConfig(nameArchivoConfig, keysConfigYama, datosConfigYama)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
 
 	/* ************** conexión como cliente al FS *************** */
-	log_info(logYAMA,"Conexion a FileSystem, IP: %s, Puerto: %s",datosConfigTxt.FS_IP,datosConfigTxt.FS_PUERTO);
-	int socketFS = conectarA(datosConfigTxt.FS_IP,datosConfigTxt.FS_PUERTO);
+	log_info(logYAMA,"Conexión a FileSystem, IP: %s, Puerto: %s",datosConfigYama[FS_IP],datosConfigYama[FS_PUERTO]);
+	int socketFS = conectarA(datosConfigYama[FS_IP],datosConfigYama[FS_PUERTO]);
 	if (!socketFS) {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 		preparadoEnviarFs=0;
 	}
 
 	/* ************** inicialización como server ************ */
-	int listenningSocket=inicializarServer(datosConfigTxt.IP_PROPIA,datosConfigTxt.PUERTO_PROPIO);
+	int listenningSocket=inicializarServer(datosConfigYama[IP_PROPIA],datosConfigYama[PUERTO_PROPIO]);
 	if(listenningSocket<0){
 		log_error(logYAMA,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
@@ -70,7 +69,7 @@ int main(int argc, char *argv[]) {
 	//while (preparadoRecibir) {
 		preparadoRecibir = recv(socketCliente,(void*) message, PACKAGESIZE, 0);
 		puts("Impresión por pantalla del contenido del archivo recibido");
-		puts("/* **************************************** */");
+		//puts("/* **************************************** */");
 		if (preparadoRecibir) {
 			//imprime por pantalla el mensaje recibido
 			printf("Mensaje entrante: %s\n", message);

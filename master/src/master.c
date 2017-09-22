@@ -13,41 +13,55 @@
 #include <commons/string.h>
 #include "../../utils/conexionesSocket.h"
 #include "../../utils/archivoConfig.h"
+#include "../../utils/comunicacion.h"
 
-#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
+//#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-/*enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
+enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
 char* keysConfigMaster[]={"YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO", NULL};
-char* datosConfigMaster[4];*/
+char* datosConfigMaster[4];
 
 int main(int argc, char *argv[]) {
-	struct datosConfigMaster datosConfigTxt;
-	char message[PACKAGESIZE];
-	printf("\n*** Proceso Master ***");
+	headerProtocolo headerComunicacion;
+	printf("\n*** Proceso Master ***\n");
+
+	if(argc<5){
+		puts("Error. Faltan parámetros en la ejecución del proceso\n");
+		return EXIT_FAILURE;
+	}
+	char *transformador=argv[1];
+	char *reductor=argv[2];
+	char *archivoRequerido=argv[3];
+	char *archivoDestino=argv[4];
+
+	printf("%s - %s - %s - %s\n",transformador,reductor,archivoRequerido,archivoDestino);
 
 	char *nameArchivoConfig = "configMaster.txt";
 
 	// 1º) leer archivo de config.
-	if (leerArchivoConfigMaster(nameArchivoConfig, &datosConfigTxt)) {	//leerArchivoConfig devuelve 1 si hay error
-			printf("Hubo un error al leer el archivo de configuración\n");
-			return EXIT_FAILURE;
-		}
+	if (leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster)) {	//leerArchivoConfig devuelve 1 si hay error
+		printf("Hubo un error al leer el archivo de configuración");
+		return 0;
+	}
 
     // 2º) conectarse a YAMA y aguardar instrucciones
-    int serverSocket=conectarA(datosConfigTxt.YAMA_IP, datosConfigTxt.YAMA_PUERTO);
-    int enviar = 1;
-    while(enviar){
-    		fgets(message, PACKAGESIZE, stdin);			// Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
-    		if (!strcmp(message,"exit\n")) enviar = 0;			// Chequeo que el usuario no quiera salir
-    		if (enviar) send(serverSocket, message, strlen(message) + 1, 0); 	// Solo envio si el usuario no quiere salir.
-    	}
-    // 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
+    //int serverSocket=conectarA(datosConfigTxt.YAMA_IP, datosConfigTxt.YAMA_PUERTO);
+
+    //envía a yama el archivo con el que quiere trabajar
+    headerComunicacion=armarHeader(11,strlen(archivoRequerido) + 1);
+	char *headerSerializado=serializarHeader(headerComunicacion);
+	printf("Header serializado: %s\n",headerSerializado);
+    //int cantBytesEnviados=send(serverSocket, archivoRequerido, 1, 0); 	// Solo envio si el usuario no quiere salir.
+	//printf("\n%d\n",cantBytesEnviados);
+
+
+	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
     //int socketWorker = inicializarClient(datosConfigTxt.WORKER_IP, datosConfigTxt.WORKER_PUERTO);
     //conectarA(socketWorker);
 
     // Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
     // Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
     // Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
-
+	//close(serverSocket);
 	return EXIT_SUCCESS;
 }

@@ -10,14 +10,13 @@
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
-/*enum keys {IP_PROPIA,PUERTO_PROPIO};
+enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigFS[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
-char* datosConfigFS[2];*/
+char* datosConfigFS[2];
 
 
 
 int main(int argc, char *argv[]) {
-	struct datosConfigFS datosConfigTxt;
 	char message[PACKAGESIZE];
     t_log* logFileSystem;
     logFileSystem = log_create("logFile.log", "FILESYSTEM", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
@@ -28,19 +27,19 @@ int main(int argc, char *argv[]) {
    	char *nameArchivoConfig = "configFilesystem.txt";
 
 	// 1º) leer archivo de config.
-	if (leerArchivoConfigFS(nameArchivoConfig, &datosConfigTxt)) {	//leerArchivoConfig devuelve 1 si hay error
-		printf("Hubo un error al leer el archivo de configuración\n");
-		return EXIT_FAILURE;
-	}
+   	if (leerArchivoConfig(nameArchivoConfig, keysConfigFS, datosConfigFS)) {	//leerArchivoConfig devuelve 1 si hay error
+   			printf("Hubo un error al leer el archivo de configuración");
+   			return 0;
+   		}
 
 	// 2º) inicializar server y aguardar conexiones
-	int listenningSocket=inicializarServer(datosConfigTxt.IP_PROPIA, datosConfigTxt.PUERTO_PROPIO);
+   	int listenningSocket=inicializarServer(datosConfigFS[IP_PROPIA],datosConfigFS[PUERTO_PROPIO]);
 	if(listenningSocket<0){
 		log_error(logFileSystem,"No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
-	puts("Ya estoy preparado para recibir conexiones\n");	//Solo deberia aceptar conexiones de Datanodes hasta que adquiera un estado estable
+	puts("Ya estoy preparado para recibir conexiones\n");
 
 	int socketCliente=aceptarConexion(listenningSocket);
 	if(socketCliente<0){
