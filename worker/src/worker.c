@@ -54,5 +54,18 @@ int main(int argc, char *argv[]) {
 	log_info(logWorker,"Worker conectado, esperando conexiones");
 	puts("Ya me conecté, ahora estoy esperando mensajes\n");
 
+	//implementando fork
+	int pid = fork();
+	if(pid == -1){
+		log_error(logWorker, "Error al forkear");
+		return EXIT_FAILURE;
+	}else if(pid == 0){
+		log_info(logWorker, "Hijo creado");
+		printf("Soy el hijo y mi PID es %d\n", getpid());
+	}else{
+		log_info(logWorker, "Hijo creado");
+		printf("Soy el padre y mi PID sigue siendo %d\n",getpid());
+		printf("El PID de mi hijo es %d\n", pid);
+	}
 	return EXIT_SUCCESS;
 }
