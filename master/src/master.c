@@ -22,7 +22,7 @@ char* keysConfigMaster[]={"YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO"
 char* datosConfigMaster[4];
 
 int main(int argc, char *argv[]) {
-	headerProtocolo headerComunicacion;
+	struct headerProtocolo headerComunicacion;
 	printf("\n*** Proceso Master ***\n");
 
 	if(argc<5){
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     //int serverSocket=conectarA(datosConfigTxt.YAMA_IP, datosConfigTxt.YAMA_PUERTO);
 
     //envía a yama el archivo con el que quiere trabajar
-    headerComunicacion=armarHeader(11,strlen(archivoRequerido) + 1);
+	headerComunicacion=armarHeader(11,strlen(archivoRequerido) + 1);
 	char *headerSerializado=serializarHeader(headerComunicacion);
 	printf("Header serializado: %s\n",headerSerializado);
     //int cantBytesEnviados=send(serverSocket, archivoRequerido, 1, 0); 	// Solo envio si el usuario no quiere salir.
