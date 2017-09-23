@@ -30,17 +30,17 @@ char* serializarHeader(struct headerProtocolo header){
 }
 
 char* recibirHeader(int socketCliente,char *message){
-	if(recv(socketCliente,(void*) message, (sizeof(struct headerProtocolo)), 0)<0){
+	if(recv(socketCliente,(void*) message, (sizeof(struct headerProtocolo)), 0) < 0){
 		perror("Recepción Header");
-		return -1;
+		return "-1";
 	}
 	return message;
 }
 
 char* recibirMensaje(int socketCliente,char *message,int packageSize){
-	if(recv(socketCliente,(void*) message, packageSize, 0)<0){
+	if(recv(socketCliente,(void*) message, packageSize, 0) < 0){
 		perror("Recepción Mensaje");
-		return -1;
+		return "-1";
 	}
 	return message;
 }
