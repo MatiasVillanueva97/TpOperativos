@@ -32,16 +32,16 @@ int main(int argc, char *argv[]) {
 	struct headerProtocolo headerComunicacion;
 	printf("\n*** Proceso Master ***\n");
 
-	if(argc<5){
+	if(argc < 5){
 		puts("Error. Faltan parámetros en la ejecución del proceso\n");
 		return EXIT_FAILURE;
 	}
-	char *transformador=argv[1];
-	char *reductor=argv[2];
-	char *archivoRequerido=argv[3];
-	char *archivoDestino=argv[4];
+	char *transformador = argv[1];
+	char *reductor = argv[2];
+	char *archivoRequerido = argv[3];
+	char *archivoDestino = argv[4];
 
-	printf("%s - %s - %s - %s\n",transformador,reductor,archivoRequerido,archivoDestino);
+	printf("%s - %s - %s - %s\n", transformador, reductor, archivoRequerido, archivoDestino);
 
 	char *nameArchivoConfig = "configMaster.txt";
 
@@ -55,9 +55,9 @@ int main(int argc, char *argv[]) {
     //int serverSocket=conectarA(datosConfigTxt.YAMA_IP, datosConfigTxt.YAMA_PUERTO);
 
     //envía a yama el archivo con el que quiere trabajar
-	headerComunicacion=armarHeader(11,strlen(archivoRequerido) + 1);
-	char *headerSerializado=serializarHeader(headerComunicacion);
-	printf("Header serializado: %s\n",headerSerializado);
+	headerComunicacion = armarHeader(11, strlen(archivoRequerido) + 1);
+	char *headerSerializado = serializarHeader(headerComunicacion);
+	printf("Header serializado: %s\n", headerSerializado);
     //int cantBytesEnviados=send(serverSocket, archivoRequerido, 1, 0); 	// Solo envio si el usuario no quiere salir.
 	//printf("\n%d\n",cantBytesEnviados);
 

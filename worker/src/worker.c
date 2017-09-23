@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 	t_log* logWorker;
 	logWorker = log_create("logFile.log", "WORKER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 
-	log_info(logWorker,"Iniciando Worker");
+	log_info(logWorker, "Iniciando Worker");
 	printf("\n*** Proceso worker ***");
 
 	char *nameArchivoConfig = "configWorker.txt";
@@ -44,36 +44,39 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-   	int listenningSocket=inicializarServer(datosConfigWorker[IP_PROPIA],datosConfigWorker[PUERTO_PROPIO]);
-	if(listenningSocket<0){
-		log_error(logWorker,"No pude iniciar como servidor");
+	// 2º) inicializar server y aguardar conexiones (de master)
+   	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
+	if(listenningSocket < 0){
+		log_error(logWorker, "No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
 	puts("Ya estoy preparado para recibir conexiones\n");
 
-	int socketCliente=aceptarConexion(listenningSocket);
-	if(socketCliente<0){
-		log_error(logWorker,"Hubo un error al aceptar conexiones");
+	int socketCliente = aceptarConexion(listenningSocket);
+	if(socketCliente < 0){
+		log_error(logWorker, "Hubo un error al aceptar conexiones");
 		puts("Hubo un error al aceptar conexiones\n");
 		return EXIT_FAILURE;
 	}
 
-	log_info(logWorker,"Worker conectado, esperando conexiones");
+	log_info(logWorker, "Worker conectado, esperando conexiones");
 	puts("Ya me conecté, ahora estoy esperando mensajes\n");
 
-	//implementando fork
+	// 3º) abro forks para ejecutar instrucciones de master
 	int pid = fork();
 	if(pid == -1){
 		log_error(logWorker, "Error al forkear");
 		return EXIT_FAILURE;
-	}else if(pid == 0){
+	} else if(pid == 0){
 		log_info(logWorker, "Hijo creado");
 		printf("Soy el hijo y mi PID es %d\n", getpid());
-	}else{
+		// Acá debería ejecutar lo q me pidió el Master
+	} else {
 		log_info(logWorker, "Hijo creado");
 		printf("Soy el padre y mi PID sigue siendo %d\n",getpid());
 		printf("El PID de mi hijo es %d\n", pid);
+		// Acá debería seguir escuchando conexiones
 	}
 	return EXIT_SUCCESS;
 }
