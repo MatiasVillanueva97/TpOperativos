@@ -21,6 +21,13 @@ enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
 char* keysConfigMaster[]={"YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO", NULL};
 char* datosConfigMaster[4];
 
+// ================================================================ //
+// Master ejecuta una tarea, sobre un archivo.
+// Se conecta a YAMA para pedir instrucciones,
+// y a los workers (usando hilos) para mandar instrucciones
+// Puede haber varios master corriendo al mismo tiempo.
+// ================================================================ //
+
 int main(int argc, char *argv[]) {
 	struct headerProtocolo headerComunicacion;
 	printf("\n*** Proceso Master ***\n");

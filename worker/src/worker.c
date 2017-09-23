@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-//#include <filesystem.h>
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
@@ -21,6 +20,15 @@
 enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigWorker[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
 char* datosConfigWorker[2];
+
+// ================================================================ //
+// Worker es el que realiza las operaciones que le pide el Master.
+// 1) Recibe orden del Master
+// 2) Se forkea
+// 3) El principal sigue escuchando, el fork ejecuta la orden
+// 4) Termina la orden y el fork muere
+// Puede haber varios Worker corriendo al mismo tiempo.
+// ================================================================ //
 
 int main(int argc, char *argv[]) {
 	t_log* logWorker;

@@ -2,7 +2,7 @@
  ============================================================================
  Name        : yama.c
  Author      : Grupo 1234
- Description : Proceso Yama
+ Description : Proceso YAMA
  ============================================================================
  */
 
@@ -20,6 +20,12 @@
 enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
 char* keysConfigYama[]={"IP_PROPIA", "PUERTO_PROPIO","FS_IP","FS_PUERTO", NULL};
 char* datosConfigYama[4];
+
+// ================================================================ //
+// YAMA coordina con Master donde correr los jobs.
+// Se conecta a FileSystem. Única instancia.
+// Solo hay un YAMA corriendo al mismo tiempo.
+// ================================================================ //
 
 int main(int argc, char *argv[]) {
     t_log* logYAMA;

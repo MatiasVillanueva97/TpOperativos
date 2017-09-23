@@ -14,7 +14,12 @@ enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigFS[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
 char* datosConfigFS[2];
 
-
+// ================================================================ //
+// FileSystem sabe qué está guardado y dónde.
+// Recibe conexiones de DataNodes hasta alcanzar "Estado Estable".
+// Se conecta a YAMA.
+// Sólo hay un FileSystem corriendo al mismo tiempo.
+// ================================================================ //
 
 int main(int argc, char *argv[]) {
 	char message[PACKAGESIZE];

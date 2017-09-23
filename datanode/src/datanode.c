@@ -24,6 +24,12 @@ struct datosConfig {
 	int WORKER_PUERTO;
 };
 
+// ================================================================ //
+// DataNode es donde persisten los datos.
+// Escribe sobre el data.bin
+// Puede haber varios DataNode corriendo al mismo tiempo.
+// ================================================================ //
+
 int main(int argc, char *argv[]) {
 
 	// 1º leer archivo de config.
