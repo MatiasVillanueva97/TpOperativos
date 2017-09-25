@@ -35,10 +35,10 @@ int main(int argc, char *argv[]) {
 	logWorker = log_create("logFile.log", "WORKER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 
 	log_info(logWorker, "Iniciando Worker");
-	printf("\n*** Proceso worker ***");
+	printf("\n*** Proceso worker ***\n");
 
-	char *nameArchivoConfig = "configWorker.txt";
 	// 1º) leer archivo de config.
+	char *nameArchivoConfig = "configWorker.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;

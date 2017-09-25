@@ -1,43 +1,14 @@
 
 
-struct headerProtocolo{
-	int id;
-	int tamPayload;
-	//int origen;	//redundante porque el server debería conocer quién se le conecta de acuerdo al socket, la primera vez que se le conecta alguien le pregunta quién es y ahí ya memoriza de quién es el socket
-};
+#include "constantes.h"
 
-/* *************************** funciones para el header ********************************* */
-struct headerProtocolo armarHeader(int idMensaje, int tamMensaje){
-	struct headerProtocolo header;
-	header.id=idMensaje;
-	header.tamPayload=tamMensaje;
-	return header;
-}
 
-char* serializarHeader(struct headerProtocolo header){
-	void *headerSerializado= malloc(sizeof(struct headerProtocolo));
-	printf("tamaño header serializado: %d - %s\n",string_length(headerSerializado),(char *) headerSerializado);
-
-	memcpy(headerSerializado, &(header.id),sizeof(header.id));
-	memcpy(headerSerializado+sizeof(int),&(header.tamPayload),sizeof(header.tamPayload));
-	//string_append_with_format(&headerSerializado, "%s", headerSerializado+sizeof(int));
-	printf("tamaño header serializado: %d - %s\n",string_length(headerSerializado),(char *) headerSerializado);
-
-	return headerSerializado;
-}
-
-struct headerProtocolo deserializarHeader(char * headerSerializado){
-	struct headerProtocolo header;
-	header.id=*headerSerializado;
-	header.tamPayload=*(headerSerializado+sizeof(header.id));
-	return header;
-}
 
 /* ****************************** funciones para enviar mensajes ******************************/
 int enviarHeader(int serverSocket,struct headerProtocolo header){
 	int cantBytesEnviados;
-	char *idString=intToArrayZerosLeft(header.id,sizeof(header.id));
-	char *tamPayloadString=intToArrayZerosLeft(header.tamPayload,sizeof(header.tamPayload));
+	char *idString=intToArrayZerosLeft(header.id,LARGO_STRING_HEADER_ID);
+	char *tamPayloadString=intToArrayZerosLeft(header.tamPayload,LARGO_STRING_HEADER_TAM_PAYLOAD);
 	cantBytesEnviados = send(serverSocket,idString, string_length(idString)+1, 0);
 	//printf("String Length del id del header: %d\n",string_length(idString));
 	//printf("Bytes enviados del id del header: %d\n",cantBytesEnviados);
@@ -61,7 +32,7 @@ int enviarMensaje(int serverSocket,char *message){
 	int cantBytesEnviados = send(serverSocket, message, string_length(message)+1, 0);
 	//printf("String Length del mensaje: %d\n",string_length(message));
 	//printf("Bytes enviados del mensaje: %d\n",cantBytesEnviados);
-	if(cantBytesEnviados!=( string_length(message)+1)){
+	if(cantBytesEnviados!=(string_length(message)+1)){
 		puts("Error. No se enviaron todos los bytes del mensaje\n");
 		return 0;
 	}
@@ -71,7 +42,7 @@ int enviarMensaje(int serverSocket,char *message){
 
 /* ******************************** funciones para recibir mensajes ********************************/
 struct headerProtocolo recibirHeader(int socketCliente){
-	int idEntero,tamEntero,packageSizeId=5,packageSizeTam=5;		// 4+1 hardcodeado a revisar
+	int idEntero,tamEntero,packageSizeId=(LARGO_STRING_HEADER_ID+1),packageSizeTam=(LARGO_STRING_HEADER_TAM_PAYLOAD+1);		// 4+1 hardcodeado a revisar
 	char id[packageSizeId],tamPayload[packageSizeTam];
 	if(recv(socketCliente,(void*) id, packageSizeId, 0)<0){
 		perror("Recepción Id Header");

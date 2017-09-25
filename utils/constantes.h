@@ -17,7 +17,10 @@
 //////////////////////////////////////////////////////////////////////////////
 //Tipos de mensajes para el protocolo de comunicación
 
-
 #define MENSAJE_TAM_VARIABLE_ID		11		//archivo sobre el cual el master quiere trabajar
 
 //////////////////////////////////////////////////////////////////////////////
+//Largos de mensajes preestableciodos
+
+#define LARGO_STRING_HEADER_TAM_PAYLOAD		8
+#define LARGO_STRING_HEADER_ID				4
