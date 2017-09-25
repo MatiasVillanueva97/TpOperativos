@@ -82,7 +82,7 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/introduccion-y-arq
 	int id;
 	int tamPayload;
 };
-
+El id como máximo 4 dígitos y el tamPayload como máximo 8 dígitos
 * Del lado que envía:
 	* enviarHeader(socketServidor,header);
 	* enviarMensaje(socketServidor,nombreArchivoRequerido);
