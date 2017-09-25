@@ -42,9 +42,9 @@ int conectarA(char *ipServer, char *puertoServer){
 	return socketServer;
 }
 
-void cerrarClient(int socket){
+void cerrarCliente(int socketServer){
 	// Cierro la conexión y libero el socket
-	close(socket);
+	close(socketServer);
 	return;
 }
 

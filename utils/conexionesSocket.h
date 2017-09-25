@@ -23,7 +23,7 @@ int conectarA(char *ipServer, char * puertoServer);
  * Cierra la conexión y libera el socket
  * recibe el socket
  */
-void cerrarClient(int socket);
+void cerrarCliente(int socketServer);
 
 /* ******************** funciones para servers de conexiones ************************ */
 

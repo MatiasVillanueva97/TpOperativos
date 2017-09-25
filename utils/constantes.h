@@ -15,12 +15,9 @@
 #define NUM_PROCESO_DATANODE 5
 
 //////////////////////////////////////////////////////////////////////////////
-//Identificadores de colas de PCB's
-/*
-#define ID_COLA_NEW 0
-#define ID_COLA_READY 1
-#define ID_COLA_EXEC 2
-#define ID_COLA_EXIT 3
-#define ID_COLA_BLOCK 4
-*/
+//Tipos de mensajes para el protocolo de comunicación
+
+
+#define MENSAJE_TAM_VARIABLE_ID		11		//archivo sobre el cual el master quiere trabajar
+
 //////////////////////////////////////////////////////////////////////////////
