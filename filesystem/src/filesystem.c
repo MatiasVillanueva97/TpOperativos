@@ -12,7 +12,12 @@ enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigFS[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
 char* datosConfigFS[2];
 
-
+// ================================================================ //
+// FileSystem sabe qué está guardado y dónde.
+// Recibe conexiones de DataNodes hasta alcanzar "Estado Estable".
+// Se conecta a YAMA.
+// Sólo hay un FileSystem corriendo al mismo tiempo.
+// ================================================================ //
 
 int main(int argc, char *argv[]) {
     t_log* logFileSystem;
@@ -21,15 +26,14 @@ int main(int argc, char *argv[]) {
     log_info(logFileSystem,"Iniciando FileSystem");
    	printf("\n*** Proceso FileSystem ***\n");
 
-   	char *nameArchivoConfig = "configFilesystem.txt";
-
 	// 1º) leer archivo de config.
+   	char *nameArchivoConfig = "configFilesystem.txt";
    	if (leerArchivoConfig(nameArchivoConfig, keysConfigFS, datosConfigFS)) {	//leerArchivoConfig devuelve 1 si hay error
    			printf("Hubo un error al leer el archivo de configuración");
    			return 0;
    		}
 
-	// 2º) inicializar server y aguardar conexiones
+	// 2º) inicializar server y aguardar conexiones (de datanode)
    	int listenningSocket=inicializarServer(datosConfigFS[IP_PROPIA],datosConfigFS[PUERTO_PROPIO]);
 	if(listenningSocket<0){
 		log_error(logFileSystem,"No pude iniciar como servidor");
@@ -55,8 +59,6 @@ int main(int argc, char *argv[]) {
     // Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
     // Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
 
-
-
 	/* *************************** espera recepción de un mensaje ****************************/
 	/* ********* espera el header ********* */
 	struct headerProtocolo header = recibirHeader(socketCliente);
@@ -69,6 +71,14 @@ int main(int argc, char *argv[]) {
 
 
 	cerrarServer(listenningSocket);
+//	if (recv(socketCliente,(void*) message, PACKAGESIZE, 0)) {
+//		puts("Impresión por pantalla del contenido del archivo recibido");
+//		puts("/* **************************************** */");
+//		//imprime por pantalla el mensaje recibido
+//		printf("Mensaje entrante: %s\n", message);
+//	}
+//
+//	cerrarServer(listenningSocket);
 	log_info(logFileSystem,"Server cerrado");
 
 	log_destroy(logFileSystem);

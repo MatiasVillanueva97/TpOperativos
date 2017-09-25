@@ -12,6 +12,13 @@ enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
 char* keysConfigMaster[]={"YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO", NULL};
 char* datosConfigMaster[4];
 
+// ================================================================ //
+// Master ejecuta una tarea, sobre un archivo.
+// Se conecta a YAMA para pedir instrucciones,
+// y a los workers (usando hilos) para mandar instrucciones
+// Puede haber varios master corriendo al mismo tiempo.
+// ================================================================ //
+
 int main(int argc, char *argv[]) {
 	t_log* logMASTER;
 	logMASTER = log_create("logMASTER.log", "MASTER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
@@ -20,14 +27,14 @@ int main(int argc, char *argv[]) {
 	log_info(logMASTER,"Iniciando proceso MASTER");
 	printf("\n*** Proceso Master ***\n");
 
-	if(argc<5){
+	if(argc < 5){
 		puts("Error. Faltan parámetros en la ejecución del proceso\n");
 		return EXIT_FAILURE;
 	}
-	char *transformador=argv[1];
-	char *reductor=argv[2];
-	char *archivoRequerido=argv[3];
-	char *archivoDestino=argv[4];
+	char *transformador = argv[1];
+	char *reductor = argv[2];
+	char *archivoRequerido = argv[3];
+	char *archivoDestino = argv[4];
 
 	//printf("%s - %s - %s - %s\n",transformador,reductor,archivoRequerido,archivoDestino);
 

@@ -54,6 +54,29 @@ int enviarHeader(int serverSocket,struct headerProtocolo header){
 	}
 	return 1;
 }
+
+
+struct headerProtocolo recibirHeader(int socketCliente){
+	int idEntero,tamEntero,packageSizeId=5,packageSizeTam=5;		// 4+1 hardcodeado a revisar
+	char id[packageSizeId],tamPayload[packageSizeTam];
+	if(recv(socketCliente,(void*) id, packageSizeId, 0)<0){
+		perror("Recepción Id Header");
+		struct headerProtocolo header=armarHeader(-1,tamEntero);
+		return header;
+	}
+	if(recv(socketCliente,(void*) tamPayload, packageSizeTam, 0)<0){
+		perror("Recepción Tamaño Payload Header");
+		struct headerProtocolo header=armarHeader(-1,tamEntero);
+		return header;
+	}
+	//printf("recepción en char *: %s - %s\n",id,tamPayload);
+	sscanf(id, "%d", &idEntero);
+	sscanf(tamPayload, "%d", &tamEntero);
+	struct headerProtocolo header=armarHeader(idEntero,tamEntero);
+	return header;
+}
+
+
 //el send no manda siempre todos los bytes que le pongo por el protocolo IP
 //leer la cantidad de bytes enviados que es lo que devuelve
 int enviarMensaje(int serverSocket,char *message){

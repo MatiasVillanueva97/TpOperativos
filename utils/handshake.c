@@ -5,7 +5,6 @@
  *      Author: utnso
  */
 
-
 int handshake_cliente(int socket, char id_cliente, char id_servidor) {
  /*   msj_header cliente;
     cliente.codigo = id_cliente;
@@ -47,4 +46,3 @@ int handshake_servidor(int socket, char id_servidor, const char *clientes_acepta
 
     */return '\0';
 }
-

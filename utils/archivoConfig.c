@@ -12,11 +12,10 @@
 #include <commons/string.h>
 #include "constantes.h"
 
-
 int leerArchivoConfig(char *nameArchivoConfig, char **keysConfig, char **datosConfig) {
 	int i;
 	char *pathArchivoConfig= string_new();;
-	string_append_with_format(&pathArchivoConfig, "../../configTxts/%s", nameArchivoConfig);
+	string_append_with_format(&pathArchivoConfig, "../../config/%s", nameArchivoConfig);
 	t_config *archivoConfig = config_create(pathArchivoConfig);
 	if (!archivoConfig) {
 		printf("Error: No se encuentra el archivo\nEjecución abortada\n");

@@ -14,7 +14,6 @@
 #include "../../utils/conexionesSocket.h"
 #include "../../utils/archivoConfig.h"
 
-
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 struct datosConfig {
@@ -23,6 +22,12 @@ struct datosConfig {
 	char *WORKER_IP;
 	int WORKER_PUERTO;
 };
+
+// ================================================================ //
+// DataNode es donde persisten los datos.
+// Escribe sobre el data.bin
+// Puede haber varios DataNode corriendo al mismo tiempo.
+// ================================================================ //
 
 int main(int argc, char *argv[]) {
 
