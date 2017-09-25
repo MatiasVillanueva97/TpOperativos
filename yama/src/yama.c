@@ -6,14 +6,8 @@
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/log.h>
-#include "../../utils/conexionesSocket.h"
-#include "../../utils/archivoConfig.h"
+#include "../../utils/includes.h"
+
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -25,14 +19,12 @@ int main(int argc, char *argv[]) {
     t_log* logYAMA;
     logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1;
-	char message[PACKAGESIZE];	//TODO: definir un protocolo de mensajes para evitar el tamaño fijo de mensajes
-	int preparadoRecibir=0;
 
 	log_info(logYAMA,"Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***\n");
 
-	char *nameArchivoConfig = "configYama.txt";
 	// 1º) leer archivo de config.
+	char *nameArchivoConfig = "configYama.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigYama, datosConfigYama)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
@@ -41,7 +33,8 @@ int main(int argc, char *argv[]) {
 	/* ************** conexión como cliente al FS *************** */
 	log_info(logYAMA,"Conexión a FileSystem, IP: %s, Puerto: %s",datosConfigYama[FS_IP],datosConfigYama[FS_PUERTO]);
 	int socketFS = conectarA(datosConfigYama[FS_IP],datosConfigYama[FS_PUERTO]);
-	if (!socketFS) {
+	if (socketFS<0) {
+		puts("Filesystem not ready\n");
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 		preparadoEnviarFs=0;
 	}
@@ -53,7 +46,6 @@ int main(int argc, char *argv[]) {
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
-	puts("Ya estoy preparado para recibir conexiones\n");
 
 	int socketCliente=aceptarConexion(listenningSocket);
 	if(socketCliente<0){
@@ -62,26 +54,33 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 	log_info(logYAMA,"FileSystem conectado, esperando conexiones");
-	puts("Ya me conecté, ahora estoy esperando mensajes\n");
+	puts("Esperando mensajes\n");
 
-
-	preparadoRecibir=1;
-	//while (preparadoRecibir) {
-		preparadoRecibir = recv(socketCliente,(void*) message, PACKAGESIZE, 0);
-		puts("Impresión por pantalla del contenido del archivo recibido");
-		//puts("/* **************************************** */");
-		if (preparadoRecibir) {
-			//imprime por pantalla el mensaje recibido
-			printf("Mensaje entrante: %s\n", message);
-		}
-	//}
+	/* *************************** espera recepción de un mensaje ****************************/
+	/* ********* espera el header ********* */
+	struct headerProtocolo header = recibirHeader(socketCliente);
+	if(header.id<0){
+		puts("Ocurrió un error al recibir el header");
+		return EXIT_FAILURE;
+	}
+	char *mensaje=recibirMensaje(socketCliente,header.tamPayload);
+	//printf("id del header: %d\n",header.id);
+	//printf("tamaño del mensaje: %d\n",header.tamPayload);
+	printf("mensaje: %s\n",mensaje);
 
 	if(preparadoEnviarFs) {
 		// Envia el mensaje a la FileSystem
-		send(socketFS, message,strlen(message) + 1, 0);
+		//printf("%d - %d\n",header.id,header.tamPayload);
+		if(!enviarHeader(socketFS,header)){
+			puts("Error. No se enviaron todos los bytes del header");
+		}
+		if(!enviarMensaje(socketFS,mensaje)){
+			puts("Error. No se enviaron todos los bytes del mensaje");
+		}
 	}
 
 	cerrarServer(listenningSocket);
+	//cerrarServer(socketCliente);
 	log_info(logYAMA,"Server cerrado");
 
 	printf("\n");

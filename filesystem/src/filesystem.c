@@ -6,9 +6,7 @@
  ============================================================================
  */
 
-#include "filesystem.h"
-
-#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
+#include "../../utils/includes.h"
 
 enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigFS[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
@@ -17,12 +15,11 @@ char* datosConfigFS[2];
 
 
 int main(int argc, char *argv[]) {
-	char message[PACKAGESIZE];
     t_log* logFileSystem;
     logFileSystem = log_create("logFile.log", "FILESYSTEM", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 
     log_info(logFileSystem,"Iniciando FileSystem");
-   	printf("\n*** Proceso FileSystem ***");
+   	printf("\n*** Proceso FileSystem ***\n");
 
    	char *nameArchivoConfig = "configFilesystem.txt";
 
@@ -60,14 +57,16 @@ int main(int argc, char *argv[]) {
 
 
 
+	/* *************************** espera recepción de un mensaje ****************************/
+	/* ********* espera el header ********* */
+	struct headerProtocolo header = recibirHeader(socketCliente);
+	char *mensaje=recibirMensaje(socketCliente,header.tamPayload);
 
+	puts("Impresión por pantalla del contenido del archivo recibido");
+	puts("/* **************************************** */");
+	printf("tamaño del mensaje: %d\n",header.tamPayload);
+	printf("mensaje: %s\n",mensaje);
 
-	if (recv(socketCliente,(void*) message, PACKAGESIZE, 0)) {
-		puts("Impresión por pantalla del contenido del archivo recibido");
-		puts("/* **************************************** */");
-		//imprime por pantalla el mensaje recibido
-		printf("Mensaje entrante: %s\n", message);
-	}
 
 	cerrarServer(listenningSocket);
 	log_info(logFileSystem,"Server cerrado");

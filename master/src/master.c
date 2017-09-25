@@ -6,23 +6,18 @@
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include "../../utils/conexionesSocket.h"
-#include "../../utils/archivoConfig.h"
-#include "../../utils/comunicacion.h"
-
-//#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
+#include "../../utils/includes.h"
 
 enum keys {YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO};
 char* keysConfigMaster[]={"YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO", NULL};
 char* datosConfigMaster[4];
 
 int main(int argc, char *argv[]) {
-	struct headerProtocolo headerComunicacion;
+	t_log* logMASTER;
+	logMASTER = log_create("logMASTER.log", "MASTER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
+	int preparadoEnviarYama=1;
+
+	log_info(logMASTER,"Iniciando proceso MASTER");
 	printf("\n*** Proceso Master ***\n");
 
 	if(argc<5){
@@ -34,26 +29,31 @@ int main(int argc, char *argv[]) {
 	char *archivoRequerido=argv[3];
 	char *archivoDestino=argv[4];
 
-	printf("%s - %s - %s - %s\n",transformador,reductor,archivoRequerido,archivoDestino);
-
-	char *nameArchivoConfig = "configMaster.txt";
+	//printf("%s - %s - %s - %s\n",transformador,reductor,archivoRequerido,archivoDestino);
 
 	// 1º) leer archivo de config.
+	char *nameArchivoConfig = "configMaster.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster)) {	//leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
 
     // 2º) conectarse a YAMA y aguardar instrucciones
-    //int serverSocket=conectarA(datosConfigTxt.YAMA_IP, datosConfigTxt.YAMA_PUERTO);
+	log_info(logMASTER,"Conexión a Yama, IP: %s, Puerto: %s",datosConfigMaster[YAMA_IP],datosConfigMaster[YAMA_PUERTO]);
+	int socketYama = conectarA(datosConfigMaster[YAMA_IP],datosConfigMaster[YAMA_PUERTO]);
+	if (!socketYama) {
+		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
+		preparadoEnviarYama=0;
+	}
 
     //envía a yama el archivo con el que quiere trabajar
-	headerComunicacion=armarHeader(11,strlen(archivoRequerido) + 1);
-	char *headerSerializado=serializarHeader(headerComunicacion);
-	printf("Header serializado: %s\n",headerSerializado);
-    //int cantBytesEnviados=send(serverSocket, archivoRequerido, 1, 0); 	// Solo envio si el usuario no quiere salir.
-	//printf("\n%d\n",cantBytesEnviados);
-
+	struct headerProtocolo header=armarHeader(MENSAJE_TAM_VARIABLE_ID,string_length(archivoRequerido));
+	if(!enviarHeader(socketYama,header)){
+		puts("Error. No se enviaron todos los bytes del header");
+	}
+	if(!enviarMensaje(socketYama,archivoRequerido)){
+		puts("Error. No se enviaron todos los bytes del mensaje");
+	}
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
     //int socketWorker = inicializarClient(datosConfigTxt.WORKER_IP, datosConfigTxt.WORKER_PUERTO);
@@ -62,6 +62,6 @@ int main(int argc, char *argv[]) {
     // Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
     // Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
     // Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
-	//close(serverSocket);
+	cerrarCliente(socketYama);
 	return EXIT_SUCCESS;
 }
