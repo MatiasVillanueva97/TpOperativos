@@ -78,13 +78,13 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/introduccion-y-arq
 
 ## Protocolo de Comunicación v1.1
 
-struct headerProtocolo{
+* struct headerProtocolo{
 	int id;
 	int tamPayload;
 };
 
 * Del lado que envía:
-* *enviarHeader(socketServidor,header)
-* *enviarMensaje(socketServidor,nombreArchivoRequerido)
+	* enviarHeader(socketServidor,header)
+	* enviarMensaje(socketServidor,nombreArchivoRequerido)
 
 
