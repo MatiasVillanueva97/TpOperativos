@@ -74,3 +74,17 @@ Master | 127.0.0.1 | #### |
 ![ARQUITECTURA](https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/assets/arquitectura.png)
 
 Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/introduccion-y-arquitectura.html
+
+
+## Protocolo de Comunicación v1.1
+
+struct headerProtocolo{
+	int id;
+	int tamPayload;
+};
+
+* Del lado que envía:
+* *enviarHeader(socketServidor,header)
+* *enviarMensaje(socketServidor,nombreArchivoRequerido)
+
+
