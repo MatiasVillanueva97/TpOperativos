@@ -84,7 +84,11 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/introduccion-y-arq
 };
 
 * Del lado que envía:
-	* enviarHeader(socketServidor,header)
-	* enviarMensaje(socketServidor,nombreArchivoRequerido)
+	* enviarHeader(socketServidor,header);
+	* enviarMensaje(socketServidor,nombreArchivoRequerido);
+	
+* Del lado que recibe:
+	* struct headerProtocolo header = recibirHeader(socketCliente);
+	* char *mensaje=recibirMensaje(socketCliente,header.tamPayload);
 
 
