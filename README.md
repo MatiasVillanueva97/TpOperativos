@@ -73,7 +73,7 @@ Master | 127.0.0.1 | #### |
 
 ![ARQUITECTURA](https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/assets/arquitectura.png)
 
-Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/introduccion-y-arquitectura.html
+Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/
 
 
 ## Protocolo de Comunicación v1.1
@@ -82,7 +82,9 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/introduccion-y-arq
 	int id;
 	int tamPayload;
 };
+
 El id como máximo 4 dígitos y el tamPayload como máximo 8 dígitos
+
 * Del lado que envía:
 	* enviarHeader(socketServidor,header);
 	* enviarMensaje(socketServidor,nombreArchivoRequerido);
