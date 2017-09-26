@@ -8,9 +8,9 @@
 
 #include "consola.h"
 
-void main() {
+int consola() {
   char * linea;
-  puts("Ingrese una opción entre 1 para YAMA y 2 para MASTER,o exit para salir");
+  puts("Ingrese un comando,o exit para salir");
   while(1) {
     linea = readline("YAMA>");
 
@@ -19,12 +19,12 @@ void main() {
 
     if(!strncmp(linea, "exit", 4)) {	//si escribo exit salgo
        free(linea);
-       break;
+       return 1;
     }
-    if (!strncmp(linea, "YAMA", 4))					//Aca iria toda la funcionalidad de la consola
-    	puts("usted ha elegido la opcion YAMA");
-    if(!strncmp(linea, "MASTER", 5))
-    	puts("usted ha elegido la opcion MASTER");
+    if (!strncmp(linea, "format", 5))					//Aca iria toda la funcionalidad de la consola
+    	puts("usted ha elegido la opcion format");
+    if(!strncmp(linea, "rm ", sizeof(linea)))
+    	puts("usted ha elegido la opcion rm"); //aca deberia empezarse a parsear cual de todos los rm se ingreso
     }
   }
 

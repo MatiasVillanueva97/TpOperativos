@@ -17,4 +17,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+//funciones
+int consola();
+
 #endif /* CONSOLA_H_ */

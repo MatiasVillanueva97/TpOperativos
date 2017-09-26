@@ -6,7 +6,7 @@
  ============================================================================
  */
 
-#include "../../utils/includes.h"
+#include "filesystem.h"
 
 enum keys {IP_PROPIA,PUERTO_PROPIO};
 char* keysConfigFS[]={"IP_PROPIA", "PUERTO_PROPIO", NULL};
@@ -50,6 +50,13 @@ int main(int argc, char *argv[]) {
 	}
 	log_info(logFileSystem,"FileSystem conectado, esperando conexiones");
 	puts("Ya me conecté, ahora estoy esperando mensajes\n");
+
+
+	consola();
+	while (consola()!=1){
+		consola();
+	}
+
 
     // 3º) si estadoEstable -> FORMATEAR
     //int socketWorker = inicializarClient(datosConfigMaster.WORKER_IP, datosConfigMaster->WORKER_PUERTO);
