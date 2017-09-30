@@ -28,11 +28,18 @@ Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
 1. Clonar este repositorio: `git clone https://github.com/sisoputnfrba/tp-2017-2c-Mi-Grupo-1234`
 2. Entrar al directorio: `cd tp-2017-2c-Mi-Grupo-1234`
 3. Compilar usando el Makefile provisto: `make`
-4. Ejecutar el proceso FileSystem: `filesystem/bin/filesystem`
-5. Ejecutar el proceso DataNode: `datanode/bin/datanode` (TO DO)
-6. Ejecutar el proceso Worker: `worker/bin/worker` (TO DO)
-7. Ejecutar el proceso YAMA: `yama/bin/yama`
-8. Ejecutar el proceso Master: `master/bin/master`
+4. Ejecutar todos los procesos juntos: `make run`
+
+Ojo! Si lo corrés varias veces seguidas falla porq las conexiones quedan abiertas, para resolverlo guardá los cambios y ejecutá lo siguiente :)
+
+`sudo sysctl -w net.ipv4.tcp_tw_recycle=1 && sudo sysctl -w net.ipv4.tcp_tw_reuse=1 && sudo reboot`
+
+> Opc.: Para ejecutar cada proceso por separado
+* FileSystem: `cd filesystem/bin && ./filesystem`
+* DataNode: `cd datanode/bin && ./datanode` (TO DO)
+* Worker: `cd worker/bin && ./worker` (TO DO)
+* YAMA: `cd yama/bin && ./yama`
+* Master: `cd master/bin && ./master`
 
 > Para trabajar en Eclipse, importar el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
 

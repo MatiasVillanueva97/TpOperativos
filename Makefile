@@ -4,6 +4,7 @@ SRC_PATH=src
 COMMONS=-lcommons
 THREAD=-lpthread
 READLINE=-lreadline
+DIR=$(pwd)
 
 FILESYSTEM=filesystem
 MASTER=master
@@ -37,8 +38,15 @@ datanode:
 	$(COMPILER) $(DATANODE)/$(SRC_PATH)/$(DATANODE).c -o $(DATANODE)/$(BIN_PATH)/$(DATANODE) $(COMMONS) $(THREAD) $(READLINE)
 
 clean:
-	rm -rf $(FILESYSTEM)/$(BIN_PATH)
-	rm -rf $(MASTER)/$(BIN_PATH)
-	rm -rf $(YAMA)/$(BIN_PATH)
-	rm -rf $(WORKER)/$(BIN_PATH)
-	rm -rf $(DATANODE)/$(BIN_PATH)
+	rm -rf $(FILESYSTEM)/$(BIN_PATH) && rm -rf $(FILESYSTEM)/*.log
+	rm -rf $(MASTER)/$(BIN_PATH) && rm -rf $(MASTER)/*.log
+	rm -rf $(YAMA)/$(BIN_PATH) && rm -rf $(YAMA)/*.log
+	rm -rf $(WORKER)/$(BIN_PATH) && rm -rf $(WORKER)/*.log
+	rm -rf $(DATANODE)/$(BIN_PATH) && rm -rf $(DATANODE)/*.log
+
+run:
+	terminator --working-directory="$(DIR)" --title "FileSystem" --command="cd filesystem/bin/; ./filesystem; bash" --geometry=640x480+0+0 &
+	sleep 1
+	terminator --working-directory="$(DIR)" --title "YAMA" --command="cd yama/bin/; ./yama; bash" --geometry=640x480-0+0 &
+	sleep 1
+	terminator --working-directory="$(DIR)" --title "Master" --command="cd master/bin/; ./master transformador reductor datos resultado; bash" --geometry=640x480+0-0 &
