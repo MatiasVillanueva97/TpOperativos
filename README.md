@@ -30,9 +30,10 @@ Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
 3. Compilar usando el Makefile provisto: `make`
 4. Ejecutar todos los procesos juntos: `make run`
 
-Ojo! Si lo corrés varias veces seguidas falla porq las conexiones quedan abiertas, para resolverlo guardá los cambios y ejecutá lo siguiente :)
+> Ojo! Si lo corrés varias veces seguidas falla porq las conexiones quedan abiertas, para resolverlo guardá los cambios y ejecutá lo siguiente :)
 
 `sudo sysctl -w net.ipv4.tcp_tw_recycle=1 && sudo sysctl -w net.ipv4.tcp_tw_reuse=1 && sudo reboot`
+
 
 > Opc.: Para ejecutar cada proceso por separado
 * FileSystem: `cd filesystem/bin && ./filesystem`
@@ -40,6 +41,7 @@ Ojo! Si lo corrés varias veces seguidas falla porq las conexiones quedan abiert
 * Worker: `cd worker/bin && ./worker` (TO DO)
 * YAMA: `cd yama/bin && ./yama`
 * Master: `cd master/bin && ./master`
+
 
 > Para trabajar en Eclipse, importar el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
 
