@@ -52,10 +52,10 @@ int main(int argc, char *argv[]) {
 	puts("Ya me conecté, ahora estoy esperando mensajes\n");
 
 
-	consola();
-	while (consola()!=1){
-		consola();
-	}
+//	consola();
+//	while (consola()!=1){
+//		consola();
+//	}
 
 
     // 3º) si estadoEstable -> FORMATEAR

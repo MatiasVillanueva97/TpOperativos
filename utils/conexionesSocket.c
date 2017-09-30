@@ -100,6 +100,6 @@ void cerrarServer(int listenningSocket) {
 	// Cierro la conexión y libero el socket
 	//close(socketCliente);
 	close(listenningSocket);
-	printf("\nCliente desconectado.");
+	printf("\nCliente desconectado.\n");
 	return;
 }

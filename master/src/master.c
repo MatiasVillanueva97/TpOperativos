@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	printf("\n*** Proceso Master ***\n");
 
 	if(argc < 5){
-		puts("Error. Faltan parámetros en la ejecución del proceso\n");
+		puts("Error. Faltan parámetros en la ejecución del proceso.\n");
 		return EXIT_FAILURE;
 	}
 	char *transformador = argv[1];
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 	char *archivoRequerido = argv[3];
 	char *archivoDestino = argv[4];
 
-	//printf("%s - %s - %s - %s\n",transformador,reductor,archivoRequerido,archivoDestino);
+	//printf("%s - %s - %s - %s\n", transformador, reductor, archivoRequerido, archivoDestino);
 
 	// 1º) leer archivo de config.
 	char *nameArchivoConfig = "configMaster.txt";
@@ -46,19 +46,19 @@ int main(int argc, char *argv[]) {
 	}
 
     // 2º) conectarse a YAMA y aguardar instrucciones
-	log_info(logMASTER,"Conexión a Yama, IP: %s, Puerto: %s",datosConfigMaster[YAMA_IP],datosConfigMaster[YAMA_PUERTO]);
-	int socketYama = conectarA(datosConfigMaster[YAMA_IP],datosConfigMaster[YAMA_PUERTO]);
+	log_info(logMASTER,"Conexión a Yama, IP: %s, Puerto: %s", datosConfigMaster[YAMA_IP],datosConfigMaster[YAMA_PUERTO]);
+	int socketYama = conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
 	if (!socketYama) {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 		preparadoEnviarYama=0;
 	}
 
     //envía a yama el archivo con el que quiere trabajar
-	struct headerProtocolo header=armarHeader(MENSAJE_TAM_VARIABLE_ID,string_length(archivoRequerido));
+	struct headerProtocolo header=armarHeader(MENSAJE_TAM_VARIABLE_ID, string_length(archivoRequerido));
 	if(!enviarHeader(socketYama,header)){
 		puts("Error. No se enviaron todos los bytes del header");
 	}
-	if(!enviarMensaje(socketYama,archivoRequerido)){
+	if(!enviarMensaje(socketYama, archivoRequerido)){
 		puts("Error. No se enviaron todos los bytes del mensaje");
 	}
 

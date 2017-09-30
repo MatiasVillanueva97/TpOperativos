@@ -89,7 +89,6 @@ int main(int argc, char *argv[]) {
 	//cerrarServer(socketCliente);
 	log_info(logYAMA,"Server cerrado");
 
-	printf("\n");
 	log_destroy(logYAMA);
 	return EXIT_SUCCESS;
 }
