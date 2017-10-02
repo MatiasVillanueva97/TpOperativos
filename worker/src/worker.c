@@ -51,32 +51,35 @@ int main(int argc, char *argv[]) {
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
-	puts("Ya estoy preparado para recibir conexiones\n");
+	while(1){//inicio bucle para forkear
+		puts("Ya estoy preparado para recibir conexiones\n");
 
-	int socketCliente = aceptarConexion(listenningSocket);
-	if(socketCliente < 0){
-		log_error(logWorker, "Hubo un error al aceptar conexiones");
-		puts("Hubo un error al aceptar conexiones\n");
-		return EXIT_FAILURE;
-	}
+		int socketCliente = aceptarConexion(listenningSocket);
+		if(socketCliente < 0){
+			log_error(logWorker, "Hubo un error al aceptar conexiones");
+			puts("Hubo un error al aceptar conexiones\n");
+			return EXIT_FAILURE;
+		}
 
-	log_info(logWorker, "Worker conectado, esperando conexiones");
-	puts("Ya me conecté, ahora estoy esperando mensajes\n");
+		log_info(logWorker, "Worker conectado, esperando conexiones");
+		puts("Ya me conecté, ahora estoy esperando mensajes\n");
 
-	// 3º) abro forks para ejecutar instrucciones de master
-	int pid = fork();
-	if(pid == -1){
-		log_error(logWorker, "Error al forkear");
-		return EXIT_FAILURE;
-	} else if(pid == 0){
-		log_info(logWorker, "Hijo creado");
-		printf("Soy el hijo y mi PID es %d\n", getpid());
-		// Acá debería ejecutar lo q me pidió el Master
-	} else {
-		log_info(logWorker, "Hijo creado");
-		printf("Soy el padre y mi PID sigue siendo %d\n",getpid());
-		printf("El PID de mi hijo es %d\n", pid);
-		// Acá debería seguir escuchando conexiones
+		// 3º) abro forks para ejecutar instrucciones de master
+		int pid = fork();
+		if(pid == -1){
+			log_error(logWorker, "Error al forkear");
+			return EXIT_FAILURE;
+		} else if(pid == 0){
+			log_info(logWorker, "Hijo creado");
+			printf("Soy el hijo y mi PID es %d\n", getpid());
+			// Acá debería ejecutar lo q me pidió el Master
+		} else {
+			log_info(logWorker, "Hijo creado");
+			printf("Soy el padre y mi PID sigue siendo %d\n",getpid());
+			printf("El PID de mi hijo es %d\n", pid);
+			// Acá debería seguir escuchando conexiones
+			close(socketCliente);//cierro el socket en el padre para poder conectarlo con otro master
+		}
 	}
 	return EXIT_SUCCESS;
 }

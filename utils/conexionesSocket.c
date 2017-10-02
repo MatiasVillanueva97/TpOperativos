@@ -67,7 +67,8 @@ int inicializarServer(char *IP, char *puerto) {
 		perror("socket");
 		return -1;
 	}
-
+	int activado=1;
+	setsockopt(listenningSocket,SOL_SOCKET,SO_REUSEADDR,&activado,sizeof(activado)); // para no tener que esperara 2min si el server se cierra mal
 	// Uso el file descriptor previo para decirle al sistema por donde voy a escuchar las conexiones
 	if(bind(listenningSocket, serverInfo->ai_addr,serverInfo->ai_addrlen)!=0){
 		perror("bind");
