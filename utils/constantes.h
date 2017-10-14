@@ -17,10 +17,11 @@
 //////////////////////////////////////////////////////////////////////////////
 //Tipos de mensajes para el protocolo de comunicación
 
-#define MENSAJE_TAM_VARIABLE_ID		11		//archivo sobre el cual el master quiere trabajar
+#define CANT1_MENSAJE_TAM_VARIABLE_ID		11		//archivo sobre el cual el master quiere trabajar
 
 //////////////////////////////////////////////////////////////////////////////
 //Largos de mensajes preestableciodos
 
 #define LARGO_STRING_HEADER_TAM_PAYLOAD		8
-#define LARGO_STRING_HEADER_ID				4
+#define LARGO_STRING_HEADER_ID				4	//es el largo del string que indica cuantos bytes tiene el id del header que se envía por socket
+#define LARGO_STRING_TAM_MENSAJE		8	//es el largo del string que indica cuantos bytes tiene el tamaño del mensaje a enviar por socket

@@ -12,7 +12,7 @@
 
 struct headerProtocolo armarHeader(int idMensaje, int tamMensaje);
 
-char* serializarHeader(struct headerProtocolo);
+char* serializarMensaje(uint32_t idMensaje,char *mensajeAEnviar);
 
 struct headerProtocolo deserializarHeader(char * headerSerializado);
 

@@ -22,7 +22,7 @@ char* datosConfigMaster[4];
 int main(int argc, char *argv[]) {
 	t_log* logMASTER;
 	logMASTER = log_create("logMASTER.log", "MASTER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	int preparadoEnviarYama=1;
+	uint32_t preparadoEnviarYama=1;
 
 	log_info(logMASTER,"Iniciando proceso MASTER");
 	printf("\n*** Proceso Master ***\n");
@@ -54,13 +54,9 @@ int main(int argc, char *argv[]) {
 	}
 
     //envía a yama el archivo con el que quiere trabajar
-	struct headerProtocolo header=armarHeader(MENSAJE_TAM_VARIABLE_ID, string_length(archivoRequerido));
-	if(!enviarHeader(socketYama,header)){
-		puts("Error. No se enviaron todos los bytes del header");
-	}
-	if(!enviarMensaje(socketYama, archivoRequerido)){
-		puts("Error. No se enviaron todos los bytes del mensaje");
-	}
+	//hago un paquete serializado con el mensaje a enviar
+	char *mensajeSerializado=serializarMensaje(CANT1_MENSAJE_TAM_VARIABLE_ID,archivoRequerido);
+	enviarMensaje(socketYama, mensajeSerializado);
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
     //int socketWorker = inicializarClient(datosConfigTxt.WORKER_IP, datosConfigTxt.WORKER_PUERTO);

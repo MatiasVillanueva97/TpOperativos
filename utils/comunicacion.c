@@ -29,9 +29,10 @@ int enviarHeader(int serverSocket,struct headerProtocolo header){
 //el send no manda siempre todos los bytes que le pongo por el protocolo IP
 //leer la cantidad de bytes enviados que es lo que devuelve
 int enviarMensaje(int serverSocket,char *message){
+	printf("bytes de largo: %d\n",string_length(message));
 	int cantBytesEnviados = send(serverSocket, message, string_length(message)+1, 0);
 	//printf("String Length del mensaje: %d\n",string_length(message));
-	//printf("Bytes enviados del mensaje: %d\n",cantBytesEnviados);
+	printf("Bytes enviados del mensaje: %d\n",cantBytesEnviados);
 	if(cantBytesEnviados!=(string_length(message)+1)){
 		puts("Error. No se enviaron todos los bytes del mensaje\n");
 		return 0;

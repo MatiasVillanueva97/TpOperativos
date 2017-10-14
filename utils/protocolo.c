@@ -6,7 +6,6 @@ struct headerProtocolo{
 	//int origen;	//redundante porque el server debería conocer quién se le conecta de acuerdo al socket, la primera vez que se le conecta alguien le pregunta quién es y ahí ya memoriza de quién es el socket
 };
 
-
 /* *************************** funciones para el header ********************************* */
 struct headerProtocolo armarHeader(int idMensaje, int tamMensaje){
 	struct headerProtocolo header;
@@ -19,16 +18,24 @@ struct headerProtocolo armarHeader(int idMensaje, int tamMensaje){
  * EN DESUSO
  * PARA CORREGIR
  */
-char* serializarHeader(struct headerProtocolo header){
-	void *headerSerializado= malloc(sizeof(struct headerProtocolo));
-	//printf("tamaño header serializado: %d - %s\n",string_length(headerSerializado),(char *) headerSerializado);
+char* serializarMensaje(uint32_t idMensaje,char *mensajeAEnviar){
+	uint32_t largoMensaje= string_length(mensajeAEnviar);
+	uint32_t largoStringId=LARGO_STRING_HEADER_ID;
+	uint32_t largoStringTamMensaje=LARGO_STRING_TAM_MENSAJE;
+	void *mensajeSerializado = malloc(largoStringId+largoStringTamMensaje+(largoMensaje+1));
+	uint32_t offsetPuntero=0;
 
-	memcpy(headerSerializado, &(header.id),sizeof(header.id));
-	memcpy(headerSerializado+sizeof(int),&(header.tamPayload),sizeof(header.tamPayload));
-	//string_append_with_format(&headerSerializado, "%s", headerSerializado+sizeof(int));
-	//printf("tamaño header serializado: %d - %s\n",string_length(headerSerializado),(char *) headerSerializado);
+	char *idString=intToArrayZerosLeft(idMensaje,largoStringId);
+	memcpy(mensajeSerializado+offsetPuntero,idString,largoStringId);
+	offsetPuntero+=largoStringId;
 
-	return headerSerializado;
+	char *largoMensajeString=intToArrayZerosLeft(largoMensaje,largoStringTamMensaje);
+	memcpy(mensajeSerializado+offsetPuntero,largoMensajeString,largoStringTamMensaje);
+	offsetPuntero+=largoStringTamMensaje;
+
+	memcpy(mensajeSerializado+offsetPuntero,mensajeAEnviar,largoMensaje+1);
+
+	return mensajeSerializado;
 }
 
 /*

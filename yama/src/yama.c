@@ -64,25 +64,31 @@ int main(int argc, char *argv[]) {
 
 	/* *************************** espera recepción de un mensaje ****************************/
 	/* ********* espera el header ********* */
-	struct headerProtocolo header = recibirHeader(socketCliente);
-	if(header.id<0){
-		puts("Ocurrió un error al recibir el header");
-		return EXIT_FAILURE;
-	}
-	char *mensaje=recibirMensaje(socketCliente,header.tamPayload);
-	//printf("id del header: %d\n",header.id);
-	//printf("tamaño del mensaje: %d\n",header.tamPayload);
-	printf("mensaje: %s\n",mensaje);
+
+	char idString[LARGO_STRING_HEADER_ID+1];
+	recv(socketCliente,idString,LARGO_STRING_HEADER_ID, 0);
+	idString[LARGO_STRING_HEADER_ID]='\0';
+	printf("id: %d\n",atoi(idString));
+
+	char tamMensajeString[LARGO_STRING_TAM_MENSAJE+1];
+	recv(socketCliente,tamMensajeString,LARGO_STRING_TAM_MENSAJE, 0);
+	tamMensajeString[LARGO_STRING_TAM_MENSAJE]='\0';
+	printf("tamMensaje: %d\n",atoi(tamMensajeString));
+
+	char *mensajeRecibido=malloc(atoi(tamMensajeString)+1);
+	recv(socketCliente,mensajeRecibido,atoi(tamMensajeString)+1, 0);
+	printf("mensajeRecibido: %s\n",mensajeRecibido);
 
 	if(preparadoEnviarFs) {
 		// Envia el mensaje a la FileSystem
 		//printf("%d - %d\n",header.id,header.tamPayload);
-		if(!enviarHeader(socketFS,header)){
+
+		/*if(!enviarHeader(socketFS,header)){
 			puts("Error. No se enviaron todos los bytes del header");
 		}
 		if(!enviarMensaje(socketFS,mensaje)){
 			puts("Error. No se enviaron todos los bytes del mensaje");
-		}
+		}*/
 	}
 
 	cerrarServer(listenningSocket);
