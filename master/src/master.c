@@ -55,7 +55,14 @@ int main(int argc, char *argv[]) {
 
     //envía a yama el archivo con el que quiere trabajar
 	//hago un paquete serializado con el mensaje a enviar
-	char *mensajeSerializado=serializarMensaje(CANT1_MENSAJE_TAM_VARIABLE_ID,archivoRequerido);
+	char *arrayMensajes[4];
+	arrayMensajes[0]=argv[1];
+	arrayMensajes[1]=argv[2];
+	arrayMensajes[2]=argv[3];
+	arrayMensajes[3]=argv[4];
+	//cuidado con el segmentation fault al armar el array de strings!!!!!!!!!!!!!!!!!!!
+
+	char *mensajeSerializado=serializarMensaje(CANT4_MENSAJE_TAM_VARIABLE_ID,arrayMensajes);
 	enviarMensaje(socketYama, mensajeSerializado);
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
@@ -65,6 +72,6 @@ int main(int argc, char *argv[]) {
     // Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
     // Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
     // Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
-	cerrarCliente(socketYama);
+	//cerrarCliente(socketYama);
 	return EXIT_SUCCESS;
 }

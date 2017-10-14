@@ -64,21 +64,24 @@ int main(int argc, char *argv[]) {
 
 	/* *************************** espera recepción de un mensaje ****************************/
 	/* ********* espera el header ********* */
+	int i;
 
 	char idString[LARGO_STRING_HEADER_ID+1];
 	recv(socketCliente,idString,LARGO_STRING_HEADER_ID, 0);
 	idString[LARGO_STRING_HEADER_ID]='\0';
 	printf("id: %d\n",atoi(idString));
 
-	char tamMensajeString[LARGO_STRING_TAM_MENSAJE+1];
-	recv(socketCliente,tamMensajeString,LARGO_STRING_TAM_MENSAJE, 0);
-	tamMensajeString[LARGO_STRING_TAM_MENSAJE]='\0';
-	printf("tamMensaje: %d\n",atoi(tamMensajeString));
+	for(i=0;i<4;i++){	//el 4 después va a salir del id (son 4 mensajes)
+		char tamMensajeString[LARGO_STRING_TAM_MENSAJE+1];
+		recv(socketCliente,tamMensajeString,LARGO_STRING_TAM_MENSAJE, 0);
+		tamMensajeString[LARGO_STRING_TAM_MENSAJE]='\0';
+		printf("tamMensaje: %d\n",atoi(tamMensajeString));
 
-	char *mensajeRecibido=malloc(atoi(tamMensajeString)+1);
-	recv(socketCliente,mensajeRecibido,atoi(tamMensajeString)+1, 0);
-	printf("mensajeRecibido: %s\n",mensajeRecibido);
-
+		char *mensajeRecibido=malloc(atoi(tamMensajeString)+1);
+		recv(socketCliente,mensajeRecibido,atoi(tamMensajeString), 0);
+		mensajeRecibido[atoi(tamMensajeString)]='\0';
+		printf("mensajeRecibido: %s\n",mensajeRecibido);
+	}
 	if(preparadoEnviarFs) {
 		// Envia el mensaje a la FileSystem
 		//printf("%d - %d\n",header.id,header.tamPayload);
