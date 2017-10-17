@@ -94,7 +94,6 @@ void deserializarMensaje(char *mensajeRecibido,int socketCliente,int tamMensaje)
 		perror("Recepción del mensaje");
 	}
 	mensajeRecibido[tamMensaje]='\0';
-
 }
 
 /*

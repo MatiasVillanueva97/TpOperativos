@@ -1,8 +1,4 @@
-
-
 #include "constantes.h"
-
-
 
 /* ****************************** funciones para enviar mensajes ******************************/
 /*int enviarHeader(int serverSocket,struct headerProtocolo header){
@@ -38,7 +34,6 @@ int enviarMensaje(int serverSocket,char *message){
 	return 1;
 }
 
-
 /* ******************************** funciones para recibir mensajes ********************************/
 /*struct headerProtocolo recibirHeader(int socketCliente){
 	int idEntero,tamEntero,packageSizeId=(LARGO_STRING_HEADER_ID+1),packageSizeTam=(LARGO_STRING_HEADER_TAM_PAYLOAD+1);		// 4+1 hardcodeado a revisar
@@ -62,8 +57,7 @@ int enviarMensaje(int serverSocket,char *message){
 
 /*
  * recibe por socket un mensaje
- * parámetros: socket del cliente y el largo del string (string_length)
- * devuelve un mensaje como char*
+ * parámetros: el puntero donde guardar el mensaje, socket del cliente y el largo del string (string_length)
  */
 void recibirMensaje(char *message,int socketCliente,int packageSize){
 	//char *message=malloc(packageSize);
