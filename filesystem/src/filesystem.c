@@ -68,13 +68,12 @@ int main(int argc, char *argv[]) {
 
 	/* *************************** espera recepción de un mensaje ****************************/
 	/* ********* espera el header ********* */
-	struct headerProtocolo header = recibirHeader(socketCliente);
-	char *mensaje=recibirMensaje(socketCliente,header.tamPayload);
+	//struct headerProtocolo header = recibirHeader(socketCliente);
+	//char *mensaje=recibirMensaje(socketCliente,header.tamPayload);
 
-	puts("Impresión por pantalla del contenido del archivo recibido");
-	puts("/* **************************************** */");
+	/*puts("Impresión por pantalla del contenido del archivo recibido");
 	printf("tamaño del mensaje: %d\n",header.tamPayload);
-	printf("mensaje: %s\n",mensaje);
+	printf("mensaje: %s\n",mensaje);*/
 
 
 	cerrarServer(listenningSocket);

@@ -9,11 +9,13 @@
 #include "../../utils/includes.h"
 
 
-#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
+//#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 enum keys {IP_PROPIA,PUERTO_PROPIO, FS_IP,FS_PUERTO};
 char* keysConfigYama[]={"IP_PROPIA", "PUERTO_PROPIO","FS_IP","FS_PUERTO", NULL};
 char* datosConfigYama[4];
+
+
 
 // ================================================================ //
 // YAMA coordina con Master donde correr los jobs.
@@ -22,6 +24,7 @@ char* datosConfigYama[4];
 // ================================================================ //
 
 int main(int argc, char *argv[]) {
+
     t_log* logYAMA;
     logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1;
@@ -63,24 +66,16 @@ int main(int argc, char *argv[]) {
 	puts("Esperando mensajes\n");
 
 	/* *************************** espera recepción de un mensaje ****************************/
-	/* ********* espera el header ********* */
-	int i;
+	int headerId = deserializarHeader(socketCliente);
+	printf("id: %d\n",headerId);
 
-	char idString[LARGO_STRING_HEADER_ID+1];
-	recv(socketCliente,idString,LARGO_STRING_HEADER_ID, 0);
-	idString[LARGO_STRING_HEADER_ID]='\0';
-	printf("id: %d\n",atoi(idString));
-
+	int i,tamMensaje;
 	for(i=0;i<4;i++){	//el 4 después va a salir del id (son 4 mensajes)
-		char tamMensajeString[LARGO_STRING_TAM_MENSAJE+1];
-		recv(socketCliente,tamMensajeString,LARGO_STRING_TAM_MENSAJE, 0);
-		tamMensajeString[LARGO_STRING_TAM_MENSAJE]='\0';
-		printf("tamMensaje: %d\n",atoi(tamMensajeString));
-
-		char *mensajeRecibido=malloc(atoi(tamMensajeString)+1);
-		recv(socketCliente,mensajeRecibido,atoi(tamMensajeString), 0);
-		mensajeRecibido[atoi(tamMensajeString)]='\0';
+		tamMensaje=deserializarTamMensaje(socketCliente);
+		char *mensajeRecibido=malloc(tamMensaje+1);
+		deserializarMensaje(mensajeRecibido,socketCliente,tamMensaje);
 		printf("mensajeRecibido: %s\n",mensajeRecibido);
+		free(mensajeRecibido);
 	}
 	if(preparadoEnviarFs) {
 		// Envia el mensaje a la FileSystem

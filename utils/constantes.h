@@ -21,6 +21,9 @@
 #define CANT2_MENSAJE_TAM_VARIABLE_ID		12
 #define CANT3_MENSAJE_TAM_VARIABLE_ID		13
 #define CANT4_MENSAJE_TAM_VARIABLE_ID		14
+
+
+
 //////////////////////////////////////////////////////////////////////////////
 //Largos de mensajes preestableciodos
 
