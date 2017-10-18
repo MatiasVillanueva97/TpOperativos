@@ -12,7 +12,7 @@ Agustín de la Dedicación | 1472161 | Agusdld@gmail.com |
 Hernán Domingo | 1306315 | hernan.domingo.22@gmail.com |
 Guillermo Fernández | 1163206 | gafernandez2525@gmail.com |
 Nahuel Oyhanarte | 1545668 | noyhanarte@gmail.com |
-Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
+Matias Villanueva | 1559837 | matias.nahuel.villanueva@hotmail.com |
 
 
 ## Requisitos
