@@ -43,15 +43,21 @@ Mathias Sanchez | 1527575 | mathisoad2@gmail.com |
 * Master: `cd master/bin && ./master`
 
 
-> Para trabajar en Eclipse, importar el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
+> Para trabajar en Eclipse, importá el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
 
 
 ## Guía de Estilo
 
 * Constantes: todo en mayúsculas con guíones bajos. Ej.: `#define NUM_PROCESO_MASTER 1`
 
-* Nombres de funciones y variables: lowerCamelCase (inicial de cada palabra en mayúscula excepto la primera)   
+* Nombres de funciones y variables: lowerCamelCase (inicial de cada palabra en mayúscula excepto la primera)
 Ej.: `preparadoRecibir, iniciarPrograma()`
+
+* Asignaciones, enum's, etc. con espacios!
+Ej.: `foo = bar, foo2 = bar2;`
+
+> Si usás el comando *Format* de Eclipse (Shift+Ctrl+F) cambiate la siguiente config.:
+Windows -> Preferences -> C/C++ -> Code Style -> Formatter -> Edit -> Line Wrapping -> Poné "Do not wrap" en c/u de los 5 tipos "padres" (Class, Function, etc.) -> Renombrá el profile y guardá
 
 
 ## Reglas
@@ -61,10 +67,10 @@ Si querés subir algo que no llegaste a revisar, q está _in progress_ y/o que n
 
 2) No compiles a mano o usando cosas raras. Sea en Eclipse o en la consola hacelo usando el Makefile provisto, así nos aseguramos que todos lo hacemos de la **misma** manera.
 
-3) No subas binarios ni archivos de proyecto/configuración: son innecesarios, contaminan el repo y confunden. 
+3) No subas binarios ni archivos de proyecto/configuración: son innecesarios, contaminan el repo y confunden.
 Los primeros se deben generar automáticamente cuando compiles (sino quedan obsoletos), y los segundos son particulares de cada persona/entorno.
 
-> Si no cumplís las reglas -> HAY TABLA. 
+> Si no cumplís las reglas -> HAY TABLA.
 
 
 ## Configuración
@@ -92,8 +98,5 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/
 * Del lado que envía:
 	* mensajeSerializado=serializarMensaje(int id,char *arrayMensajes[])
 	* enviarMensaje(socketServidor,mensajeSerializado)
-	
+
 * Del lado que recibe:
-	
-
-
