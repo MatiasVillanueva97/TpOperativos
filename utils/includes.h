@@ -20,7 +20,6 @@
 #include "conexionesSocket.h"
 #include "archivoConfig.h"
 #include "comunicacion.h"
-#include "protocolo.h"
 
 #endif /* UTILS_INCLUDES_H_ */
 
