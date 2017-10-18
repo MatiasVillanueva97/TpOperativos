@@ -6,10 +6,10 @@
  */
 
 #include "protocolo.c"
-
+/*
 #ifndef UTILS_PROTOCOLO_H_
 #define UTILS_PROTOCOLO_H_
-
+/*
 //struct headerProtocolo armarHeader(int idMensaje, int tamMensaje);
 
 char* serializarMensaje(uint32_t idMensaje,char **arrayMensajes);

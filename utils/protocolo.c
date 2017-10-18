@@ -18,7 +18,7 @@
 	header.tamPayload=tamMensaje;
 	return header;
 }*/
-
+/*
 char* serializarMensaje(uint32_t idMensaje,char **arrayMensajes){
 	int i;
 	uint32_t offsetPuntero=0;
@@ -57,7 +57,7 @@ char* serializarMensaje(uint32_t idMensaje,char **arrayMensajes){
 /*
  * hace un recv del tamaño del header para extraer el mismo del mensaje serializado
  * devuelve el id del header como int
- */
+ *//*
 int deserializarHeader(int socketCliente){
 	char* idString=malloc(LARGO_STRING_HEADER_ID+1);
 	recibirMensaje(idString,socketCliente,LARGO_STRING_HEADER_ID);
@@ -76,6 +76,7 @@ int deserializarHeader(int socketCliente){
  * recibe el socket del cliente
  * devuelve el mensaje
  */
+/*
 int deserializarTamMensaje(int socketCliente){
 	char *tamMensajeString=malloc(LARGO_STRING_TAM_MENSAJE+1);
 	recibirMensaje(tamMensajeString, socketCliente,LARGO_STRING_TAM_MENSAJE);
