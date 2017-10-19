@@ -11,7 +11,8 @@
 enum keys {
 	YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO
 };
-char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "WORKER_IP", "WORKER_PUERTO", NULL };
+char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "WORKER_IP",
+		"WORKER_PUERTO", NULL };
 char* datosConfigMaster[4];
 
 // ================================================================ //
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
 	for (i = 0; i < cantStrings; i++) {
 		free(arrayMensajes[i]);
 	}
-	//free(arrayMensajes);
+	free(arrayMensajes);
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
 	//int socketWorker = inicializarClient(datosConfigTxt.WORKER_IP, datosConfigTxt.WORKER_PUERTO);
