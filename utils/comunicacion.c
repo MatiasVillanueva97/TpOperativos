@@ -27,18 +27,22 @@ void recibirMensaje(char *message, int socketCliente, int packageSize) {
 }
 
 /* **************** funciones para serializar y deserializar mensajes ************ */
-char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes) {
+char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantStrings) {
 	int i;
 	uint32_t offsetPuntero = 0;
 	uint32_t largoStringId = LARGO_STRING_HEADER_ID;
 	uint32_t largoStringTamMensaje = LARGO_STRING_TAM_MENSAJE;
 
-	//pido memoria para el mensaje serializado calcuando el tamaño a poner en el malloc
+	//pido memoria para el mensaje serializado calculando el tamaño a poner en el malloc
 	int largoMensajeSerializado = largoStringId;
-	for (i = 0; i < sizeof(arrayMensajes); i++) {
+	printf("cantidad de mensajes: %d\n", cantStrings);
+	for (i = 0; i < cantStrings; i++) {
+		printf("1-%d\n", i);
 		largoMensajeSerializado += largoStringTamMensaje;
 		largoMensajeSerializado += string_length(arrayMensajes[i]);
+		printf("2-%d\n", i);
 	}
+	printf("largo serializado: %d\n", largoMensajeSerializado);
 
 	void *mensajeSerializado = malloc(largoMensajeSerializado);
 
@@ -48,7 +52,7 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes) {
 	offsetPuntero += largoStringId;
 
 	//cada vuelta del for agrega el tamaño del mensaje y el mensaje
-	for (i = 0; i < sizeof(arrayMensajes); i++) {
+	for (i = 0; i < cantStrings; i++) {
 
 		uint32_t largoMensaje = string_length(arrayMensajes[i]);
 

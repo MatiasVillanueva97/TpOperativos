@@ -22,6 +22,7 @@ char* datosConfigMaster[4];
 // ================================================================ //
 
 int main(int argc, char *argv[]) {
+	int i;
 	t_log* logMASTER;
 	logMASTER = log_create("logMASTER.log", "MASTER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	uint32_t preparadoEnviarYama = 1;
@@ -38,11 +39,9 @@ int main(int argc, char *argv[]) {
 	char *archivoRequerido = argv[3];
 	char *archivoDestino = argv[4];
 
-	//printf("%s - %s - %s - %s\n", transformador, reductor, archivoRequerido, archivoDestino);
-
 	// 1º) leer archivo de config.
 	char *nameArchivoConfig = "configMaster.txt";
-	if (leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster)) {//leerArchivoConfig devuelve 1 si hay error
+	if (leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster)) { //leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
@@ -57,17 +56,22 @@ int main(int argc, char *argv[]) {
 
 	//envía a yama el archivo con el que quiere trabajar
 	//hago un paquete serializado con el mensaje a enviar
-	char *arrayMensajes[4];
-	arrayMensajes[0] = argv[1];
-	arrayMensajes[1] = argv[2];
-	arrayMensajes[2] = argv[3];
-	arrayMensajes[3] = argv[4];
-	//cuidado con el segmentation fault al armar el array de strings!!!!!!!!!!!!!!!!!!!
-	//creo que está mal hacerlo así
-	//habría que meter algún malloc en algún lado porque son char *
-
-	char *mensajeSerializado = serializarMensaje(PATH_ARCHIVO, arrayMensajes);
+	int cantStrings = 1;
+	char **arrayMensajes = malloc(cantStrings);
+	arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
+	strcpy(arrayMensajes[0], archivoRequerido);
+	arrayMensajes[0][string_length(archivoRequerido)] = '\0';
+	/*for (i = 0; i < cantStrings; i++) {
+	 arrayMensajes[i] = malloc(string_length(argv[i + 1]) + 1);
+	 strcpy(arrayMensajes[i], argv[i + 1]);
+	 arrayMensajes[i][string_length(argv[i + 1])] = '\0';
+	 }*/
+	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO, arrayMensajes, cantStrings);
 	enviarMensaje(socketYama, mensajeSerializado);
+	for (i = 0; i < cantStrings; i++) {
+		free(arrayMensajes[i]);
+	}
+	//free(arrayMensajes);
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
 	//int socketWorker = inicializarClient(datosConfigTxt.WORKER_IP, datosConfigTxt.WORKER_PUERTO);
