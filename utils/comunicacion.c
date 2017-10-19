@@ -35,15 +35,10 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
 
 	//pido memoria para el mensaje serializado calculando el tamaño a poner en el malloc
 	int largoMensajeSerializado = largoStringId;
-	printf("cantidad de mensajes: %d\n", cantStrings);
 	for (i = 0; i < cantStrings; i++) {
-		printf("1-%d\n", i);
 		largoMensajeSerializado += largoStringTamMensaje;
 		largoMensajeSerializado += string_length(arrayMensajes[i]);
-		printf("2-%d\n", i);
 	}
-	printf("largo serializado: %d\n", largoMensajeSerializado);
-
 	void *mensajeSerializado = malloc(largoMensajeSerializado);
 
 	//agrego el id del mensaje a la serialización
@@ -53,7 +48,6 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
 
 	//cada vuelta del for agrega el tamaño del mensaje y el mensaje
 	for (i = 0; i < cantStrings; i++) {
-
 		uint32_t largoMensaje = string_length(arrayMensajes[i]);
 
 		char *largoMensajeString = intToArrayZerosLeft(largoMensaje, largoStringTamMensaje);
