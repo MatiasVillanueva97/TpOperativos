@@ -63,6 +63,8 @@ int main(int argc, char *argv[]) {
 	arrayMensajes[2] = argv[3];
 	arrayMensajes[3] = argv[4];
 	//cuidado con el segmentation fault al armar el array de strings!!!!!!!!!!!!!!!!!!!
+	//creo que está mal hacerlo así
+	//habría que meter algún malloc en algún lado porque son char *
 
 	char *mensajeSerializado = serializarMensaje(PATH_ARCHIVO, arrayMensajes);
 	enviarMensaje(socketYama, mensajeSerializado);

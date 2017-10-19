@@ -5,12 +5,16 @@
  Description : Proceso YAMA
  ============================================================================
  */
-
+// ================================================================ //
+// YAMA coordina con Master donde correr los jobs.
+// Se conecta a FileSystem. Única instancia.
+// Solo hay un YAMA corriendo al mismo tiempo.
+// ================================================================ //
 #include "../../utils/includes.h"
-//#include "../../utils/constantes.c"
 
-//#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
-
+// ================================================================ //
+// enum y vectores para los datos de configuración levantados del archivo config
+// ================================================================ //
 enum keys {
 	IP_PROPIA, PUERTO_PROPIO, FS_IP, FS_PUERTO
 };
@@ -18,10 +22,25 @@ char* keysConfigYama[] = { "IP_PROPIA", "PUERTO_PROPIO", "FS_IP", "FS_PUERTO", N
 char* datosConfigYama[4];
 
 // ================================================================ //
-// YAMA coordina con Master donde correr los jobs.
-// Se conecta a FileSystem. Única instancia.
-// Solo hay un YAMA corriendo al mismo tiempo.
+// tabla de estados de YAMA
 // ================================================================ //
+enum etapasTablaEstados {
+	TRANSFORMACION, REDUCC_LOCAL, REDUCC_GLOBAL
+};
+enum estadoTablaEstados {
+	EN_PROCESO, ERROR, FIN_OK
+};
+struct filaTablaEstados {
+	int job;
+	int master;
+	int nodo;
+	int bloque;
+	int etapa;
+	int estado;
+	struct filaTablaEstados *siguiente;
+};
+
+//struct filaTablaEstados tablaEstados[100];
 
 int main(int argc, char *argv[]) {
 
@@ -62,6 +81,7 @@ int main(int argc, char *argv[]) {
 		puts("Hubo un error al aceptar conexiones\n");
 		return EXIT_FAILURE;
 	}
+	printf("socket cliente: %d\n",socketCliente);
 	log_info(logYAMA, "FileSystem conectado, esperando conexiones");
 	puts("Esperando mensajes\n");
 
@@ -70,6 +90,7 @@ int main(int argc, char *argv[]) {
 	printf("id: %d\n", headerId);
 	printf("mensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
 
+	//
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes);
 	int i;

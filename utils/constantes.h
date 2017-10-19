@@ -15,19 +15,8 @@
 #define NUM_PROCESO_DATANODE 5
 
 //////////////////////////////////////////////////////////////////////////////
-//Tipos de mensajes para el protocolo de comunicación
-
-#define CODIGO_ERROR 		0
-#define CODIGO_OK 			1
-#define PATH_ARCHIVO 		2
-#define CUATRO_MENSAJES		3
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////
 //Largos de mensajes preestableciodos
 
-#define LARGO_STRING_HEADER_TAM_PAYLOAD		8
-#define LARGO_STRING_HEADER_ID				4	//es el largo del string que indica cuantos bytes tiene el id del header que se envía por socket
-#define LARGO_STRING_TAM_MENSAJE		8	//es el largo del string que indica cuantos bytes tiene el tamaño del mensaje a enviar por socket
+//#define LARGO_STRING_HEADER_TAM_PAYLOAD		8
+#define LARGO_STRING_HEADER_ID		4	//es el largo del string que indica cuantos bytes tiene el id del header que se envía por socket
+#define LARGO_STRING_TAM_MENSAJE	8	//es el largo del string que indica cuantos bytes tiene el tamaño del mensaje a enviar por socket
