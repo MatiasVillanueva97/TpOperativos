@@ -11,6 +11,7 @@
 // Solo hay un YAMA corriendo al mismo tiempo.
 // ================================================================ //
 #include "../../utils/includes.h"
+#include "tablaEstados.h"
 
 // ================================================================ //
 // enum y vectores para los datos de configuración levantados del archivo config
@@ -31,17 +32,7 @@ enum etapasTablaEstados {
 enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK
 };
-struct filaTablaEstados {
-	int job;
-	int master;
-	int nodo;
-	int bloque;
-	int etapa;
-	char[20];
-	int estado;
-	struct filaTablaEstados *siguiente;
-};
-//struct filaTablaEstados tablaEstados[100];
+
 
 typedef struct {
 	int tamArchivo;
@@ -94,8 +85,6 @@ int recibirConexion(t_log* logYAMA, int listenningSocket) {
 }
 
 bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
-	printf("archivo: %s\n", archivo);
-
 	int cantStrings = 1, i;
 	char **arrayMensajesSerializar = malloc(cantStrings);
 	arrayMensajesSerializar[0] = malloc(string_length(archivo) + 1);
@@ -110,7 +99,6 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	enviarMensaje(socketFS, mensajeSerializado);
 
 	uint32_t headerId = deserializarHeader(socketFS);
-	printf("\nmensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
 	if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
@@ -149,34 +137,9 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 
 }
 
-struct filaTablaEstados *primero, *ultimo;
 
-void agregarElemTablaEstados(struct filaTablaEstados fila) {
-	struct filaTablaEstados *nuevo;
-	/* reservamos memoria para el nuevo elemento */
-	nuevo = (struct filaTablaEstados *) malloc(sizeof(struct filaTablaEstados));
-	if (nuevo == NULL)
-		perror("No hay memoria disponible!\n");
-	nuevo->siguiente = NULL;
-	/* ahora metemos el nuevo elemento en la lista. lo situamos al final de la lista */
-	/* comprobamos si la lista está vacía. si primero==NULL es que no
-	 * hay ningún elemento en la lista. también vale ultimo==NULL */
-	if (primero == NULL) {
-		printf("Primer elemento\n");
-		primero = nuevo;
-		ultimo = nuevo;
-	} else {
-		/* el que hasta ahora era el último tiene que apuntar al nuevo */
-		ultimo->siguiente = nuevo;
-		/* hacemos que el nuevo sea ahora el último */
-		ultimo = nuevo;
-	}
-
-	//if()
-}
 
 int main(int argc, char *argv[]) {
-	struct filaTablaEstados *primero, *ultimo;
 	t_log* logYAMA;
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1, i;
@@ -208,7 +171,7 @@ int main(int argc, char *argv[]) {
 
 	/* *************************** espera recepción de un mensaje ****************************/
 	uint32_t headerId = deserializarHeader(socketCliente);
-	printf("\nmensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
+	//printf("\nmensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes);
 	switch (headerId) {
@@ -225,21 +188,32 @@ int main(int argc, char *argv[]) {
 		//pide la metadata del archivo al FS
 		if (preparadoEnviarFs) {
 			bloqueArchivo *bloques = pedirMetadataArchivoFS(socketFS, archivo);
-			printf("Tamaño del archivo: %d\nTipo del archivo: %c\n", bloques[0].tamArchivo, bloques[0].tipoArchivo);
-			printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
-			printf("Bloque 1 - Copia 2: Nodo %d - Bloque %d\n", bloques[0].nodoCopia2, bloques[0].bloqueCopia2);
-			printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
-			printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);
+			/*printf("Tamaño del archivo: %d\nTipo del archivo: %c\n", bloques[0].tamArchivo, bloques[0].tipoArchivo);
+			 printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
+			 printf("Bloque 1 - Copia 2: Nodo %d - Bloque %d\n", bloques[0].nodoCopia2, bloques[0].bloqueCopia2);
+			 printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
+			 printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);*/
 
 			int cantBloquesArchivo = bloques[0].cantBloquesArchivo;
+			struct filaTablaEstados fila;
 			for (i = 0; i < cantBloquesArchivo; i++) {
-				agregarElemTablaEstados(bloques[i]);
+				fila.master = 1;		//modificar
+				fila.job = 1;		//modificar
+				fila.nodo = bloques[i].nodoCopia1;	//planificar
+				fila.bloque = bloques[i].bloqueCopia1;	//planificar
+				fila.etapa = TRANSFORMACION;
+				fila.estado = EN_PROCESO;
+				//genera el nombre del archivo temporal
+				char* temporal = string_from_format("m%dj%dn%db%d", fila.master, fila.job, fila.nodo, fila.bloque);
+				strcpy(fila.temporal, temporal);	//modificar
+				fila.siguiente = NULL;
+				if (!agregarElemTablaEstados(fila)) {
+					perror("Error al agregar elementos a la tabla de estados");
+				}
+
 			}
-
-
+			mostrarListaElementos();
 		}
-
-		//genera el nombre del archivo temporal
 
 		//guarda la info de los bloques del archivo en la tabla de estados
 
