@@ -75,13 +75,12 @@ Los primeros se deben generar automáticamente cuando compiles (sino quedan obso
 
 ## Configuración
 
-Proceso | IP | Puerto |
-:---: | :---: | :---: |
-FileSystem | 127.0.0.1 | #### |
-DataNode | 127.0.0.1 | #### |
-Worker | 127.0.0.1 | #### |
-YAMA | 127.0.0.1 | #### |
-Master | 127.0.0.1 | #### |
+Proceso | Archivo | IP | Puerto |
+:---: | :---: | :---: | :---: |
+FileSystem | configFilesystem.txt | 127.0.0.1 | 5000 |
+YAMA | configYama.txt | 127.0.0.1 | 5100 |
+Master | configMaster.txt | 127.0.0.1 | 5200 |
+Nodo (Worker + DataNode) | configNodo.txt | 127.0.0.1 | 5300 |
 
 
 ## Arquitectura
