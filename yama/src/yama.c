@@ -37,19 +37,21 @@ struct filaTablaEstados {
 	int nodo;
 	int bloque;
 	int etapa;
+	char[20];
 	int estado;
 	struct filaTablaEstados *siguiente;
 };
+//struct filaTablaEstados tablaEstados[100];
 
 typedef struct {
 	int tamArchivo;
 	char tipoArchivo;
-	int nodo0;
-	int bloque0;
-	int nodo1;
-	int bloque1;
+	int cantBloquesArchivo;
+	int nodoCopia1;
+	int bloqueCopia1;
+	int nodoCopia2;
+	int bloqueCopia2;
 } bloqueArchivo;
-//struct filaTablaEstados tablaEstados[100];
 
 int getDatosConfiguracion() {
 	char *nameArchivoConfig = "configYama.txt";
@@ -116,10 +118,11 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 		bloqueArchivo *bloquesError = malloc(sizeof(bloqueArchivo));
 		bloquesError[0].tamArchivo = 0;
 		bloquesError[0].tipoArchivo = 0;
-		bloquesError[0].nodo0 = 0;
-		bloquesError[0].bloque0 = 0;
-		bloquesError[0].nodo1 = 0;
-		bloquesError[0].bloque1 = 0;
+		bloquesError[0].cantBloquesArchivo = 0;
+		bloquesError[0].nodoCopia1 = 0;
+		bloquesError[0].bloqueCopia1 = 0;
+		bloquesError[0].nodoCopia2 = 0;
+		bloquesError[0].bloqueCopia2 = 0;
 		return bloquesError;
 	} else {
 		//guardar la data en algún lado
@@ -131,13 +134,14 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 		for (i = 0; i < cantBloquesArchivo; i++) {
 			bloques[i].tamArchivo = tamArchivo;
 			bloques[i].tipoArchivo = tipoArchivo;
-			bloques[i].nodo0 = atoi(arrayMensajes[j]);
+			bloques[i].cantBloquesArchivo = cantBloquesArchivo;
+			bloques[i].nodoCopia1 = atoi(arrayMensajes[j]);
 			j++;
-			bloques[i].bloque0 = atoi(arrayMensajes[j]);
+			bloques[i].bloqueCopia1 = atoi(arrayMensajes[j]);
 			j++;
-			bloques[i].nodo1 = atoi(arrayMensajes[j]);
+			bloques[i].nodoCopia2 = atoi(arrayMensajes[j]);
 			j++;
-			bloques[i].bloque1 = atoi(arrayMensajes[j]);
+			bloques[i].bloqueCopia2 = atoi(arrayMensajes[j]);
 			j++;
 		}
 		return bloques;
@@ -145,16 +149,43 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 
 }
 
-int main(int argc, char *argv[]) {
+struct filaTablaEstados *primero, *ultimo;
 
+void agregarElemTablaEstados(struct filaTablaEstados fila) {
+	struct filaTablaEstados *nuevo;
+	/* reservamos memoria para el nuevo elemento */
+	nuevo = (struct filaTablaEstados *) malloc(sizeof(struct filaTablaEstados));
+	if (nuevo == NULL)
+		perror("No hay memoria disponible!\n");
+	nuevo->siguiente = NULL;
+	/* ahora metemos el nuevo elemento en la lista. lo situamos al final de la lista */
+	/* comprobamos si la lista está vacía. si primero==NULL es que no
+	 * hay ningún elemento en la lista. también vale ultimo==NULL */
+	if (primero == NULL) {
+		printf("Primer elemento\n");
+		primero = nuevo;
+		ultimo = nuevo;
+	} else {
+		/* el que hasta ahora era el último tiene que apuntar al nuevo */
+		ultimo->siguiente = nuevo;
+		/* hacemos que el nuevo sea ahora el último */
+		ultimo = nuevo;
+	}
+
+	//if()
+}
+
+int main(int argc, char *argv[]) {
+	struct filaTablaEstados *primero, *ultimo;
 	t_log* logYAMA;
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1, i;
-
+	int cantElementosTablaEstados = 0, maxMasterTablaEstados = 0;
+	int maxJobTablaEstados = 0;
 	log_info(logYAMA, "Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***\n");
 
-	// 1º) leer archivo de config.
+// 1º) leer archivo de config.
 	if (!getDatosConfiguracion()) {
 		return EXIT_FAILURE;
 	}
@@ -173,6 +204,7 @@ int main(int argc, char *argv[]) {
 	if ((socketCliente = recibirConexion(logYAMA, listenningSocket)) < 0) {
 		return EXIT_FAILURE;
 	}
+	int numMaster = socketCliente;
 
 	/* *************************** espera recepción de un mensaje ****************************/
 	uint32_t headerId = deserializarHeader(socketCliente);
@@ -193,14 +225,19 @@ int main(int argc, char *argv[]) {
 		//pide la metadata del archivo al FS
 		if (preparadoEnviarFs) {
 			bloqueArchivo *bloques = pedirMetadataArchivoFS(socketFS, archivo);
-			printf("Tamaño del archivo: %d\nTipo del archivo: %c\n",bloques[0].tamArchivo,bloques[0].tipoArchivo);
-			printf("Bloque 1 - Copia 1: %d - %d\n",bloques[0].nodo0,bloques[0].bloque0);
-			printf("Bloque 1 - Copia 2: %d - %d\n",bloques[0].nodo1,bloques[0].bloque1);
-			printf("Bloque 2 - Copia 1: %d - %d\n",bloques[1].nodo0,bloques[1].bloque0);
-			printf("Bloque 2 - Copia 2: %d - %d\n",bloques[1].nodo1,bloques[1].bloque1);
-		}
+			printf("Tamaño del archivo: %d\nTipo del archivo: %c\n", bloques[0].tamArchivo, bloques[0].tipoArchivo);
+			printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
+			printf("Bloque 1 - Copia 2: Nodo %d - Bloque %d\n", bloques[0].nodoCopia2, bloques[0].bloqueCopia2);
+			printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
+			printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);
 
-		//armo una simulación de datos hasta que pueda obtenerlos del FS
+			int cantBloquesArchivo = bloques[0].cantBloquesArchivo;
+			for (i = 0; i < cantBloquesArchivo; i++) {
+				agregarElemTablaEstados(bloques[i]);
+			}
+
+
+		}
 
 		//genera el nombre del archivo temporal
 
@@ -226,7 +263,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	cerrarServer(listenningSocket);
-	//cerrarServer(socketCliente);
+//cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
 
 	log_destroy(logYAMA);
