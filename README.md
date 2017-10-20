@@ -71,6 +71,7 @@ Si querés subir algo que no llegaste a revisar, q está _in progress_ y/o que n
 Los primeros se deben generar automáticamente cuando compiles (sino quedan obsoletos), y los segundos son particulares de cada persona/entorno.
 
 > Si no cumplís las reglas -> HAY TABLA.
+
 > Si querés evitar la tabla -> FACTURAS
 
 ## Configuración
