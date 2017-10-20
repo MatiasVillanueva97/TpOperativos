@@ -9,10 +9,9 @@
 #include "../../utils/includes.h"
 
 enum keys {
-	YAMA_IP, YAMA_PUERTO, WORKER_IP, WORKER_PUERTO
+	YAMA_IP, YAMA_PUERTO, NODO_IP, NODO_PUERTO
 };
-char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "WORKER_IP",
-		"WORKER_PUERTO", NULL };
+char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "NODO_IP", "NODO_PUERTO", NULL };
 char* datosConfigMaster[4];
 
 // ================================================================ //
@@ -21,6 +20,8 @@ char* datosConfigMaster[4];
 // y a los workers (usando hilos) para mandar instrucciones
 // Puede haber varios master corriendo al mismo tiempo.
 // ================================================================ //
+
+void* printDataAndWait();
 
 int main(int argc, char *argv[]) {
 	int i;
@@ -47,40 +48,55 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
-	// 2º) conectarse a YAMA y aguardar instrucciones
-	log_info(logMASTER, "Conexión a Yama, IP: %s, Puerto: %s", datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
-	int socketYama = conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
-	if (!socketYama) {
-		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
-		preparadoEnviarYama = 0;
-	}
 
-	//envía a yama el archivo con el que quiere trabajar
-	//hago un paquete serializado con el mensaje a enviar
-	int cantStrings = 1;
-	char **arrayMensajes = malloc(cantStrings);
-	arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
-	strcpy(arrayMensajes[0], archivoRequerido);
-	arrayMensajes[0][string_length(archivoRequerido)] = '\0';
-	/*for (i = 0; i < cantStrings; i++) {
-	 arrayMensajes[i] = malloc(string_length(argv[i + 1]) + 1);
-	 strcpy(arrayMensajes[i], argv[i + 1]);
-	 arrayMensajes[i][string_length(argv[i + 1])] = '\0';
-	 }*/
-	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO, arrayMensajes, cantStrings);
-	enviarMensaje(socketYama, mensajeSerializado);
-	for (i = 0; i < cantStrings; i++) {
-		free(arrayMensajes[i]);
-	}
-	free(arrayMensajes);
+	 // 2º) conectarse a YAMA y aguardar instrucciones
+	 log_info(logMASTER, "Conexión a Yama, IP: %s, Puerto: %s", datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
+	 int socketYama = conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
+	 if (!socketYama) {
+	 //preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
+	 preparadoEnviarYama = 0;
+	 }
+
+	 //envía a yama el archivo con el que quiere trabajar
+	 //hago un paquete serializado con el mensaje a enviar
+	 int cantStrings = 1;
+	 char **arrayMensajes = malloc(cantStrings);
+	 arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
+	 strcpy(arrayMensajes[0], archivoRequerido);
+	 arrayMensajes[0][string_length(archivoRequerido)] = '\0';
+	 //	for (i = 0; i < cantStrings; i++) {
+	 //	 arrayMensajes[i] = malloc(string_length(argv[i + 1]) + 1);
+	 //	 strcpy(arrayMensajes[i], argv[i + 1]);
+	 //	 arrayMensajes[i][string_length(argv[i + 1])] = '\0';
+	 //	 }
+	 char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO, arrayMensajes, cantStrings);
+	 enviarMensaje(socketYama, mensajeSerializado);
+	 for (i = 0; i < cantStrings; i++) {
+	 free(arrayMensajes[i]);
+	 }
+	 free(arrayMensajes);
+
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
-	//int socketWorker = inicializarClient(datosConfigTxt.WORKER_IP, datosConfigTxt.WORKER_PUERTO);
-	//conectarA(socketWorker);
+	int socketWorker = conectarA(datosConfigMaster[NODO_IP], datosConfigMaster[NODO_PUERTO]);
+
+	pthread_t hiloWorker;
+
+	pthread_create(&hiloWorker, NULL, printDataAndWait, NULL);
+
+	pthread_join(hiloWorker, NULL);
 
 	// Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
 	// Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
 	// Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
+
 	//cerrarCliente(socketYama);
+	return EXIT_SUCCESS;
+}
+
+void* printDataAndWait() {
+
+	printf("hilo creado\n");
+	sleep(10000);
 	return EXIT_SUCCESS;
 }
