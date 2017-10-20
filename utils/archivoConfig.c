@@ -26,7 +26,6 @@ int leerArchivoConfig(char *nameArchivoConfig, char **keysConfig, char **datosCo
 	i=0;
 	while(keysConfig[i]){
 		datosConfig[i] = config_get_string_value(archivoConfig, keysConfig[i]);
-		//printf("%s: %s \n", keysConfig[i],datosConfig[i]);
 		i++;
 	}
 	free(archivoConfig);
