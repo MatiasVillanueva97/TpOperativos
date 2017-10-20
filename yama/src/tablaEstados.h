@@ -14,6 +14,6 @@ int agregarElemTablaEstados(struct filaTablaEstados fila);
 
 void mostrarListaElementos();
 
-void buscarElemTablaEstados(struct filaTablaEstados busqueda);
+struct filaTablaEstados* buscarElemTablaEstados(struct filaTablaEstados busqueda);
 
 #endif /* YAMA_SRC_TABLAESTADOS_H_ */

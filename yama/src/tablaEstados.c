@@ -59,27 +59,27 @@ void mostrarListaElementos() {
 	}
 }
 
-void buscarElemTablaEstados(struct filaTablaEstados busqueda) {
+struct filaTablaEstados * buscarElemTablaEstados(struct filaTablaEstados busqueda) {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
-	if (busqueda.job && busqueda.job != auxiliar->job) {
-		return;
-	}
-	if (busqueda.master && busqueda.master != auxiliar->master) {
-		return;
-	}
-	if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
-		return;
-	}
-	if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
-		return;
-	}
-	if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
-		return;
-	}
-	if (!strcmp(busqueda.temporal, "") && !strcmp(busqueda.temporal, auxiliar->temporal)) {
-		return;
-	}
+	while (auxiliar != NULL) {
+		if (busqueda.job && busqueda.job != auxiliar->job) {
+			auxiliar = auxiliar->siguiente;
+		}else if (busqueda.master && busqueda.master != auxiliar->master) {
+			auxiliar = auxiliar->siguiente;
+		}else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
+			auxiliar = auxiliar->siguiente;
+		}else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
+			auxiliar = auxiliar->siguiente;
+		}else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
+			auxiliar = auxiliar->siguiente;
+		}else if (!strcmp(busqueda.temporal, "") && !strcmp(busqueda.temporal, auxiliar->temporal)) {
+			auxiliar = auxiliar->siguiente;
+		}else{	//es el elemento buscado
+			return auxiliar;
+		}
 
+	}
+	return NULL;
 }
 

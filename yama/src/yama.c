@@ -33,7 +33,6 @@ enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK
 };
 
-
 typedef struct {
 	int tamArchivo;
 	char tipoArchivo;
@@ -137,8 +136,6 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 
 }
 
-
-
 int main(int argc, char *argv[]) {
 	t_log* logYAMA;
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
@@ -148,7 +145,7 @@ int main(int argc, char *argv[]) {
 	log_info(logYAMA, "Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***\n");
 
-// 1º) leer archivo de config.
+	// 1º) leer archivo de config.
 	if (!getDatosConfiguracion()) {
 		return EXIT_FAILURE;
 	}
@@ -194,6 +191,8 @@ int main(int argc, char *argv[]) {
 			 printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
 			 printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);*/
 
+			//planificación
+			//guarda la info de los bloques del archivo en la tabla de estados
 			int cantBloquesArchivo = bloques[0].cantBloquesArchivo;
 			struct filaTablaEstados fila;
 			for (i = 0; i < cantBloquesArchivo; i++) {
@@ -213,11 +212,51 @@ int main(int argc, char *argv[]) {
 
 			}
 			mostrarListaElementos();
+
+			/* ******************* buscar elemento de la tabla ************************ */
+			fila.master = 1;
+			fila.job = 4;
+			fila.nodo = bloques[1].nodoCopia1;
+			fila.bloque = 0;
+			fila.etapa = 0;
+			fila.estado = 0;
+			char* temporal = string_from_format("m%dj%dn%db%d", fila.master, fila.job, fila.nodo, fila.bloque);
+			strcpy(fila.temporal, "");
+			fila.siguiente = NULL;
+
+			struct filaTablaEstados *elementoBuscado = buscarElemTablaEstados(fila);
+
+			if (elementoBuscado == NULL) {
+				puts("no existe el registro buscado");
+			} else {
+				printf("nodo: %d - temporal: %s - etapa: %d\n", elementoBuscado->nodo, elementoBuscado->temporal, elementoBuscado->etapa);
+			}
+			/* ************************************************************************ */
+
+			/* ******************* modificar un elemento de la tabla ****************** */
+			fila.master = 1;
+			fila.job = 1;
+			fila.nodo = bloques[1].nodoCopia1;
+			fila.bloque = 0;
+			fila.etapa = 0;
+			fila.estado = 0;
+			strcpy(fila.temporal, "");
+			fila.siguiente = NULL;
+
+			struct filaTablaEstados datosNuevos;
+			datosNuevos.master = 1;
+			datosNuevos.job = 1;
+			datosNuevos.nodo = bloques[0].nodoCopia1;
+			datosNuevos.bloque = 0;
+			datosNuevos.etapa = 0;
+			datosNuevos.estado = FIN_OK;
+			strcpy(datosNuevos.temporal, "");
+			fila.siguiente = NULL;
+			if (datosNuevos.bloque)
+				printf("nodo: %d - estado: %d\n", datosNuevos.nodo, datosNuevos.estado);
+			//modificarElemTablaEstados(fila, datosNuevos);
+			/* ************************************************************************ */
 		}
-
-		//guarda la info de los bloques del archivo en la tabla de estados
-
-		//planificación
 
 		//envía al master la lista de nodos donde trabajar cada bloque
 
@@ -237,7 +276,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	cerrarServer(listenningSocket);
-//cerrarServer(socketCliente);
+	//cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
 
 	log_destroy(logYAMA);
