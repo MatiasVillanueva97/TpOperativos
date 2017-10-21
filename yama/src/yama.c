@@ -41,6 +41,7 @@ typedef struct {
 	int bloqueCopia1;
 	int nodoCopia2;
 	int bloqueCopia2;
+	int bytesBloque;
 } bloqueArchivo;
 
 int getDatosConfiguracion() {
@@ -110,6 +111,7 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 		bloquesError[0].bloqueCopia1 = 0;
 		bloquesError[0].nodoCopia2 = 0;
 		bloquesError[0].bloqueCopia2 = 0;
+		bloquesError[0].bytesBloque = 0;
 		return bloquesError;
 	} else {
 		//guardar la data en algún lado
@@ -130,7 +132,11 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 			j++;
 			bloques[i].bloqueCopia2 = atoi(arrayMensajes[j]);
 			j++;
+			bloques[i].bytesBloque = atoi(arrayMensajes[j]);
+
+			j++;
 		}
+
 		return bloques;
 	}
 
@@ -202,6 +208,7 @@ int main(int argc, char *argv[]) {
 				fila.bloque = bloques[i].bloqueCopia1;	//planificar
 				fila.etapa = TRANSFORMACION;
 				fila.estado = EN_PROCESO;
+				//fila.
 				//genera el nombre del archivo temporal
 				char* temporal = string_from_format("m%dj%dn%db%d", fila.master, fila.job, fila.nodo, fila.bloque);
 				strcpy(fila.temporal, temporal);	//modificar
@@ -211,11 +218,12 @@ int main(int argc, char *argv[]) {
 				}
 
 			}
+			puts("lista de elementos 1");
 			mostrarListaElementos();
 
 			/* ******************* buscar elemento de la tabla ************************ */
 			fila.master = 1;
-			fila.job = 4;
+			fila.job = 1;
 			fila.nodo = bloques[1].nodoCopia1;
 			fila.bloque = 0;
 			fila.etapa = 0;
@@ -229,6 +237,7 @@ int main(int argc, char *argv[]) {
 			if (elementoBuscado == NULL) {
 				puts("no existe el registro buscado");
 			} else {
+				puts("búsqueda del elemento job 1 master 1");
 				printf("nodo: %d - temporal: %s - etapa: %d\n", elementoBuscado->nodo, elementoBuscado->temporal, elementoBuscado->etapa);
 			}
 			/* ************************************************************************ */
@@ -246,15 +255,15 @@ int main(int argc, char *argv[]) {
 			struct filaTablaEstados datosNuevos;
 			datosNuevos.master = 1;
 			datosNuevos.job = 1;
-			datosNuevos.nodo = bloques[0].nodoCopia1;
+			datosNuevos.nodo = bloques[1].nodoCopia1;
 			datosNuevos.bloque = 0;
 			datosNuevos.etapa = 0;
 			datosNuevos.estado = FIN_OK;
 			strcpy(datosNuevos.temporal, "");
 			fila.siguiente = NULL;
-			if (datosNuevos.bloque)
-				printf("nodo: %d - estado: %d\n", datosNuevos.nodo, datosNuevos.estado);
-			//modificarElemTablaEstados(fila, datosNuevos);
+			modificarElemTablaEstados(fila, datosNuevos);
+			puts("elementos después de ser modificados");
+			mostrarListaElementos();
 			/* ************************************************************************ */
 		}
 

@@ -16,4 +16,6 @@ void mostrarListaElementos();
 
 struct filaTablaEstados* buscarElemTablaEstados(struct filaTablaEstados busqueda);
 
+int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEstados datosNuevos);
+
 #endif /* YAMA_SRC_TABLAESTADOS_H_ */

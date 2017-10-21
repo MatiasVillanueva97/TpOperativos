@@ -23,7 +23,7 @@ enum tiposMensajes {
 //si se agrega algo al final del enum modificar este parámetros en los arrays
 //de esta forma al sumarle 1 se genera el array del tamaño necesario
 const int protocoloCantidadMensajes[TIPO_MSJ_METADATA_ARCHIVO + 1] = { 0, 0, 1,
-		1, 1,4, 1, 11 };
+		1, 1, 4, 1, 13 };
 const char* protocoloMensajesPredefinidos[TIPO_MSJ_METADATA_ARCHIVO + 1] = {
 		"ERROR", "OK", "HANDSHAKE", "PATH_ARCHIVO","PATH_ARCHIVO_TRANSFORMAR", "CUATRO_MENSAJES",
 		"PEDIDO_METADATA_ARCHIVO", "METADATA_ARCHIVO" };

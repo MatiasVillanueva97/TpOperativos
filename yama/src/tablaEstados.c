@@ -18,6 +18,10 @@ struct filaTablaEstados {
 
 struct filaTablaEstados *primeroTablaEstados, *ultimoTablaEstados;
 
+/*
+ * agrega una fila a la tabla de estados agregando un nodo al final de la lista enlazada
+ * devuelve 1 en caso de éxito o 0 en caso de error
+ */
 int agregarElemTablaEstados(struct filaTablaEstados fila) {
 	struct filaTablaEstados *nuevo;
 	/* reservamos memoria para el nuevo elemento */
@@ -54,32 +58,65 @@ void mostrarListaElementos() {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
-		printf("nodo: %d - temporal: %s - etapa: %d\n", auxiliar->nodo, auxiliar->temporal, auxiliar->etapa);
+		printf("nodo: %d - temporal: %s - etapa: %d\n", auxiliar->nodo, auxiliar->temporal, auxiliar->estado);
 		auxiliar = auxiliar->siguiente;
 	}
 }
 
+/*
+ * busca una fila de la tabla de estados
+ * recibe los datos de la fila de búsqueda
+ * devuelve un puntero apuntando a la fila modificada (nodo de la lista enlazada)
+ */
 struct filaTablaEstados * buscarElemTablaEstados(struct filaTablaEstados busqueda) {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
 		if (busqueda.job && busqueda.job != auxiliar->job) {
 			auxiliar = auxiliar->siguiente;
-		}else if (busqueda.master && busqueda.master != auxiliar->master) {
+		} else if (busqueda.master && busqueda.master != auxiliar->master) {
 			auxiliar = auxiliar->siguiente;
-		}else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
+		} else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
 			auxiliar = auxiliar->siguiente;
-		}else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
+		} else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
 			auxiliar = auxiliar->siguiente;
-		}else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
+		} else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
 			auxiliar = auxiliar->siguiente;
-		}else if (!strcmp(busqueda.temporal, "") && !strcmp(busqueda.temporal, auxiliar->temporal)) {
+		} else if (!strcmp(busqueda.temporal, "") && !strcmp(busqueda.temporal, auxiliar->temporal)) {
 			auxiliar = auxiliar->siguiente;
-		}else{	//es el elemento buscado
+		} else {	//es el elemento buscado
 			return auxiliar;
 		}
 
 	}
 	return NULL;
+}
+
+/*
+ * modifica una fila de la lista
+ * recibe la fila a modificar y los datos que quiero modificar en forma de struct con todos los datos
+ * lo que no quier modificar pongo en 0 o ""
+ * devuelve 1 si pudo modificar o 0 si no encontró la fila que se buscaba
+ */
+int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEstados datosNuevos) {
+	struct filaTablaEstados *filaAModificar = buscarElemTablaEstados(fila);
+	if (filaAModificar == NULL) {	//no se encontró la fila a modificar
+		return 0;
+	}
+	if (datosNuevos.bloque)
+		filaAModificar->bloque = datosNuevos.bloque;
+	if (datosNuevos.estado)
+		filaAModificar->estado = datosNuevos.estado;
+	if (datosNuevos.etapa)
+		filaAModificar->etapa = datosNuevos.etapa;
+	if (datosNuevos.job)
+		filaAModificar->job = datosNuevos.job;
+	if (datosNuevos.master)
+		filaAModificar->master = datosNuevos.master;
+	if (datosNuevos.nodo)
+		filaAModificar->nodo = datosNuevos.nodo;
+	if (strcmp(datosNuevos.temporal, ""))
+		strcpy(filaAModificar->temporal, datosNuevos.temporal);
+	return 1;
 }
 

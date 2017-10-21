@@ -44,12 +44,14 @@ void envirInfoBloques(int socketCliente) {
 	char *bloque0BloqueCopia0 = "0033";
 	char *bloque0NodoCopia1 = "0001";
 	char *bloque0BloqueCopia1 = "0013";
+	char *bytesBloque0 = "00012564";
 	char *bloque1NodoCopia0 = "0005";
 	char *bloque1BloqueCopia0 = "0020";
 	char *bloque1NodoCopia1 = "0004";
 	char *bloque1BloqueCopia1 = "0025";
+	char *bytesBloque1 = "00003264";
 
-	int cantStrings = 11, i;
+	int cantStrings = 13, i;
 	char **arrayMensajesSerializar = malloc(cantStrings);
 
 	arrayMensajesSerializar[0] = malloc(string_length(tamFile) + 1);
@@ -80,21 +82,29 @@ void envirInfoBloques(int socketCliente) {
 	strcpy(arrayMensajesSerializar[6], bloque0BloqueCopia1);
 	arrayMensajesSerializar[6][string_length(bloque0BloqueCopia1)] = '\0';
 
-	arrayMensajesSerializar[7] = malloc(string_length(bloque1NodoCopia0) + 1);
-	strcpy(arrayMensajesSerializar[7], bloque1NodoCopia0);
-	arrayMensajesSerializar[7][string_length(bloque1NodoCopia0)] = '\0';
+	arrayMensajesSerializar[7] = malloc(string_length(bytesBloque0) + 1);
+	strcpy(arrayMensajesSerializar[7], bytesBloque0);
+	arrayMensajesSerializar[7][string_length(bytesBloque0)] = '\0';
 
-	arrayMensajesSerializar[8] = malloc(string_length(bloque1BloqueCopia0) + 1);
-	strcpy(arrayMensajesSerializar[8], bloque1BloqueCopia0);
-	arrayMensajesSerializar[8][string_length(bloque1BloqueCopia0)] = '\0';
+	arrayMensajesSerializar[8] = malloc(string_length(bloque1NodoCopia0) + 1);
+	strcpy(arrayMensajesSerializar[8], bloque1NodoCopia0);
+	arrayMensajesSerializar[8][string_length(bloque1NodoCopia0)] = '\0';
 
-	arrayMensajesSerializar[9] = malloc(string_length(bloque1NodoCopia1) + 1);
-	strcpy(arrayMensajesSerializar[9], bloque1NodoCopia1);
-	arrayMensajesSerializar[9][string_length(bloque1NodoCopia1)] = '\0';
+	arrayMensajesSerializar[9] = malloc(string_length(bloque1BloqueCopia0) + 1);
+	strcpy(arrayMensajesSerializar[9], bloque1BloqueCopia0);
+	arrayMensajesSerializar[9][string_length(bloque1BloqueCopia0)] = '\0';
 
-	arrayMensajesSerializar[10] = malloc(string_length(bloque1BloqueCopia1) + 1);
-	strcpy(arrayMensajesSerializar[10], bloque1BloqueCopia1);
-	arrayMensajesSerializar[10][string_length(bloque1BloqueCopia1)] = '\0';
+	arrayMensajesSerializar[10] = malloc(string_length(bloque1NodoCopia1) + 1);
+	strcpy(arrayMensajesSerializar[10], bloque1NodoCopia1);
+	arrayMensajesSerializar[10][string_length(bloque1NodoCopia1)] = '\0';
+
+	arrayMensajesSerializar[11] = malloc(string_length(bloque1BloqueCopia1) + 1);
+	strcpy(arrayMensajesSerializar[11], bloque1BloqueCopia1);
+	arrayMensajesSerializar[11][string_length(bloque1BloqueCopia1)] = '\0';
+
+	arrayMensajesSerializar[12] = malloc(string_length(bytesBloque1) + 1);
+	strcpy(arrayMensajesSerializar[12], bytesBloque1);
+	arrayMensajesSerializar[12][string_length(bytesBloque1)] = '\0';
 
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_METADATA_ARCHIVO, arrayMensajesSerializar, cantStrings);
 	printf("mensaje serializado: %s\n", mensajeSerializado);
