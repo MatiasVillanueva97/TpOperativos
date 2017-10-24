@@ -12,6 +12,7 @@
 // ================================================================ //
 #include "../../utils/includes.h"
 #include "tablaEstados.h"
+#include "planificacion.h"
 
 // ================================================================ //
 // enum y vectores para los datos de configuración levantados del archivo config
@@ -142,7 +143,103 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 
 }
 
+void planificar() {
+	//sale del archivo config?????????????
+	cargaBase = 1;
+
+	//estos valores salen de la info del FS
+	cantBloquesArchivo = 6;
+	//guarda los nodos en los que está cada bloque
+	nodosPorBloque nodosPorBloque[cantBloquesArchivo];
+	//cargo los nodos en los que está cada bloque
+	nodosPorBloque[0].nodo1 = 1;
+	nodosPorBloque[0].nodo2 = 3;
+	nodosPorBloque[1].nodo1 = 2;
+	nodosPorBloque[1].nodo2 = 3;
+	nodosPorBloque[2].nodo1 = 2;
+	nodosPorBloque[2].nodo2 = 3;
+	nodosPorBloque[3].nodo1 = 2;
+	nodosPorBloque[3].nodo2 = 3;
+	nodosPorBloque[4].nodo1 = 1;
+	nodosPorBloque[4].nodo2 = 3;
+	nodosPorBloque[5].nodo1 = 1;
+	nodosPorBloque[5].nodo2 = 2;
+
+	//estos valores salen de la info del FS
+	cantNodos = 3;
+	//tiene la carga de cada nodo
+	nodo listaNodos[cantNodos];
+	//pongo la carga inicial de cada nodo
+	listaNodos[0].carga = 0;
+	listaNodos[0].numero = 1;
+	listaNodos[1].carga = 1;
+	listaNodos[1].numero = 2;
+	listaNodos[2].carga = 1;
+	listaNodos[2].numero = 3;
+	nodo nodoMaxCarga;
+	nodoMaxCarga = nodoConMayorCarga(listaNodos, cantNodos);
+	cargaMaxima = nodoMaxCarga.carga;
+	listaNodos[0].disponibilidad = calcularDisponibilidadNodo(listaNodos[0]);
+	listaNodos[1].disponibilidad = calcularDisponibilidadNodo(listaNodos[1]);
+	listaNodos[2].disponibilidad = calcularDisponibilidadNodo(listaNodos[2]);
+
+	int i, j;
+	nodo temp;
+	for (i = 0; i < cantNodos; i++) {
+		for (j = 0; j < cantNodos - 1; j++) {
+			if (listaNodos[j].disponibilidad < listaNodos[j + 1].disponibilidad) {
+				temp = listaNodos[j];
+				listaNodos[j] = listaNodos[j + 1];
+				listaNodos[j + 1] = temp;
+			}
+		}
+	}
+
+	int bloque = 0;
+	int clockMaestro = 0, clockAuxiliar = 0;
+	//indexado por bloques, contiene el nodo al cual fue asignado el bloque
+	int asignacionsBloquesNodos[cantBloquesArchivo];
+	while (bloque < cantBloquesArchivo) {
+		nodo nodoActual = listaNodos[clockAuxiliar];
+		if (nodoConDisponibilidad(nodoActual) && existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) {
+			//asigno bloque al nodo
+			asignacionsBloquesNodos[bloque] = nodoActual.numero;
+			//sumar 1 a la carga del nodo
+			nodoActual.carga++;
+			//mover el clock auxiliar
+			clockAuxiliar++;
+			//if (clockAuxiliar >= cantNodos)
+			//clockAuxiliar = 0;
+			if (clockAuxiliar == (clockMaestro + 1)) {
+				if (clockAuxiliar >= cantNodos)
+					clockAuxiliar = 0;
+				clockMaestro = clockAuxiliar;
+			} else {
+				if (clockAuxiliar >= cantNodos)
+					clockMaestro = 0;
+				clockAuxiliar = clockMaestro;
+			}
+			bloque++;
+		} else if (!nodoConDisponibilidad(nodoActual)) { //el nodo no tiene disponibilidad
+			nodoActual.disponibilidad += cargaBase;
+			clockAuxiliar++;
+			if (clockAuxiliar >= cantNodos)
+				clockAuxiliar = 0;
+			if (clockAuxiliar == clockMaestro)
+				listaNodos[clockAuxiliar].disponibilidad += cargaBase;
+		} else if (!existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) {
+			clockAuxiliar++;
+			if (clockAuxiliar >= cantNodos)
+				clockAuxiliar = 0;
+		}
+
+	}
+
+}
+
 int main(int argc, char *argv[]) {
+	planificar();
+	return 0;
 	t_log* logYAMA;
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1, i;
@@ -151,7 +248,7 @@ int main(int argc, char *argv[]) {
 	log_info(logYAMA, "Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***\n");
 
-	// 1º) leer archivo de config.
+// 1º) leer archivo de config.
 	if (!getDatosConfiguracion()) {
 		return EXIT_FAILURE;
 	}
@@ -174,7 +271,7 @@ int main(int argc, char *argv[]) {
 
 	/* *************************** espera recepción de un mensaje ****************************/
 	uint32_t headerId = deserializarHeader(socketCliente);
-	//printf("\nmensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
+//printf("\nmensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes);
 	switch (headerId) {
@@ -286,7 +383,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	cerrarServer(listenningSocket);
-	//cerrarServer(socketCliente);
+//cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
 
 	log_destroy(logYAMA);
