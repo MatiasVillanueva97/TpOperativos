@@ -276,6 +276,7 @@ int main(int argc, char *argv[]) {
 			printf("mensajeRecibido %d: %s\n", i, arrayMensajes[i]);
 			free(arrayMensajes[i]);
 		}
+
 		free(arrayMensajes);
 		break;
 	default:
