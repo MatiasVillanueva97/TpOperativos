@@ -183,6 +183,7 @@ void planificar() {
 	listaNodos[1].disponibilidad = calcularDisponibilidadNodo(listaNodos[1]);
 	listaNodos[2].disponibilidad = calcularDisponibilidadNodo(listaNodos[2]);
 
+	//ordeno los nodos de mayor a menor disponibilidad
 	int i, j;
 	nodo temp;
 	for (i = 0; i < cantNodos; i++) {
@@ -196,43 +197,44 @@ void planificar() {
 	}
 
 	int bloque = 0;
-	int clockMaestro = 0, clockAuxiliar = 0;
+	int clockMaestro = 0, clockNoExisteBloque = -1,
+			clockNodoDisponibilidad = -1;
 	//indexado por bloques, contiene el nodo al cual fue asignado el bloque
 	int asignacionsBloquesNodos[cantBloquesArchivo];
 	while (bloque < cantBloquesArchivo) {
-		nodo nodoActual = listaNodos[clockAuxiliar];
+		nodo nodoActual = listaNodos[clockMaestro];
 		if (nodoConDisponibilidad(nodoActual) && existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) {
 			//asigno bloque al nodo
 			asignacionsBloquesNodos[bloque] = nodoActual.numero;
-			//sumar 1 a la carga del nodo
 			nodoActual.carga++;
+			nodoActual.disponibilidad--;
 			//mover el clock auxiliar
-			clockAuxiliar++;
-			//if (clockAuxiliar >= cantNodos)
-			//clockAuxiliar = 0;
-			if (clockAuxiliar == (clockMaestro + 1)) {
-				if (clockAuxiliar >= cantNodos)
-					clockAuxiliar = 0;
-				clockMaestro = clockAuxiliar;
-			} else {
-				if (clockAuxiliar >= cantNodos)
+
+			if (clockNoExisteBloque < 0 || clockMaestro == clockNoExisteBloque) {
+				clockMaestro++;
+				if (clockMaestro >= cantNodos)
 					clockMaestro = 0;
-				clockAuxiliar = clockMaestro;
+			} else {
+				clockMaestro = clockNoExisteBloque;
 			}
+			clockNoExisteBloque = -1;
 			bloque++;
 		} else if (!nodoConDisponibilidad(nodoActual)) { //el nodo no tiene disponibilidad
+			clockNodoDisponibilidad = clockMaestro;	//?????
 			nodoActual.disponibilidad += cargaBase;
-			clockAuxiliar++;
-			if (clockAuxiliar >= cantNodos)
-				clockAuxiliar = 0;
-			if (clockAuxiliar == clockMaestro)
-				listaNodos[clockAuxiliar].disponibilidad += cargaBase;
-		} else if (!existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) {
-			clockAuxiliar++;
-			if (clockAuxiliar >= cantNodos)
-				clockAuxiliar = 0;
-		}
+			clockMaestro++;
+			if (clockMaestro >= cantNodos)
+				clockMaestro = 0;
 
+		} else if (!existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) { //no se encuentra el bloque en el nodo
+			clockNoExisteBloque = clockMaestro;
+			clockMaestro++;
+			if (clockMaestro >= cantNodos)
+				clockMaestro = 0;
+
+		}
+		if (clockNoExisteBloque == clockMaestro)
+			listaNodos[clockNoExisteBloque].disponibilidad += cargaBase;
 	}
 
 }
