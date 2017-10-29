@@ -208,7 +208,6 @@ void planificar() {
 			asignacionsBloquesNodos[bloque] = nodoActual.numero;
 			nodoActual.carga++;
 			nodoActual.disponibilidad--;
-			//mover el clock auxiliar
 
 			if (clockNoExisteBloque < 0 || clockMaestro == clockNoExisteBloque) {
 				clockMaestro++;
@@ -218,9 +217,11 @@ void planificar() {
 				clockMaestro = clockNoExisteBloque;
 			}
 			clockNoExisteBloque = -1;
+			clockNodoDisponibilidad = -1;	//????? A1
 			bloque++;
 		} else if (!nodoConDisponibilidad(nodoActual)) { //el nodo no tiene disponibilidad
-			clockNodoDisponibilidad = clockMaestro;	//?????
+			if (clockNodoDisponibilidad < 0)	//????? A1
+				clockNodoDisponibilidad = clockMaestro;
 			nodoActual.disponibilidad += cargaBase;
 			clockMaestro++;
 			if (clockMaestro >= cantNodos)
