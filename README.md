@@ -104,18 +104,5 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/
 	* int cantidadMensajes = protocoloCantidadMensajes[headerId]	//averigua la cantidad de mensajes que le van a llegar
 	* char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes)	//recibe los mensajes en un array de strings
 
-## Mensajes entre procesos
-### FS -> YAMA: FS le envía a YAMA la información un archivo: nodo y bloque dentro del nodo de ambas copias de cada parte del archivo distribuido
 
-Bloque	Copia 1	Copia 2	Fin Bloque
-0	Nodo 1 - Bloque 5	Nodo 2 - Bloque 2	1048576
-1	Nodo 2 - Bloque 10	Nodo 3 - Bloque 7	1048500
-2	Nodo 1 - Bloque 12	Nodo 2 - Bloque 3	1048516
-
-
-Bloque | Copia 1 | Copia 2 | Fin Bloque |
-:---: | :---: | :---: | :---: |
-0 | Nodo 1 - Bloque 5 | Nodo 2 - Bloque 2 | 1048576 |
-1 | Nodo 2 - Bloque 10 | Nodo 3 - Bloque 7 | 1048500 |
-2 | Nodo 1 - Bloque 12 | Nodo 2 - Bloque 3 | 1048516 |
 
