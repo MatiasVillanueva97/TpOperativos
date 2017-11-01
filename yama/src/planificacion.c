@@ -34,18 +34,20 @@
 //sale del archivo config?????????????
 char algoritmoPlanificacion = 'W';	//C para clock; W para w-clock
 
-int cargaMaxima, cargaBase, cantBloquesArchivo, cantNodos;
+int cargaMaxima, cargaBase;
 
 typedef struct {
 	int nodo1;
+	int bloque1;
 	int nodo2;
+	int bloque2;
 } nodosPorBloque;
 
 typedef struct {
 	int carga;
 	int numero;
 	int disponibilidad;
-} nodo;
+} cargaNodo;
 
 
 /*
@@ -60,7 +62,7 @@ int existeBloqueEnNodo(int bloque, int nodo, nodosPorBloque *nodosPorBloque) { /
 /*
  *
  */
-int nodoConDisponibilidad(nodo nodo) {
+int nodoConDisponibilidad(cargaNodo nodo) {
 	if (nodo.disponibilidad > 0)
 		return 1;
 	return 0;
@@ -71,7 +73,7 @@ int nodoConDisponibilidad(nodo nodo) {
  * recibe el nodo
  * devuelve el valor de disponibilidad (A)
  */
-int calcularDisponibilidadNodo(nodo nodo) {
+int calcularDisponibilidadNodo(cargaNodo nodo) {
 	if (algoritmoPlanificacion == 'C') {
 		return cargaBase;
 	} else {
@@ -84,9 +86,9 @@ int calcularDisponibilidadNodo(nodo nodo) {
  * recibe un puntero a la lista de nodos
  * devuelve dicho nodo (struct)
  */
-nodo nodoConMayorCarga(nodo *listaNodos, int cantNodos) {
+cargaNodo nodoConMayorCarga(cargaNodo *listaNodos, int cantNodos) {
 	int maxCarga = -1, i;
-	nodo nodoMayorCarga;
+	cargaNodo nodoMayorCarga;
 	for (i = 0; i < cantNodos; i++) {
 		if (listaNodos[i].carga > maxCarga) {
 			maxCarga = listaNodos[i].carga;

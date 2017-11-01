@@ -14,11 +14,11 @@
 
 int existeBloqueEnNodo(int bloque, int nodo, nodosPorBloque*);
 
-int nodoConDisponibilidad(nodo nodo);
+int nodoConDisponibilidad(cargaNodo nodo);
 
-int calcularDisponibilidadNodo(nodo nodo);
+int calcularDisponibilidadNodo(cargaNodo nodo);
 
-nodo nodoConMayorCarga(nodo *listaNodos,int cantNodos);
+cargaNodo nodoConMayorCarga(cargaNodo *listaNodos,int cantNodos);
 
 //void ordenarMayorDisponibilidad(int *listaNodos, int cantNodos);
 

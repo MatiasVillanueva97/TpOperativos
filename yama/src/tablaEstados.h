@@ -14,7 +14,7 @@ int agregarElemTablaEstados(struct filaTablaEstados fila);
 
 void mostrarListaElementos();
 
-struct filaTablaEstados* buscarElemTablaEstados(struct filaTablaEstados busqueda);
+struct filaTablaEstados* buscarElemTablaEstadosPorJMNBE(struct filaTablaEstados busqueda);
 
 int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEstados datosNuevos);
 

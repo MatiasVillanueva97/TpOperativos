@@ -64,30 +64,50 @@ void mostrarListaElementos() {
 }
 
 /*
+ * busca N filas de la tabla de estados
+ * recibe los datos de búsqueda
+ * devuelve un array de punteros apuntando a la filas
+ * EN CONSTRUCCIÓN
+ */
+struct filaTablaEstados * buscarMuchosElemTablaEstados(struct filaTablaEstados busqueda) {
+	/*struct filaTablaEstados *auxiliar;
+	 auxiliar = primeroTablaEstados;
+	 while (auxiliar != NULL) {
+	 if (busqueda.job && busqueda.job != auxiliar->job) {
+	 auxiliar = auxiliar->siguiente;
+	 } else if (busqueda.master && busqueda.master != auxiliar->master) {
+	 auxiliar = auxiliar->siguiente;
+	 } else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
+	 auxiliar = auxiliar->siguiente;
+	 } else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
+	 auxiliar = auxiliar->siguiente;
+	 } else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
+	 auxiliar = auxiliar->siguiente;
+	 } else if (!strcmp(busqueda.temporal, "") && !strcmp(busqueda.temporal, auxiliar->temporal)) {
+	 auxiliar = auxiliar->siguiente;
+	 } else {	//es el elemento buscado
+	 return auxiliar;
+	 }
+
+	 }*/
+	return NULL;
+}
+
+/*
  * busca una fila de la tabla de estados
  * recibe los datos de la fila de búsqueda
- * devuelve un puntero apuntando a la fila modificada (nodo de la lista enlazada)
+ * datos obligatorios: job, master, nodo, bloque, etapa
+ * devuelve un puntero apuntando a la fila encontrada (nodo de la lista enlazada)
+ * o NULL si no encuentra los datos
  */
-struct filaTablaEstados * buscarElemTablaEstados(struct filaTablaEstados busqueda) {
+struct filaTablaEstados * buscarElemTablaEstadosPorJMNBE(struct filaTablaEstados busqueda) {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
-		if (busqueda.job && busqueda.job != auxiliar->job) {
-			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.master && busqueda.master != auxiliar->master) {
-			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
-			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
-			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
-			auxiliar = auxiliar->siguiente;
-		} else if (!strcmp(busqueda.temporal, "") && !strcmp(busqueda.temporal, auxiliar->temporal)) {
-			auxiliar = auxiliar->siguiente;
-		} else {	//es el elemento buscado
+		if (busqueda.job == auxiliar->job && busqueda.master == auxiliar->master && busqueda.nodo == auxiliar->nodo && busqueda.bloque == auxiliar->bloque && busqueda.etapa == auxiliar->etapa) {
 			return auxiliar;
 		}
-
+		auxiliar = auxiliar->siguiente;
 	}
 	return NULL;
 }
@@ -99,7 +119,7 @@ struct filaTablaEstados * buscarElemTablaEstados(struct filaTablaEstados busqued
  * devuelve 1 si pudo modificar o 0 si no encontró la fila que se buscaba
  */
 int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEstados datosNuevos) {
-	struct filaTablaEstados *filaAModificar = buscarElemTablaEstados(fila);
+	struct filaTablaEstados *filaAModificar = buscarElemTablaEstadosPorJMNBE(fila);
 	if (filaAModificar == NULL) {	//no se encontró la fila a modificar
 		return 0;
 	}

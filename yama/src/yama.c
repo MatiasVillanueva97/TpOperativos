@@ -35,15 +35,23 @@ enum estadoTablaEstados {
 };
 
 typedef struct {
-	int tamArchivo;
-	char tipoArchivo;
-	int cantBloquesArchivo;
 	int nodoCopia1;
 	int bloqueCopia1;
 	int nodoCopia2;
 	int bloqueCopia2;
 	int bytesBloque;
 } bloqueArchivo;
+
+int cantBloquesArchivo, cantNodosArchivo;
+
+typedef struct {
+	int numero;
+	char ip[12];
+	int puerto;
+} datosConexionNodo;
+
+#define CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO 5
+#define CANT_MENSAJES_POR_NODO 3
 
 int getDatosConfiguracion() {
 	char *nameArchivoConfig = "configYama.txt";
@@ -85,7 +93,7 @@ int recibirConexion(t_log* logYAMA, int listenningSocket) {
 	return socketCliente;
 }
 
-bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
+int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	int cantStrings = 1, i;
 	char **arrayMensajesSerializar = malloc(cantStrings);
 	arrayMensajesSerializar[0] = malloc(string_length(archivo) + 1);
@@ -97,97 +105,119 @@ bloqueArchivo* pedirMetadataArchivoFS(int socketFS, char *archivo) {
 		free(arrayMensajesSerializar[i]);
 	}
 	free(arrayMensajesSerializar);
-	enviarMensaje(socketFS, mensajeSerializado);
-
+	return enviarMensaje(socketFS, mensajeSerializado);
+}
+bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
+	int i;
 	uint32_t headerId = deserializarHeader(socketFS);
-	int cantidadMensajes = protocoloCantidadMensajes[headerId];
-	char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
 	if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
 		perror("El FS no mandó lo solicitado");
 		bloqueArchivo *bloquesError = malloc(sizeof(bloqueArchivo));
-		bloquesError[0].tamArchivo = 0;
-		bloquesError[0].tipoArchivo = 0;
-		bloquesError[0].cantBloquesArchivo = 0;
 		bloquesError[0].nodoCopia1 = 0;
 		bloquesError[0].bloqueCopia1 = 0;
 		bloquesError[0].nodoCopia2 = 0;
 		bloquesError[0].bloqueCopia2 = 0;
 		bloquesError[0].bytesBloque = 0;
 		return bloquesError;
-	} else {
-		//guardar la data en algún lado
-		int tamArchivo = atoi(arrayMensajes[0]);
-		char tipoArchivo = arrayMensajes[1][0];
-		int cantBloquesArchivo = atoi(arrayMensajes[2]);
-		bloqueArchivo *bloques = malloc(cantBloquesArchivo * sizeof(bloqueArchivo));
-		int j = 3;
-		for (i = 0; i < cantBloquesArchivo; i++) {
-			bloques[i].tamArchivo = tamArchivo;
-			bloques[i].tipoArchivo = tipoArchivo;
-			bloques[i].cantBloquesArchivo = cantBloquesArchivo;
-			bloques[i].nodoCopia1 = atoi(arrayMensajes[j]);
-			j++;
-			bloques[i].bloqueCopia1 = atoi(arrayMensajes[j]);
-			j++;
-			bloques[i].nodoCopia2 = atoi(arrayMensajes[j]);
-			j++;
-			bloques[i].bloqueCopia2 = atoi(arrayMensajes[j]);
-			j++;
-			bloques[i].bytesBloque = atoi(arrayMensajes[j]);
-
-			j++;
-		}
-
-		return bloques;
 	}
+	int cantidadMensajes = protocoloCantidadMensajes[headerId];
+	char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
+	//guardar la data en algún lado
+	cantBloquesArchivo = atoi(arrayMensajes[0]);
+	arrayMensajes = deserializarMensaje(socketFS, cantBloquesArchivo * CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO);
+	bloqueArchivo *bloques = malloc(cantBloquesArchivo * sizeof(bloqueArchivo));
+	int j = 0;
+	for (i = 0; i < cantBloquesArchivo; i++) {
+		bloques[i].nodoCopia1 = atoi(arrayMensajes[j]);
+		j++;
+		bloques[i].bloqueCopia1 = atoi(arrayMensajes[j]);
+		j++;
+		bloques[i].nodoCopia2 = atoi(arrayMensajes[j]);
+		j++;
+		bloques[i].bloqueCopia2 = atoi(arrayMensajes[j]);
+		j++;
+		bloques[i].bytesBloque = atoi(arrayMensajes[j]);
 
+		j++;
+	}
+	return bloques;
 }
 
-void planificar() {
+datosConexionNodo * recibirNodosArchivoFS( socketFS) {
+	int i;
+	uint32_t headerId = deserializarHeader(socketFS);
+	if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
+		perror("El FS no mandó lo solicitado");
+		datosConexionNodo *nodosError = malloc(sizeof(bloqueArchivo));
+		nodosError[0].numero = 0;
+		strcpy(nodosError[0].ip, "");
+		nodosError[0].puerto = 0;
+		return nodosError;
+	}
+	int cantidadMensajes = protocoloCantidadMensajes[headerId];
+	char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
+	//guardar la data en algún lado
+	cantNodosArchivo = atoi(arrayMensajes[0]);
+	arrayMensajes = deserializarMensaje(socketFS, cantNodosArchivo * CANT_MENSAJES_POR_NODO);
+	datosConexionNodo *nodos = malloc(cantNodosArchivo * sizeof(datosConexionNodo));
+	int j = 0;
+	for (i = 0; i < cantBloquesArchivo; i++) {
+		nodos[i].numero = atoi(arrayMensajes[j]);
+		j++;
+		strcpy(nodos[i].ip, arrayMensajes[j]);
+		j++;
+		nodos[i].puerto = atoi(arrayMensajes[j]);
+		j++;
+	}
+	return nodos;
+}
+
+void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos) {
+	/*printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
+	printf("Bloque 1 - Copia 2: Nodo %d - Bloque %d\n", bloques[0].nodoCopia2, bloques[0].bloqueCopia2);
+	printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
+	printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);*/
+
+	int i, j;
+
 	//sale del archivo config?????????????
 	cargaBase = 1;
 
-	//estos valores salen de la info del FS
-	cantBloquesArchivo = 6;
 	//guarda los nodos en los que está cada bloque
 	nodosPorBloque nodosPorBloque[cantBloquesArchivo];
 	//cargo los nodos en los que está cada bloque
-	nodosPorBloque[0].nodo1 = 1;
-	nodosPorBloque[0].nodo2 = 3;
-	nodosPorBloque[1].nodo1 = 2;
-	nodosPorBloque[1].nodo2 = 3;
-	nodosPorBloque[2].nodo1 = 2;
-	nodosPorBloque[2].nodo2 = 3;
-	nodosPorBloque[3].nodo1 = 2;
-	nodosPorBloque[3].nodo2 = 3;
-	nodosPorBloque[4].nodo1 = 1;
-	nodosPorBloque[4].nodo2 = 3;
-	nodosPorBloque[5].nodo1 = 1;
-	nodosPorBloque[5].nodo2 = 2;
+	//el índice es el número del bloque
+	for (i = 0; i < cantBloquesArchivo; i++) {
+		nodosPorBloque[i].nodo1 = bloques[i].nodoCopia1;
+		nodosPorBloque[i].bloque1 = bloques[i].bloqueCopia1;
+		nodosPorBloque[i].nodo2 = bloques[i].nodoCopia2;
+		nodosPorBloque[i].bloque2 = bloques[i].bloqueCopia2;
+	}
 
-	//estos valores salen de la info del FS
-	cantNodos = 3;
 	//tiene la carga de cada nodo
-	nodo listaNodos[cantNodos];
+	cargaNodo listaNodos[cantNodosArchivo];
 	//pongo la carga inicial de cada nodo
-	listaNodos[0].carga = 0;
-	listaNodos[0].numero = 1;
-	listaNodos[1].carga = 1;
-	listaNodos[1].numero = 2;
-	listaNodos[2].carga = 1;
-	listaNodos[2].numero = 3;
-	nodo nodoMaxCarga;
-	nodoMaxCarga = nodoConMayorCarga(listaNodos, cantNodos);
+	for (i = 0; i < cantNodosArchivo; i++) {
+		listaNodos[i].carga = 0;//de dónde saco estos valores????????????????
+		listaNodos[i].numero = 1;
+	}
+	/*listaNodos[0].carga = 0;
+	 listaNodos[0].numero = 1;
+	 listaNodos[1].carga = 1;
+	 listaNodos[1].numero = 2;
+	 listaNodos[2].carga = 1;
+	 listaNodos[2].numero = 3;*/
+	cargaNodo nodoMaxCarga;
+	nodoMaxCarga = nodoConMayorCarga(listaNodos, cantNodosArchivo);
 	cargaMaxima = nodoMaxCarga.carga;
-	listaNodos[0].disponibilidad = calcularDisponibilidadNodo(listaNodos[0]);
-	listaNodos[1].disponibilidad = calcularDisponibilidadNodo(listaNodos[1]);
-	listaNodos[2].disponibilidad = calcularDisponibilidadNodo(listaNodos[2]);
+	for (i = 0; i < cantNodosArchivo; i++) {
+		listaNodos[i].disponibilidad = calcularDisponibilidadNodo(listaNodos[i]);
+	}
 
 	//ordeno los nodos de mayor a menor disponibilidad
-	int i, j;
-	nodo temp;
-	for (i = 0; i < cantNodos; i++) {
-		for (j = 0; j < cantNodos - 1; j++) {
+	cargaNodo temp;
+	for (i = 0; i < cantNodosArchivo; i++) {
+		for (j = 0; j < cantNodosArchivo - 1; j++) {
 			if (listaNodos[j].disponibilidad < listaNodos[j + 1].disponibilidad) {
 				temp = listaNodos[j];
 				listaNodos[j] = listaNodos[j + 1];
@@ -200,18 +230,18 @@ void planificar() {
 	int clockMaestro = 0, clockNoExisteBloque = -1,
 			clockNodoDisponibilidad = -1;
 	//indexado por bloques, contiene el nodo al cual fue asignado el bloque
-	int asignacionsBloquesNodos[cantBloquesArchivo];
+	int asignacionsBloquesNodos[cantBloquesArchivo][2];
 	while (bloque < cantBloquesArchivo) {
-		nodo nodoActual = listaNodos[clockMaestro];
+		cargaNodo nodoActual = listaNodos[clockMaestro];
 		if (nodoConDisponibilidad(nodoActual) && existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) {
 			//asigno bloque al nodo
-			asignacionsBloquesNodos[bloque] = nodoActual.numero;
+			asignacionsBloquesNodos[bloque][0] = nodoActual.numero;
 			nodoActual.carga++;
 			nodoActual.disponibilidad--;
 
 			if (clockNoExisteBloque < 0 || clockMaestro == clockNoExisteBloque) {
 				clockMaestro++;
-				if (clockMaestro >= cantNodos)
+				if (clockMaestro >= cantNodosArchivo)
 					clockMaestro = 0;
 			} else {
 				clockMaestro = clockNoExisteBloque;
@@ -224,13 +254,13 @@ void planificar() {
 				clockNodoDisponibilidad = clockMaestro;
 			nodoActual.disponibilidad += cargaBase;
 			clockMaestro++;
-			if (clockMaestro >= cantNodos)
+			if (clockMaestro >= cantNodosArchivo)
 				clockMaestro = 0;
 
 		} else if (!existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) { //no se encuentra el bloque en el nodo
 			clockNoExisteBloque = clockMaestro;
 			clockMaestro++;
-			if (clockMaestro >= cantNodos)
+			if (clockMaestro >= cantNodosArchivo)
 				clockMaestro = 0;
 
 		}
@@ -241,8 +271,6 @@ void planificar() {
 }
 
 int main(int argc, char *argv[]) {
-	planificar();
-	return 0;
 	t_log* logYAMA;
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1, i;
@@ -272,9 +300,11 @@ int main(int argc, char *argv[]) {
 	}
 	int numMaster = socketCliente;
 
+	/* *********** crea la lista para la tabla de estados ********************* */
+	t_list * listaTablaEstados = list_create();
+
 	/* *************************** espera recepción de un mensaje ****************************/
 	uint32_t headerId = deserializarHeader(socketCliente);
-//printf("\nmensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes);
 	switch (headerId) {
@@ -290,28 +320,26 @@ int main(int argc, char *argv[]) {
 
 		//pide la metadata del archivo al FS
 		if (preparadoEnviarFs) {
-			bloqueArchivo *bloques = pedirMetadataArchivoFS(socketFS, archivo);
-			/*printf("Tamaño del archivo: %d\nTipo del archivo: %c\n", bloques[0].tamArchivo, bloques[0].tipoArchivo);
-			 printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
-			 printf("Bloque 1 - Copia 2: Nodo %d - Bloque %d\n", bloques[0].nodoCopia2, bloques[0].bloqueCopia2);
-			 printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
-			 printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);*/
+			if (!pedirMetadataArchivoFS(socketFS, archivo))
+				return EXIT_FAILURE;
+
+			bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
+			datosConexionNodo *nodosArchivo = recibirNodosArchivoFS(socketFS);
 
 			//planificación
+			planificar(bloques, nodosArchivo);
 			//guarda la info de los bloques del archivo en la tabla de estados
-			int cantBloquesArchivo = bloques[0].cantBloquesArchivo;
 			struct filaTablaEstados fila;
 			for (i = 0; i < cantBloquesArchivo; i++) {
-				fila.master = 1;		//modificar
 				fila.job = 1;		//modificar
+				fila.master = 1;		//modificar
 				fila.nodo = bloques[i].nodoCopia1;	//planificar
 				fila.bloque = bloques[i].bloqueCopia1;	//planificar
 				fila.etapa = TRANSFORMACION;
-				fila.estado = EN_PROCESO;
-				//fila.
 				//genera el nombre del archivo temporal
-				char* temporal = string_from_format("m%dj%dn%db%d", fila.master, fila.job, fila.nodo, fila.bloque);
+				char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
 				strcpy(fila.temporal, temporal);	//modificar
+				fila.estado = EN_PROCESO;
 				fila.siguiente = NULL;
 				if (!agregarElemTablaEstados(fila)) {
 					perror("Error al agregar elementos a la tabla de estados");
@@ -322,48 +350,39 @@ int main(int argc, char *argv[]) {
 			mostrarListaElementos();
 
 			/* ******************* buscar elemento de la tabla ************************ */
-			fila.master = 1;
-			fila.job = 1;
-			fila.nodo = bloques[1].nodoCopia1;
-			fila.bloque = 0;
-			fila.etapa = 0;
-			fila.estado = 0;
-			char* temporal = string_from_format("m%dj%dn%db%d", fila.master, fila.job, fila.nodo, fila.bloque);
-			strcpy(fila.temporal, "");
-			fila.siguiente = NULL;
+			/*fila.master = 1;
+			 fila.job = 1;
+			 fila.nodo = bloques[1].nodoCopia1;
+			 fila.bloque = bloques[1].bloqueCopia1;
+			 fila.etapa = TRANSFORMACION;
 
-			struct filaTablaEstados *elementoBuscado = buscarElemTablaEstados(fila);
+			 struct filaTablaEstados *elementoBuscado = buscarElemTablaEstadosPorJMNBE(fila);
 
-			if (elementoBuscado == NULL) {
-				puts("no existe el registro buscado");
-			} else {
-				puts("búsqueda del elemento job 1 master 1");
-				printf("nodo: %d - temporal: %s - etapa: %d\n", elementoBuscado->nodo, elementoBuscado->temporal, elementoBuscado->etapa);
-			}
+			 if (elementoBuscado == NULL) {
+			 puts("no existe el registro buscado");
+			 } else {
+			 puts("búsqueda del elemento job 1 master 1");
+			 printf("nodo: %d - temporal: %s - etapa: %d\n", elementoBuscado->nodo, elementoBuscado->temporal, elementoBuscado->etapa);
+			 }*/
 			/* ************************************************************************ */
 
 			/* ******************* modificar un elemento de la tabla ****************** */
-			fila.master = 1;
-			fila.job = 1;
-			fila.nodo = bloques[1].nodoCopia1;
-			fila.bloque = 0;
-			fila.etapa = 0;
-			fila.estado = 0;
-			strcpy(fila.temporal, "");
-			fila.siguiente = NULL;
-
-			struct filaTablaEstados datosNuevos;
-			datosNuevos.master = 1;
-			datosNuevos.job = 1;
-			datosNuevos.nodo = bloques[1].nodoCopia1;
-			datosNuevos.bloque = 0;
-			datosNuevos.etapa = 0;
-			datosNuevos.estado = FIN_OK;
-			strcpy(datosNuevos.temporal, "");
-			fila.siguiente = NULL;
-			modificarElemTablaEstados(fila, datosNuevos);
-			puts("elementos después de ser modificados");
-			mostrarListaElementos();
+			/*fila.master = 1;
+			 fila.job = 1;
+			 fila.nodo = bloques[1].nodoCopia1;
+			 fila.bloque = bloques[1].bloqueCopia1;
+			 fila.etapa = TRANSFORMACION;
+			 mostrarListaElementos();
+			 struct filaTablaEstados datosNuevos;
+			 datosNuevos.master = 1;
+			 datosNuevos.job = 1;
+			 datosNuevos.nodo = bloques[1].nodoCopia1;
+			 datosNuevos.bloque = bloques[1].bloqueCopia1;
+			 datosNuevos.etapa = TRANSFORMACION;
+			 datosNuevos.estado = FIN_OK;
+			 modificarElemTablaEstados(fila, datosNuevos);
+			 puts("elementos después de ser modificados");
+			 mostrarListaElementos();*/
 			/* ************************************************************************ */
 		}
 
