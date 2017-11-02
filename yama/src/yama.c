@@ -107,6 +107,7 @@ int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	free(arrayMensajesSerializar);
 	return enviarMensaje(socketFS, mensajeSerializado);
 }
+
 bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	int i;
 	uint32_t headerId = deserializarHeader(socketFS);
@@ -299,9 +300,10 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 	int numMaster = socketCliente;
+	printf("Número de socket: %d\n",numMaster);
 
 	/* *********** crea la lista para la tabla de estados ********************* */
-	t_list * listaTablaEstados = list_create();
+	//t_list * listaTablaEstados = list_create();
 
 	/* *************************** espera recepción de un mensaje ****************************/
 	uint32_t headerId = deserializarHeader(socketCliente);
