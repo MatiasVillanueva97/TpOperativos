@@ -11,7 +11,8 @@
 enum keys {
 	YAMA_IP, YAMA_PUERTO, NODO_IP, NODO_PUERTO
 };
-char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "NODO_IP", "NODO_PUERTO", NULL };
+char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "NODO_IP", "NODO_PUERTO",
+NULL };
 char* datosConfigMaster[4];
 
 // ================================================================ //
@@ -48,34 +49,47 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 
+	// 2º) conectarse a YAMA y aguardar instrucciones
+	log_info(logMASTER, "Conexión a Yama, IP: %s, Puerto: %s", datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
+	int socketYama = conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
+	if (!socketYama) {
+		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
+		preparadoEnviarYama = 0;
+	}
 
-	 // 2º) conectarse a YAMA y aguardar instrucciones
-	 log_info(logMASTER, "Conexión a Yama, IP: %s, Puerto: %s", datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
-	 int socketYama = conectarA(datosConfigMaster[YAMA_IP], datosConfigMaster[YAMA_PUERTO]);
-	 if (!socketYama) {
-	 //preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
-	 preparadoEnviarYama = 0;
-	 }
+	/* ******************** SOLO PARA PRUEBAS ******************* */
+	int cantStringsHS = protocoloCantidadMensajes[TIPO_MSJ_HANDSHAKE];
+	char **arrayMensajesHS = malloc(cantStringsHS);
+	arrayMensajesHS[0] = malloc(string_length("master") + 1);
+	strcpy(arrayMensajesHS[0], "master");
+	arrayMensajesHS[0][string_length("master")] = '\0';
+	char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_HANDSHAKE, arrayMensajesHS, cantStringsHS);
+	enviarMensaje(socketYama, mensajeSerializado1);
 
-	 //envía a yama el archivo con el que quiere trabajar
-	 //hago un paquete serializado con el mensaje a enviar
-	 int cantStrings = 1;
-	 char **arrayMensajes = malloc(cantStrings);
-	 arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
-	 strcpy(arrayMensajes[0], archivoRequerido);
-	 arrayMensajes[0][string_length(archivoRequerido)] = '\0';
-	 //	for (i = 0; i < cantStrings; i++) {
-	 //	 arrayMensajes[i] = malloc(string_length(argv[i + 1]) + 1);
-	 //	 strcpy(arrayMensajes[i], argv[i + 1]);
-	 //	 arrayMensajes[i][string_length(argv[i + 1])] = '\0';
-	 //	 }
-	 char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO, arrayMensajes, cantStrings);
-	 enviarMensaje(socketYama, mensajeSerializado);
-	 for (i = 0; i < cantStrings; i++) {
-	 free(arrayMensajes[i]);
-	 }
-	 free(arrayMensajes);
+	uint32_t headerId = deserializarHeader(socketYama);
 
+	int cantidadMensajes = protocoloCantidadMensajes[headerId];
+	char **arrayMensajesRecibidos = deserializarMensaje(socketYama, cantidadMensajes);
+
+	/* ************************************************************** */
+	//envía a yama el archivo con el que quiere trabajar
+	//hago un paquete serializado con el mensaje a enviar
+	int cantStrings = 1;
+	char **arrayMensajes = malloc(cantStrings);
+	arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
+	strcpy(arrayMensajes[0], archivoRequerido);
+	arrayMensajes[0][string_length(archivoRequerido)] = '\0';
+	//	for (i = 0; i < cantStrings; i++) {
+	//	 arrayMensajes[i] = malloc(string_length(argv[i + 1]) + 1);
+	//	 strcpy(arrayMensajes[i], argv[i + 1]);
+	//	 arrayMensajes[i][string_length(argv[i + 1])] = '\0';
+	//	 }
+	char *mensajeSerializado2 = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR, arrayMensajes, cantStrings);
+	enviarMensaje(socketYama, mensajeSerializado2);
+	for (i = 0; i < cantStrings; i++) {
+		free(arrayMensajes[i]);
+	}
+	free(arrayMensajes);
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
 	int socketWorker = conectarA(datosConfigMaster[NODO_IP], datosConfigMaster[NODO_PUERTO]);

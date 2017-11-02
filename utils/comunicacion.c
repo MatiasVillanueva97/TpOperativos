@@ -71,7 +71,7 @@ uint32_t deserializarHeader(int socketCliente) {
 		return -1;
 	}
 	idString[LARGO_STRING_HEADER_ID] = '\0';
-	int headerId = atoi(idString);
+	uint32_t headerId = atoi(idString);
 	free(idString);
 	return headerId;
 }
