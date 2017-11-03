@@ -1,4 +1,5 @@
 #include "constantes.h"
+#include <stdint.h>
 
 /* ****************************** funciones para enviar mensajes ******************************/
 //el send no manda siempre todos los bytes que le pongo por el protocolo IP
