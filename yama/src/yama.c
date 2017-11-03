@@ -179,10 +179,10 @@ datosConexionNodo * recibirNodosArchivoFS( socketFS) {
 }
 
 void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos) {
-	/*printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
+	printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
 	 printf("Bloque 1 - Copia 2: Nodo %d - Bloque %d\n", bloques[0].nodoCopia2, bloques[0].bloqueCopia2);
 	 printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
-	 printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);*/
+	 printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);
 
 	int i, j;
 
@@ -237,7 +237,7 @@ void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos) {
 			clockNodoDisponibilidad = -1;
 	//indexado por bloques, contiene el nodo al cual fue asignado el bloque
 	int asignacionsBloquesNodos[cantBloquesArchivo][2];
-	while (bloque < cantBloquesArchivo) {
+	/*while (bloque < cantBloquesArchivo) {
 		cargaNodo nodoActual = listaNodos[clockMaestro];
 		if (nodoConDisponibilidad(nodoActual) && existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) {
 			//asigno bloque al nodo
@@ -272,7 +272,7 @@ void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos) {
 		}
 		if (clockNoExisteBloque == clockMaestro)
 			listaNodos[clockNoExisteBloque].disponibilidad += cargaBase;
-	}
+	}*/
 
 }
 
@@ -310,156 +310,142 @@ int main(int argc, char *argv[]) {
 	FD_SET(listenningSocket, &socketsLecturaMaster);
 	// keep track of the biggest file descriptor
 	maxFD = listenningSocket; // so far, it's this one
-
 	/* *********** crea la lista para la tabla de estados ********************* */
 	//t_list * listaTablaEstados = list_create();
-	int socketCliente, numMaster, socketConectado;
+	int socketCliente, numMaster, socketConectado, cantStrings;
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
 
-		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) == -1) {
-			perror("Error en select()");
-			//exit(4);
-		}
+		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
 
-		for (i = 0; i <= maxFD; i++) {
-			if (FD_ISSET(i, &socketsLecturaTemp)) {
-				if (i == listenningSocket) {
-					if ((socketCliente = recibirConexion(logYAMA, listenningSocket)) >= 0) {
-						numMaster = socketCliente;
-					}
-					uint32_t headerId = deserializarHeader(socketCliente);
-					if (headerId == TIPO_MSJ_HANDSHAKE) { // && handshake() == ok)
-						FD_SET(socketCliente, &socketsLecturaMaster); // add to master set
-						if (socketCliente > maxFD) {    // keep track of the max
-							maxFD = socketCliente;
+			for (i = 0; i <= maxFD; i++) {
+				if (FD_ISSET(i, &socketsLecturaTemp)) {
+					if (i == listenningSocket) {	//conexión nueva
+						if ((socketCliente = recibirConexion(logYAMA, listenningSocket)) >= 0) {
+							numMaster = socketCliente;
 						}
-						/* *********** solo de prueba *************** */
-						int cantStrings = 1;
-						int cantidadMensajes = protocoloCantidadMensajes[headerId];
-						char **arrayMensajesR = deserializarMensaje(socketConectado, cantidadMensajes);
-						/*if (!strcmp(arrayMensajesR[0], "master")) {
-							char *mensaje = "handhake ok";
-						}else{
-							char *mensaje = "handhake error";
-						}*/
-						char *mensaje = "handhake ok";
-						char **arrayMensajesE = malloc(cantStrings);
-						arrayMensajesE[0] = malloc(string_length(mensaje) + 1);
-						strcpy(arrayMensajesE[0], mensaje);
-						arrayMensajesE[0][string_length(mensaje)] = '\0';
-						char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, arrayMensajesE, 0);
-						enviarMensaje(socketCliente, mensajeSerializado1);
-					} else {
-						int cantStrings = 1;
-						char *mensaje = "volá de acá vos";
-						char **arrayMensajes = malloc(cantStrings);
-						arrayMensajes[0] = malloc(string_length(mensaje) + 1);
-						strcpy(arrayMensajes[0], mensaje);
-						arrayMensajes[0][string_length(mensaje)] = '\0';
-						char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, arrayMensajes, cantStrings);
-						enviarMensaje(socketCliente, mensajeSerializado1);
-					}
-				} else {	//conexión preexistente
-					/* *************************** recepción de un mensaje ****************************/
-					socketConectado = i;
-					uint32_t headerId = deserializarHeader(socketConectado);
-					if (headerId < 0) {	//error
-						//close(socketConectado); // bye!
-						//FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
-					}
-					int cantidadMensajes = protocoloCantidadMensajes[headerId];
-					char **arrayMensajes = deserializarMensaje(socketConectado, cantidadMensajes);
-					switch (headerId) {
+						uint32_t headerId = deserializarHeader(socketCliente);
 
-					case TIPO_MSJ_TRANSFORMACION_OK:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_TRANSFORMACION_ERROR:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_REDUCC_LOCAL_OK:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_REDUCC_LOCAL_ERROR:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_REDUCC_GLOBAL_OK:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_REDUCC_GLOBAL_ERROR:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_ALM_FINAL_OK:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_ALM_FINAL_ERROR:
-						;
-						free(arrayMensajes);
-						break;
-					case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
-						;
-						char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
-						strcpy(archivo, arrayMensajes[0]);
-						free(arrayMensajes);
-
-						//pide la metadata del archivo al FS
-						if (preparadoEnviarFs) {
-							if (pedirMetadataArchivoFS(socketFS, archivo)) {
-								bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
-								datosConexionNodo *nodosArchivo = recibirNodosArchivoFS(socketFS);
-								//planificación
-								planificar(bloques, nodosArchivo);
-								//guarda la info de los bloques del archivo en la tabla de estados
-								struct filaTablaEstados fila;
-								for (i = 0; i < cantBloquesArchivo; i++) {
-									fila.job = 1;		//modificar
-									fila.master = 1;		//modificar
-									fila.nodo = bloques[i].nodoCopia1;//planificar
-									fila.bloque = bloques[i].bloqueCopia1;//planificar
-									fila.etapa = TRANSFORMACION;
-									//genera el nombre del archivo temporal
-									char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
-									strcpy(fila.temporal, temporal);//modificar
-									fila.estado = EN_PROCESO;
-									fila.siguiente = NULL;
-									if (!agregarElemTablaEstados(fila))
-										perror("Error al agregar elementos a la tabla de estados");
+						if (headerId == TIPO_MSJ_HANDSHAKE) { // && handshake() == ok)
+							int cantidadMensajes = protocoloCantidadMensajes[headerId];
+							char **arrayMensajesRHS = deserializarMensaje(socketCliente, cantidadMensajes);
+							int idEmisorMensaje = atoi(arrayMensajesRHS[0]);
+							free(arrayMensajesRHS);
+							char mensaje[4];
+							if (idEmisorMensaje == NUM_PROCESO_MASTER) {
+								FD_SET(socketCliente, &socketsLecturaMaster); // add to master set
+								FD_SET(socketCliente, &socketsLecturaTemp); // add to master set
+								if (socketCliente > maxFD) { // keep track of the max
+									maxFD = socketCliente;
 								}
+								strcpy(mensaje, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, 4));
 							} else {
-								perror("No se pudo enviar el archivo al FS");
+								strcpy(mensaje, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO, 4));
+							}
+							enviarMensaje(socketCliente, mensaje);
+						}
+					} else {	//conexión preexistente
+						/* *************************** recepción de un mensaje ****************************/
+						socketConectado = i;
+						uint32_t headerId = deserializarHeader(socketConectado);
+						if (headerId < 0) {	//error
+							//close(socketConectado); // bye!
+							//FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+						}
+						int cantidadMensajes = protocoloCantidadMensajes[headerId];
+						char **arrayMensajes = deserializarMensaje(socketConectado, cantidadMensajes);
+						switch (headerId) {
+
+						case TIPO_MSJ_TRANSFORMACION_OK:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_TRANSFORMACION_ERROR:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_REDUCC_LOCAL_OK:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_REDUCC_LOCAL_ERROR:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_REDUCC_GLOBAL_OK:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_REDUCC_GLOBAL_ERROR:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_ALM_FINAL_OK:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_ALM_FINAL_ERROR:
+							;
+							free(arrayMensajes);
+							break;
+						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
+							;
+							char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
+							strcpy(archivo, arrayMensajes[0]);
+							free(arrayMensajes);
+							//pide la metadata del archivo al FS
+							if (preparadoEnviarFs) {
+								if (pedirMetadataArchivoFS(socketFS, archivo)) {
+									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
+									datosConexionNodo *nodosArchivo = recibirNodosArchivoFS(socketFS);
+									//planificación
+									planificar(bloques, nodosArchivo);
+									//guarda la info de los bloques del archivo en la tabla de estados
+									struct filaTablaEstados fila;
+									for (i = 0; i < cantBloquesArchivo; i++) {
+										fila.job = 1;		//modificar
+										fila.master = 1;		//modificar
+										fila.nodo = bloques[i].nodoCopia1;//planificar
+										fila.bloque = bloques[i].bloqueCopia1;//planificar
+										fila.etapa = TRANSFORMACION;
+										//genera el nombre del archivo temporal
+										char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
+										strcpy(fila.temporal, temporal);//modificar
+										fila.estado = EN_PROCESO;
+										fila.siguiente = NULL;
+										if (!agregarElemTablaEstados(fila))
+											perror("Error al agregar elementos a la tabla de estados");
+									}
+								} else {
+									perror("No se pudo enviar el archivo al FS");
+								}
+
+								puts("lista de elementos 1");
+								mostrarListaElementos();
 							}
 
-							puts("lista de elementos 1");
-							mostrarListaElementos();
+							//envía al master la lista de nodos donde trabajar cada bloque
+
+							break;
+						case TIPO_MSJ_CUATRO_MENSAJES:
+							;
+							for (i = 0; i < cantidadMensajes; i++) {
+								printf("mensajeRecibido %d: %s\n", i, arrayMensajes[i]);
+								free(arrayMensajes[i]);
+							}
+
+							free(arrayMensajes);
+							break;
+						default:
+							;
+							free(arrayMensajes);
+							break;
 						}
-
-						//envía al master la lista de nodos donde trabajar cada bloque
-
-						break;
-					case TIPO_MSJ_CUATRO_MENSAJES:
-						;
-						for (i = 0; i < cantidadMensajes; i++) {
-							printf("mensajeRecibido %d: %s\n", i, arrayMensajes[i]);
-							free(arrayMensajes[i]);
-						}
-
-						free(arrayMensajes);
-						break;
-					default:
-						;
-						free(arrayMensajes);
-						break;
 					}
 				}
 			}
+		} else {
+			perror("Error en select()");
 		}
 	}
 

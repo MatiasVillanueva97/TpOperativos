@@ -60,36 +60,32 @@ int main(int argc, char *argv[]) {
 	/* ******************** SOLO PARA PRUEBAS ******************* */
 	int cantStringsHS = protocoloCantidadMensajes[TIPO_MSJ_HANDSHAKE];
 	char **arrayMensajesHS = malloc(cantStringsHS);
-	arrayMensajesHS[0] = malloc(string_length("master") + 1);
-	strcpy(arrayMensajesHS[0], "master");
-	arrayMensajesHS[0][string_length("master")] = '\0';
-	char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_HANDSHAKE, arrayMensajesHS, cantStringsHS);
-	enviarMensaje(socketYama, mensajeSerializado1);
+	char *mensaje = intToArrayZerosLeft(NUM_PROCESO_MASTER, 4);
+	arrayMensajesHS[0] = malloc(string_length(mensaje) + 1);
+	strcpy(arrayMensajesHS[0], mensaje);
+	arrayMensajesHS[0][string_length(mensaje)] = '\0';
+	char *mensajeSerializadoHS = serializarMensaje(TIPO_MSJ_HANDSHAKE, arrayMensajesHS, cantStringsHS);
+	enviarMensaje(socketYama, mensajeSerializadoHS);
+	free(arrayMensajesHS);
 
 	uint32_t headerId = deserializarHeader(socketYama);
-
-	int cantidadMensajes = protocoloCantidadMensajes[headerId];
-	char **arrayMensajesRecibidos = deserializarMensaje(socketYama, cantidadMensajes);
-
-	/* ************************************************************** */
-	//envía a yama el archivo con el que quiere trabajar
-	//hago un paquete serializado con el mensaje a enviar
-	int cantStrings = 1;
-	char **arrayMensajes = malloc(cantStrings);
-	arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
-	strcpy(arrayMensajes[0], archivoRequerido);
-	arrayMensajes[0][string_length(archivoRequerido)] = '\0';
-	//	for (i = 0; i < cantStrings; i++) {
-	//	 arrayMensajes[i] = malloc(string_length(argv[i + 1]) + 1);
-	//	 strcpy(arrayMensajes[i], argv[i + 1]);
-	//	 arrayMensajes[i][string_length(argv[i + 1])] = '\0';
-	//	 }
-	char *mensajeSerializado2 = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR, arrayMensajes, cantStrings);
-	enviarMensaje(socketYama, mensajeSerializado2);
-	for (i = 0; i < cantStrings; i++) {
-		free(arrayMensajes[i]);
+	if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
+		/* ************************************************************** */
+		//envía a yama el archivo con el que quiere trabajar
+		//hago un paquete serializado con el mensaje a enviar
+		int cantStrings = protocoloCantidadMensajes[TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR];
+		char **arrayMensajes = malloc(cantStrings);
+		arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
+		strcpy(arrayMensajes[0], archivoRequerido);
+		arrayMensajes[0][string_length(archivoRequerido)] = '\0';
+		char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR, arrayMensajes, cantStrings);
+		enviarMensaje(socketYama, mensajeSerializado);
+		for (i = 0; i < cantStrings; i++) {
+			free(arrayMensajes[i]);
+		}
+		free(arrayMensajes);
+		puts("envió archivo");
 	}
-	free(arrayMensajes);
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
 	int socketWorker = conectarA(datosConfigMaster[NODO_IP], datosConfigMaster[NODO_PUERTO]);
