@@ -58,6 +58,8 @@ typedef struct {
 #define CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO 5
 #define CANT_MENSAJES_POR_NODO 3
 
+t_log* logYAMA;
+
 int getDatosConfiguracion() {
 	char *nameArchivoConfig = "configYama.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigYama, datosConfigYama)) { //leerArchivoConfig devuelve 1 si hay error
@@ -67,7 +69,7 @@ int getDatosConfiguracion() {
 	return 1;
 }
 
-int conexionAFileSystem(t_log* logYAMA) {
+int conexionAFileSystem() {
 	log_info(logYAMA, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigYama[FS_IP], datosConfigYama[FS_PUERTO]);
 	int socketFS = conectarA(datosConfigYama[FS_IP], datosConfigYama[FS_PUERTO]);
 	if (socketFS < 0) {
@@ -77,7 +79,7 @@ int conexionAFileSystem(t_log* logYAMA) {
 	return socketFS;
 }
 
-int inicializoComoServidor(t_log* logYAMA) {
+int inicializoComoServidor() {
 	int listenningSocket = inicializarServer(datosConfigYama[IP_PROPIA], datosConfigYama[PUERTO_PROPIO]);
 	if (listenningSocket < 0) {
 		log_error(logYAMA, "No pude iniciar como servidor");
@@ -86,7 +88,7 @@ int inicializoComoServidor(t_log* logYAMA) {
 	return listenningSocket;
 }
 
-int recibirConexion(t_log* logYAMA, int listenningSocket) {
+int recibirConexion(int listenningSocket) {
 	int socketCliente = aceptarConexion(listenningSocket);
 	if (socketCliente < 0) {
 		log_error(logYAMA, "Hubo un error al aceptar conexiones");
@@ -149,7 +151,7 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	return bloques;
 }
 
-datosConexionNodo * recibirNodosArchivoFS( socketFS) {
+datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 	int i;
 	uint32_t headerId = deserializarHeader(socketFS);
 	if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
@@ -277,7 +279,7 @@ void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos) {
 }
 
 int main(int argc, char *argv[]) {
-	t_log* logYAMA;
+
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1, i;
 	int cantElementosTablaEstados = 0, maxMasterTablaEstados = 0;
@@ -295,12 +297,12 @@ int main(int argc, char *argv[]) {
 	}
 	/* ************** conexión como cliente al FS *************** */
 	int socketFS;
-	if ((socketFS = conexionAFileSystem(logYAMA)) < 0) {
+	if ((socketFS = conexionAFileSystem()) < 0) {
 		preparadoEnviarFs = 0;
 	}
 	/* ************** inicialización como server ************ */
 	int listenningSocket;
-	if ((listenningSocket = inicializoComoServidor(logYAMA)) < 0) {
+	if ((listenningSocket = inicializoComoServidor()) < 0) {
 		return EXIT_FAILURE;
 	}
 	// clear the set ahead of time
@@ -321,7 +323,7 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i <= maxFD; i++) {
 				if (FD_ISSET(i, &socketsLecturaTemp)) {
 					if (i == listenningSocket) {	//conexión nueva
-						if ((socketCliente = recibirConexion(logYAMA, listenningSocket)) >= 0) {
+						if ((socketCliente = recibirConexion(listenningSocket)) >= 0) {
 							numMaster = socketCliente;
 						}
 						uint32_t headerId = deserializarHeader(socketCliente);
