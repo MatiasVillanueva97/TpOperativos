@@ -4,6 +4,7 @@ SRC_PATH=src
 COMMONS=-lcommons
 THREAD=-lpthread
 READLINE=-lreadline
+MATH=-lm
 DIR=$(pwd)
 
 FILESYSTEM=filesystem
@@ -19,7 +20,7 @@ all: filesystem master yama worker datanode
 
 filesystem:
 	mkdir -p $(FILESYSTEM)/$(BIN_PATH)
-	$(COMPILER) $(FILESYSTEM)/$(SRC_PATH)/$(FILESYSTEM).c -o $(FILESYSTEM)/$(BIN_PATH)/$(FILESYSTEM) $(COMMONS) $(THREAD) $(READLINE)
+	$(COMPILER) $(FILESYSTEM)/$(SRC_PATH)/$(FILESYSTEM).c -o $(FILESYSTEM)/$(BIN_PATH)/$(FILESYSTEM) $(COMMONS) $(THREAD) $(READLINE) $(MATH)
 
 master:
 	mkdir -p $(MASTER)/$(BIN_PATH)
