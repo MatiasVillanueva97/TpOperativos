@@ -8,6 +8,7 @@ char* keysConfigFilesystem[] = { "IP_PROPIA", "PUERTO_PROPIO", NULL };
 
 char* datosConfigFilesystem[2];
 
+void enviarInfoBloques(int socket);
 
 void crearBitmap(char * PATH, char * nodoConectado, int cantBloques) {
 	int FileD;
@@ -49,8 +50,11 @@ void crearBitmapDeNodosConectados(char * NodoConectado, int cantBloques) {
 	t_list * nodosConectados = list_create();
 
 	list_add(nodosConectados, NodoConectado);
-	void crearBitmapXNodo(char * nodoConectado) {
 
+// Se usa realmente el parámetro nodoConectado? No lo encontré en ningún lado, y tira warning en list_iterate!
+//	void crearBitmapXNodo(char * nodoConectado) {
+void crearBitmapXNodo() {
+		char * nodoConectado = "nodo"; //TODO: definir
 		char * PATH_bitmap_xNOdo = string_new();
 		string_append(&PATH_bitmap_xNOdo, "../bitmaps/");
 		string_append(&PATH_bitmap_xNOdo, nodoConectado);
@@ -58,6 +62,7 @@ void crearBitmapDeNodosConectados(char * NodoConectado, int cantBloques) {
 		crearBitmap(PATH_bitmap_xNOdo, nodoConectado, cantBloques);
 
 	}
+
 	list_iterate(nodosConectados, crearBitmapXNodo);
 }
 
@@ -147,12 +152,14 @@ void partirArchivoDeTexto(char * PATH) {
 	fseek(archivo, 0, SEEK_SET);
 	int posicionActual = 0;
 
-	void partir(int * posicion) {
+// Se usa realmente el parámetro posición? No lo encontré en ningún lado, y tira warning en list_iterate!
+//	void partir(int * posicion) {
+	void partir() {
 
 		char * puta = string_new();
 		string_append(&puta, "/home/utnso/Escritorio/archivonuevo");
 		string_append(&puta, string_itoa(posicionActual));
-
+        int *posicion = 0;
 		FILE*archivo2 = fopen(puta, "a+");
 		if (posicionActual == 0) {
 			contenidoAEnviar = malloc(*posicion);
