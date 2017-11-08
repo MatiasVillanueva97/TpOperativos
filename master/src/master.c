@@ -13,6 +13,7 @@ enum keys {
 };
 char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "NODO_IP", "NODO_PUERTO",
 NULL };
+
 char* datosConfigMaster[4];
 
 // ================================================================ //

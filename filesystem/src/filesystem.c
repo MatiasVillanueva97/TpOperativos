@@ -10,6 +10,13 @@ char* datosConfigFilesystem[2];
 
 void enviarInfoBloques(int socket);
 
+// ================================================================ //
+// FileSystem sabe qué está guardado y dónde.
+// Recibe conexiones de DataNodes hasta alcanzar "Estado Estable".
+// Se conecta a YAMA.
+// Sólo hay un FileSystem corriendo al mismo tiempo.
+// ================================================================ //
+
 void crearBitmap(char * PATH, char * nodoConectado, int cantBloques) {
 	int FileD;
 	FILE* archivoDeBitmap = fopen(PATH, "r+");
