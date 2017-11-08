@@ -46,8 +46,8 @@ clean:
 	rm -rf $(DATANODE)/$(BIN_PATH) && rm -rf $(DATANODE)/*.log
 
 run:
-	terminator --working-directory="$(DIR)" --title "FileSystem" --command="cd filesystem/bin/; ./filesystem; bash" --geometry=640x480+0+0 &
+	terminator --working-directory="$(DIR)" --title "FileSystem" --command="cd filesystem/bin/; ./filesystem; bash" --geometry=640x400+0+0 &
 	sleep 1
-	terminator --working-directory="$(DIR)" --title "YAMA" --command="cd yama/bin/; ./yama; bash" --geometry=640x480-0+0 &
+	terminator --working-directory="$(DIR)" --title "YAMA" --command="cd yama/bin/; ./yama; bash" --geometry=640x400-0+0 &
 	sleep 1
-	terminator --working-directory="$(DIR)" --title "Master" --command="cd master/bin/; ./master transformador reductor datos resultado; bash" --geometry=640x480+0-0 &
+	terminator --working-directory="$(DIR)" --title "Master" --command="cd master/bin/; ./master transformador reductor datos resultado; bash" --geometry=640x400+0-0 &
