@@ -48,18 +48,6 @@ int main(int argc, char *argv[]) {
 	log_info(logWorker, "Iniciando Worker");
 	printf("\n*** Proceso worker ***\n");
 
-	//ARREGLAR CON NAHUEL COMO SE VAN A PASAR LOS PARAMETROS, NO ESTOY SEGURO SI TIENE QUE INICIAR YA CON PARAMETROS O INICIAR
-	//SIN PARAMETROS Y DESPUES RECIBIR POR SOCKET
-    /*if (argc < 4) {
-        puts("Error. Faltan parámetros en la ejecución del proceso.\n");
-        return EXIT_FAILURE;
-    }
-
-    char *codigo = argv[1];
-    char *origen = argv[2];
-    char *destino = argv[3];
-    */
-
 	// 1º) leer archivo de config.
 	char *nameArchivoConfig = "configNodo.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) {//leerArchivoConfig devuelve 1 si hay error
