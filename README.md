@@ -21,7 +21,7 @@ Matias Villanueva | 1559837 | matias.nahuel.villanueva@hotmail.com |
 2. Tener instaladas la commons library ([link](https://github.com/sisoputnfrba/so-commons-library))
 3. Tener instaladas la pthreads library
 4. Tener instaladas la readline library (sudo apt-get install libreadline6-dev)
-
+5. Tener instalado Ruby si se corre algún script (Transformador o Reductor) de tipo `.rb` (sudo apt-get install ruby)
 
 ## Instrucciones
 
