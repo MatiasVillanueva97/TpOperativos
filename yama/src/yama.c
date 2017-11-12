@@ -47,13 +47,22 @@ typedef struct {
 	int bytesBloque;
 } bloqueArchivo;
 
-int cantBloquesArchivo, cantNodosArchivo;
+int cantPartesArchivo, cantNodosArchivo;
 
 typedef struct {
 	int numero;
-	char ip[12];
+	char ip[13];
 	int puerto;
 } datosConexionNodo;
+
+typedef struct {
+	int nroNodo;
+	char ipNodo[13];
+	int puertoNodo;
+	int bloque;
+	int bytesOcupados;
+	char temporal[40];
+} tablaTransformacion;
 
 #define CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO 5
 #define CANT_MENSAJES_POR_NODO 3
@@ -104,13 +113,14 @@ int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	int cantStrings = 1, i;
 	char **arrayMensajesSerializar = malloc(cantStrings);
 	arrayMensajesSerializar[0] = malloc(string_length(archivo) + 1);
-	strcpy(arrayMensajesSerializar[0], archivo);
-	arrayMensajesSerializar[0][string_length(archivo)] = '\0';
+	//memset(arrayMensajesSerializar[0], '\0', string_length(arrayMensajesSerializar[0]));
+	//strcpy(arrayMensajesSerializar[0], archivo);
+	arrayMensajesSerializar[0] = copiarString(archivo, string_length(arrayMensajesSerializar[0]));
 
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PEDIDO_METADATA_ARCHIVO, arrayMensajesSerializar, cantStrings);
-	for (i = 0; i < cantStrings; i++) {
-		free(arrayMensajesSerializar[i]);
-	}
+	/*for (i = 0; i < cantStrings; i++) {
+	 free(arrayMensajesSerializar[i]);
+	 }*/
 	free(arrayMensajesSerializar);
 	return enviarMensaje(socketFS, mensajeSerializado);
 }
@@ -119,7 +129,7 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	int i;
 	uint32_t headerId = deserializarHeader(socketFS);
 	if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
-		perror("El FS no mandó lo solicitado");
+		perror("El FS no mandó los bloques");
 		bloqueArchivo *bloquesError = malloc(sizeof(bloqueArchivo));
 		bloquesError[0].nodoCopia1 = 0;
 		bloquesError[0].bloqueCopia1 = 0;
@@ -131,11 +141,13 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
 	//guardar la data en algún lado
-	cantBloquesArchivo = atoi(arrayMensajes[0]);
-	arrayMensajes = deserializarMensaje(socketFS, cantBloquesArchivo * CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO);
-	bloqueArchivo *bloques = malloc(cantBloquesArchivo * sizeof(bloqueArchivo));
+	cantPartesArchivo = atoi(arrayMensajes[0]);
+	printf("cantPartesArchivo: %d\n", cantPartesArchivo);
+
+	arrayMensajes = deserializarMensaje(socketFS, cantPartesArchivo * CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO);
+	bloqueArchivo *bloques = malloc(cantPartesArchivo * sizeof(bloqueArchivo));
 	int j = 0;
-	for (i = 0; i < cantBloquesArchivo; i++) {
+	for (i = 0; i < cantPartesArchivo; i++) {
 		bloques[i].nodoCopia1 = atoi(arrayMensajes[j]);
 		j++;
 		bloques[i].bloqueCopia1 = atoi(arrayMensajes[j]);
@@ -154,22 +166,24 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 	int i;
 	uint32_t headerId = deserializarHeader(socketFS);
-	if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
-		perror("El FS no mandó lo solicitado");
-		datosConexionNodo *nodosError = malloc(sizeof(bloqueArchivo));
-		nodosError[0].numero = 0;
-		strcpy(nodosError[0].ip, "");
-		nodosError[0].puerto = 0;
-		return nodosError;
-	}
+	printf("headerId nodos: %d\n", headerId);
+	/*if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
+	 printf("El FS no mandó los nodos\n");
+	 datosConexionNodo *nodosError = malloc(sizeof(bloqueArchivo));
+	 nodosError[0].numero = 0;
+	 strcpy(nodosError[0].ip, "");
+	 nodosError[0].puerto = 0;
+	 return nodosError;
+	 }*/
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
 	//guardar la data en algún lado
 	cantNodosArchivo = atoi(arrayMensajes[0]);
+	printf("cantNodos: %d\n", cantNodosArchivo);
 	arrayMensajes = deserializarMensaje(socketFS, cantNodosArchivo * CANT_MENSAJES_POR_NODO);
 	datosConexionNodo *nodos = malloc(cantNodosArchivo * sizeof(datosConexionNodo));
 	int j = 0;
-	for (i = 0; i < cantBloquesArchivo; i++) {
+	for (i = 0; i < cantNodosArchivo; i++) {
 		nodos[i].numero = atoi(arrayMensajes[j]);
 		j++;
 		strcpy(nodos[i].ip, arrayMensajes[j]);
@@ -180,110 +194,204 @@ datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 	return nodos;
 }
 
-void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos) {
-	printf("Bloque 1 - Copia 1: Nodo %d - Bloque %d\n", bloques[0].nodoCopia1, bloques[0].bloqueCopia1);
-	 printf("Bloque 1 - Copia 2: Nodo %d - Bloque %d\n", bloques[0].nodoCopia2, bloques[0].bloqueCopia2);
-	 printf("Bloque 2 - Copia 1: Nodo %d - Bloque %d\n", bloques[1].nodoCopia1, bloques[1].bloqueCopia1);
-	 printf("Bloque 2 - Copia 2: Nodo %d - Bloque %d\n", bloques[1].nodoCopia2, bloques[1].bloqueCopia2);
+typedef struct {
+	int nroNodo;
+	char ip[13];
+	int puerto;
+	int bloque;
+	int bytesOcupados;
+	char temporal[40];
+} nodoParaAsignar;
+
+void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos, nodoParaAsignar asignacionesNodos[cantPartesArchivo]) {
 
 	int i, j;
 
 	//sale del archivo config?????????????
 	cargaBase = 1;
-
-	//guarda los nodos en los que está cada bloque
-	nodosPorBloque nodosPorBloque[cantBloquesArchivo];
-	//cargo los nodos en los que está cada bloque
-	//el índice es el número del bloque
-	for (i = 0; i < cantBloquesArchivo; i++) {
-		nodosPorBloque[i].nodo1 = bloques[i].nodoCopia1;
-		nodosPorBloque[i].bloque1 = bloques[i].bloqueCopia1;
-		nodosPorBloque[i].nodo2 = bloques[i].nodoCopia2;
-		nodosPorBloque[i].bloque2 = bloques[i].bloqueCopia2;
+	printf("cantPartesArchivo: %d\n", cantPartesArchivo);
+	printf("cantNodosArchivo: %d\n", cantNodosArchivo);
+	//guarda los nodos en los que está cada pedazo de archivo
+	nodosPorPedazoArchivo nodosPorPedazoArchivo[cantPartesArchivo];
+	//cargo los nodos en los que está cada pedazo de archivo
+	//el índice es el número del pedazo de archivo
+	/*for (i = 0; i < cantPartesArchivo; i++) {
+	 printf("parte archivo %d: Nodo copia1 %d - Bloque copia1 %d\n", i, bloques[i].nodoCopia1, bloques[i].bloqueCopia1);
+	 printf("parte archivo %d: Nodo copia2 %d - Bloque copia2 %d\n", i, bloques[i].nodoCopia2, bloques[i].bloqueCopia2);
+	 }
+	 printf("\n");*/
+	for (i = 0; i < cantPartesArchivo; i++) {
+		nodosPorPedazoArchivo[i].nodo1 = bloques[i].nodoCopia1;
+		nodosPorPedazoArchivo[i].bloque1 = bloques[i].bloqueCopia1;
+		nodosPorPedazoArchivo[i].nodo2 = bloques[i].nodoCopia2;
+		nodosPorPedazoArchivo[i].bloque2 = bloques[i].bloqueCopia2;
+		nodosPorPedazoArchivo[i].bytes = bloques[i].bytesBloque;
 	}
-
+	for (i = 0; i < cantPartesArchivo; i++) {
+		printf("nodosPorPedazoArchivo %d: Nodo copia1 %d - Bloque copia1 %d\n", i, nodosPorPedazoArchivo[i].nodo1, nodosPorPedazoArchivo[i].bloque1);
+		printf("nodosPorPedazoArchivo %d: Nodo copia2 %d - Bloque copia2 %d\n", i, nodosPorPedazoArchivo[i].nodo2, nodosPorPedazoArchivo[i].bloque2);
+	}
+	printf("\n");
 	//tiene la carga de cada nodo
-	cargaNodo listaNodos[cantNodosArchivo];
+	cargaNodo listaCargaNodos[cantNodosArchivo];
 	//pongo la carga inicial de cada nodo
-	for (i = 0; i < cantNodosArchivo; i++) {
-		listaNodos[i].carga = 0;//de dónde saco estos valores????????????????
-		listaNodos[i].numero = 1;
-	}
-	/*listaNodos[0].carga = 0;
-	 listaNodos[0].numero = 1;
-	 listaNodos[1].carga = 1;
-	 listaNodos[1].numero = 2;
-	 listaNodos[2].carga = 1;
-	 listaNodos[2].numero = 3;*/
+	/*for (i = 0; i < cantNodosArchivo; i++) {
+	 listaCargaNodos[i].carga = 0;//de dónde saco estos valores????????????????
+	 listaCargaNodos[i].numero = 1;
+	 }*/
+	listaCargaNodos[0].carga = 0;
+	listaCargaNodos[0].numero = 1;
+	listaCargaNodos[1].carga = 1;
+	listaCargaNodos[1].numero = 2;
+	listaCargaNodos[2].carga = 1;
+	listaCargaNodos[2].numero = 3;
 	cargaNodo nodoMaxCarga;
-	nodoMaxCarga = nodoConMayorCarga(listaNodos, cantNodosArchivo);
+	nodoMaxCarga = nodoConMayorCarga(listaCargaNodos, cantNodosArchivo);
 	cargaMaxima = nodoMaxCarga.carga;
 	for (i = 0; i < cantNodosArchivo; i++) {
-		listaNodos[i].disponibilidad = calcularDisponibilidadNodo(listaNodos[i]);
+		listaCargaNodos[i].disponibilidad = calcularDisponibilidadNodo(listaCargaNodos[i]);
 	}
 
 	//ordeno los nodos de mayor a menor disponibilidad
 	cargaNodo temp;
 	for (i = 0; i < cantNodosArchivo; i++) {
 		for (j = 0; j < cantNodosArchivo - 1; j++) {
-			if (listaNodos[j].disponibilidad < listaNodos[j + 1].disponibilidad) {
-				temp = listaNodos[j];
-				listaNodos[j] = listaNodos[j + 1];
-				listaNodos[j + 1] = temp;
+			if (listaCargaNodos[j].disponibilidad < listaCargaNodos[j + 1].disponibilidad) {
+				temp = listaCargaNodos[j];
+				listaCargaNodos[j] = listaCargaNodos[j + 1];
+				listaCargaNodos[j + 1] = temp;
 			}
 		}
 	}
 
-	int bloque = 0;
-	int clockMaestro = 0, clockNoExisteBloque = -1,
-			clockNodoDisponibilidad = -1;
-	//indexado por bloques, contiene el nodo al cual fue asignado el bloque
-	int asignacionsBloquesNodos[cantBloquesArchivo][2];
-	/*while (bloque < cantBloquesArchivo) {
-		cargaNodo nodoActual = listaNodos[clockMaestro];
-		if (nodoConDisponibilidad(nodoActual) && existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) {
-			//asigno bloque al nodo
-			asignacionsBloquesNodos[bloque][0] = nodoActual.numero;
+	int parteArchivo = 0;
+	int clockMaestro = 0, clockNoExisteParteArchivo = -1,
+			clockNodoSinDisponibilidad = -1;
+
+	while (parteArchivo < cantPartesArchivo) {
+		cargaNodo nodoActual = listaCargaNodos[clockMaestro];
+		printf("\nnodo actual: %d, parte de archivo: %d\n", nodoActual.numero, parteArchivo);
+		printf("disponibilidad del nodo: %d\n", nodoConDisponibilidad(nodoActual));
+		printf("existe la parte del archivo en el nodo: %d\n", existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo));
+		if (nodoConDisponibilidad(nodoActual) && existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo)) {
+			//asigno parteArchivo al nodo y bloque
+			asignacionesNodos[parteArchivo].nroNodo = nodoActual.numero;
+			//me fijo si es el nodo de la copia 1 o 2, para cargarle el bloque dentro del nodo
+			if (nodoActual.numero == nodosPorPedazoArchivo[parteArchivo].nodo1)
+				asignacionesNodos[parteArchivo].bloque = nodosPorPedazoArchivo[parteArchivo].bloque1;
+			else
+				asignacionesNodos[parteArchivo].bloque = nodosPorPedazoArchivo[parteArchivo].bloque2;
+			asignacionesNodos[parteArchivo].bytesOcupados = nodosPorPedazoArchivo[parteArchivo].bytes;
+			for (j = 0; j < cantNodosArchivo; j++) {//recorro nodosArchivo para buscar la ip y el puerto
+				//nodosArchivo tiene el número, ip y puerto de cada nodo
+				if (nodoActual.numero == nodos[j].numero) {
+					memset(asignacionesNodos[parteArchivo].ip, '\0', sizeof(asignacionesNodos[parteArchivo].ip));
+					strcpy(asignacionesNodos[parteArchivo].ip, nodos[j].ip);
+					asignacionesNodos[parteArchivo].puerto = nodos[j].puerto;
+					break;
+				}
+			}
+
 			nodoActual.carga++;
 			nodoActual.disponibilidad--;
 
-			if (clockNoExisteBloque < 0 || clockMaestro == clockNoExisteBloque) {
+			if (clockNoExisteParteArchivo < 0 || clockMaestro == clockNoExisteParteArchivo) {
 				clockMaestro++;
 				if (clockMaestro >= cantNodosArchivo)
 					clockMaestro = 0;
 			} else {
-				clockMaestro = clockNoExisteBloque;
+				clockMaestro = clockNoExisteParteArchivo;
 			}
-			clockNoExisteBloque = -1;
-			clockNodoDisponibilidad = -1;	//????? A1
-			bloque++;
+			clockNoExisteParteArchivo = -1;
+			clockNodoSinDisponibilidad = -1;	//????? A1
+			printf("\nasignó partearchivo %d al nodo %d - bloque %d\n", parteArchivo, asignacionesNodos[parteArchivo].nroNodo, asignacionesNodos[parteArchivo].bloque);
+			parteArchivo++;
+
 		} else if (!nodoConDisponibilidad(nodoActual)) { //el nodo no tiene disponibilidad
-			if (clockNodoDisponibilidad < 0)	//????? A1
-				clockNodoDisponibilidad = clockMaestro;
+			if (clockNodoSinDisponibilidad < 0)	//????? A1
+				clockNodoSinDisponibilidad = clockMaestro;
 			nodoActual.disponibilidad += cargaBase;
 			clockMaestro++;
 			if (clockMaestro >= cantNodosArchivo)
 				clockMaestro = 0;
-
-		} else if (!existeBloqueEnNodo(bloque, nodoActual.numero, nodosPorBloque)) { //no se encuentra el bloque en el nodo
-			clockNoExisteBloque = clockMaestro;
+			printf("\nno disponibilidad partearchivo %d en el nodo %d\n", parteArchivo, nodoActual.numero);
+		} else if (!existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo)) { //no se encuentra el bloque en el nodo
+			clockNoExisteParteArchivo = clockMaestro;
 			clockMaestro++;
 			if (clockMaestro >= cantNodosArchivo)
 				clockMaestro = 0;
-
+			printf("\nno existe parte de archivo %d en nodo %d\n", parteArchivo, nodoActual.numero);
+			printf("clock maestro: %d\n", clockMaestro);
 		}
-		if (clockNoExisteBloque == clockMaestro)
-			listaNodos[clockNoExisteBloque].disponibilidad += cargaBase;
-	}*/
+		if (clockNoExisteParteArchivo == clockMaestro)
+			listaCargaNodos[clockNoExisteParteArchivo].disponibilidad += cargaBase;
+	}
+
+	return;
+}
+
+char* serializarNodosTransformacion(tablaTransformacion respuestaTransformacion[cantPartesArchivo]) {
+	int i, j, k, cantStringsASerializar, largoStringDestinoCopia;
+
+	cantStringsASerializar = (cantPartesArchivo * 6) + 1;
+	char **arrayMensajes = malloc(cantStringsASerializar);
+
+	largoStringDestinoCopia = 4 + 1;
+	arrayMensajes[0] = malloc(largoStringDestinoCopia);
+	arrayMensajes[0] = copiarString(intToArrayZerosLeft(cantPartesArchivo, 4), largoStringDestinoCopia);
+	j = 1;
+	for (i = 0; i < cantPartesArchivo; i++) {
+		//printf("\nnodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", respuestaTransformacion[i].nroNodo, respuestaTransformacion[i].ipNodo, respuestaTransformacion[i].puertoNodo, respuestaTransformacion[i].bloque, respuestaTransformacion[i].bytesOcupados, respuestaTransformacion[i].temporal);
+
+		//número de nodo
+		largoStringDestinoCopia = 4 + 1;
+		arrayMensajes[j] = malloc(largoStringDestinoCopia);
+		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4), largoStringDestinoCopia);
+		j++;
+
+		//IP
+		largoStringDestinoCopia = string_length(respuestaTransformacion[i].ipNodo) + 1;
+		arrayMensajes[j] = malloc(largoStringDestinoCopia);
+		arrayMensajes[j] = copiarString(respuestaTransformacion[i].ipNodo, largoStringDestinoCopia);
+		j++;
+
+		//puerto
+		largoStringDestinoCopia = 4 + 1;
+		arrayMensajes[j] = malloc(largoStringDestinoCopia);
+		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4), largoStringDestinoCopia);
+		j++;
+
+		//bloque
+		largoStringDestinoCopia = 4 + 1;
+		arrayMensajes[j] = malloc(largoStringDestinoCopia);
+		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bloque, 4), largoStringDestinoCopia);
+		j++;
+
+		//bytes ocupados
+		largoStringDestinoCopia = 8 + 1;
+		arrayMensajes[j] = malloc(largoStringDestinoCopia);
+		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bytesOcupados, 8), largoStringDestinoCopia);
+		j++;
+
+		//temporal
+		largoStringDestinoCopia = string_length(respuestaTransformacion[i].temporal) + 1;
+		arrayMensajes[j] = malloc(largoStringDestinoCopia);
+		arrayMensajes[j] = copiarString(respuestaTransformacion[i].temporal, largoStringDestinoCopia);
+		j++;
+	}
+
+	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_TABLA_TRANSFORMACION, arrayMensajes, cantStringsASerializar);
+	return mensajeSerializado;
 
 }
 
 int main(int argc, char *argv[]) {
 
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	int preparadoEnviarFs = 1, i;
+	int preparadoEnviarFs = 1, i, j, k, master, job;
 	int cantElementosTablaEstados = 0, maxMasterTablaEstados = 0;
 	int maxJobTablaEstados = 0;
+	char mensajeHeaderSolo[4];
 	log_info(logYAMA, "Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***\n");
 	//para el select
@@ -333,18 +441,19 @@ int main(int argc, char *argv[]) {
 							char **arrayMensajesRHS = deserializarMensaje(socketCliente, cantidadMensajes);
 							int idEmisorMensaje = atoi(arrayMensajesRHS[0]);
 							free(arrayMensajesRHS);
-							char mensaje[4];
 							if (idEmisorMensaje == NUM_PROCESO_MASTER) {
 								FD_SET(socketCliente, &socketsLecturaMaster); // add to master set
 								FD_SET(socketCliente, &socketsLecturaTemp); // add to master set
 								if (socketCliente > maxFD) { // keep track of the max
 									maxFD = socketCliente;
 								}
-								strcpy(mensaje, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, 4));
+								memset(mensajeHeaderSolo, '\0', sizeof(mensajeHeaderSolo));
+								strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, 4));
 							} else {
-								strcpy(mensaje, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO, 4));
+								memset(mensajeHeaderSolo, '\0', sizeof(mensajeHeaderSolo));
+								strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO, 4));
 							}
-							enviarMensaje(socketCliente, mensaje);
+							enviarMensaje(socketCliente, mensajeHeaderSolo);
 						}
 					} else {	//conexión preexistente
 						/* *************************** recepción de un mensaje ****************************/
@@ -393,41 +502,128 @@ int main(int argc, char *argv[]) {
 						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
 							;
 							char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
-							strcpy(archivo, arrayMensajes[0]);
+							archivo = copiarString(arrayMensajes[0], string_length(archivo));
 							free(arrayMensajes);
 							//pide la metadata del archivo al FS
 							if (preparadoEnviarFs) {
 								if (pedirMetadataArchivoFS(socketFS, archivo)) {
-									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
-									datosConexionNodo *nodosArchivo = recibirNodosArchivoFS(socketFS);
-									//planificación
-									planificar(bloques, nodosArchivo);
+
+									/*bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
+									 enviarHeaderSolo(socketFS, TIPO_MSJ_OK);
+									 puts("\npasame los nodos");
+									 datosConexionNodo *nodosArchivo = recibirNodosArchivoFS(socketFS);
+									 enviarHeaderSolo(socketFS, TIPO_MSJ_OK);*/
+
+									/* ***************** datos de bloques y nodos inventados para probar **************** */
+									bloqueArchivo bloques[6];
+									datosConexionNodo nodosArchivo[3];
+									bloques[0].nodoCopia1 = 1;
+									bloques[0].bloqueCopia1 = 33;
+									bloques[0].nodoCopia2 = 3;
+									bloques[0].bloqueCopia2 = 13;
+									bloques[0].bytesBloque = 12564;
+
+									bloques[1].nodoCopia1 = 2;
+									bloques[1].bloqueCopia1 = 36;
+									bloques[1].nodoCopia2 = 3;
+									bloques[1].bloqueCopia2 = 21;
+									bloques[1].bytesBloque = 3264;
+
+									bloques[2].nodoCopia1 = 2;
+									bloques[2].bloqueCopia1 = 12;
+									bloques[2].nodoCopia2 = 3;
+									bloques[2].bloqueCopia2 = 55;
+									bloques[2].bytesBloque = 3264;
+
+									bloques[3].nodoCopia1 = 2;
+									bloques[3].bloqueCopia1 = 65;
+									bloques[3].nodoCopia2 = 3;
+									bloques[3].bloqueCopia2 = 5;
+									bloques[3].bytesBloque = 10264;
+
+									bloques[4].nodoCopia1 = 1;
+									bloques[4].bloqueCopia1 = 88;
+									bloques[4].nodoCopia2 = 3;
+									bloques[4].bloqueCopia2 = 101;
+									bloques[4].bytesBloque = 4264;
+
+									bloques[5].nodoCopia1 = 1;
+									bloques[5].bloqueCopia1 = 74;
+									bloques[5].nodoCopia2 = 2;
+									bloques[5].bloqueCopia2 = 120;
+									bloques[5].bytesBloque = 32334;
+
+									cantPartesArchivo = 6;
+
+									nodosArchivo[0].numero = 1;
+									memset(nodosArchivo[0].ip, '\0', sizeof(nodosArchivo[0].ip));
+									strcpy(nodosArchivo[0].ip, "192168001152");
+									nodosArchivo[0].puerto = 4050;
+
+									nodosArchivo[1].numero = 2;
+									memset(nodosArchivo[1].ip, '\0', sizeof(nodosArchivo[1].ip));
+									strcpy(nodosArchivo[1].ip, "192168001095");
+									nodosArchivo[1].puerto = 5250;
+
+									nodosArchivo[2].numero = 3;
+									memset(nodosArchivo[2].ip, '\0', sizeof(nodosArchivo[2].ip));
+									strcpy(nodosArchivo[2].ip, "192168001201");
+									nodosArchivo[2].puerto = 4095;
+
+									cantNodosArchivo = 3;
+									/* ********************************************************************************** */
+									master = 1;	//modificar
+									job = 1;	//modificar
+									/* ************* inicio planificación *************** */
+									//indexado por partes del archivo, contiene el nodo, bloque y bytes
+									//al cual fue asignado el pedazo de archivo
+									nodoParaAsignar asignacionesNodos[cantPartesArchivo];
+									planificar(bloques, nodosArchivo, asignacionesNodos);
+									/* ************* fin planificación *************** */
+
 									//guarda la info de los bloques del archivo en la tabla de estados
 									struct filaTablaEstados fila;
-									for (i = 0; i < cantBloquesArchivo; i++) {
-										fila.job = 1;		//modificar
-										fila.master = 1;		//modificar
-										fila.nodo = bloques[i].nodoCopia1;//planificar
-										fila.bloque = bloques[i].bloqueCopia1;//planificar
+									tablaTransformacion respuestaTransformacion[cantPartesArchivo];
+									for (i = 0; i < cantPartesArchivo; i++) {
+										//printf("parte de archivo %d asignado a: nodo %d - bloque %d\n", i, asignacionesNodos[i][0], asignacionesNodos[i][1]);
+										//genera una fila en la tabla de estados
+										fila.job = master;
+										fila.master = job;
+										fila.nodo = asignacionesNodos[i].nroNodo;
+										fila.bloque = asignacionesNodos[i].bloque;
 										fila.etapa = TRANSFORMACION;
-										//genera el nombre del archivo temporal
 										char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
-										strcpy(fila.temporal, temporal);//modificar
+										memset(fila.temporal, '\0', sizeof(fila.temporal));
+										strcpy(fila.temporal, temporal);
 										fila.estado = EN_PROCESO;
 										fila.siguiente = NULL;
 										if (!agregarElemTablaEstados(fila))
 											perror("Error al agregar elementos a la tabla de estados");
+
+										//genera una fila en la tabla de transformación para el master
+										respuestaTransformacion[i].nroNodo = asignacionesNodos[i].nroNodo;
+										memset(respuestaTransformacion[i].ipNodo, '\0', sizeof(respuestaTransformacion[i].ipNodo));
+										strcpy(respuestaTransformacion[i].ipNodo, asignacionesNodos[i].ip);
+										respuestaTransformacion[i].puertoNodo = asignacionesNodos[i].puerto;
+										respuestaTransformacion[i].bloque = asignacionesNodos[i].bloque;
+										respuestaTransformacion[i].bytesOcupados = asignacionesNodos[i].bytesOcupados;
+										memset(respuestaTransformacion[i].temporal, '\0', sizeof(respuestaTransformacion[i].temporal));
+										strcpy(respuestaTransformacion[i].temporal, temporal);
+									}
+
+									//puts("\nlista de elementos asignados a transformación");
+									//mostrarListaElementos();
+
+									//envía al master la lista de nodos donde trabajar cada bloque
+									char *mensajeSerializado = serializarNodosTransformacion(respuestaTransformacion);
+									printf("mensaje serializado: %s\n", mensajeSerializado);
+									if (!enviarMensaje(socketConectado, mensajeSerializado)) {
+										return 0;
 									}
 								} else {
-									perror("No se pudo enviar el archivo al FS");
+									perror("No se pudo pedir el archivo al FS");
 								}
-
-								puts("lista de elementos 1");
-								mostrarListaElementos();
 							}
-
-							//envía al master la lista de nodos donde trabajar cada bloque
-
 							break;
 						case TIPO_MSJ_CUATRO_MENSAJES:
 							;
@@ -451,8 +647,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	//cerrarServer(listenningSocket);
-	//cerrarServer(socketCliente);
+//cerrarServer(listenningSocket);
+//cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
 
 	log_destroy(logYAMA);

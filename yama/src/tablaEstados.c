@@ -11,7 +11,7 @@ struct filaTablaEstados {
 	int nodo;
 	int bloque;
 	int etapa;
-	char temporal[20];
+	char temporal[40];
 	int estado;
 	struct filaTablaEstados *siguiente;
 };
@@ -58,7 +58,7 @@ void mostrarListaElementos() {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
-		printf("nodo: %d - temporal: %s - etapa: %d\n", auxiliar->nodo, auxiliar->temporal, auxiliar->estado);
+		printf("nodo: %d - bloque: %d - etapa: %d\n", auxiliar->nodo, auxiliar->bloque, auxiliar->estado);
 		auxiliar = auxiliar->siguiente;
 	}
 }

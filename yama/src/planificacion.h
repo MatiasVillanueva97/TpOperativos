@@ -12,7 +12,7 @@
 
 //void guardarNodosPorBloque(int bloque, int nodo1, int nodo2);
 
-int existeBloqueEnNodo(int bloque, int nodo, nodosPorBloque*);
+int existeParteArchivoEnNodo(int bloque, int nodo, nodosPorPedazoArchivo*);
 
 int nodoConDisponibilidad(cargaNodo nodo);
 

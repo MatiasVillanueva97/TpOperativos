@@ -6,12 +6,19 @@
 //leer la cantidad de bytes enviados que es lo que devuelve
 int enviarMensaje(int serverSocket, char *message) {
 	int cantBytesEnviados = send(serverSocket, message, string_length(message), 0);
-	//printf("String Length del mensaje: %d\n",string_length(message));
 	if (cantBytesEnviados != string_length(message)) {
 		puts("Error. No se enviaron todos los bytes del mensaje\n");
 		return 0;
 	}
 	return 1;
+}
+
+int enviarHeaderSolo(int serverSocket, uint32_t headerId) {
+	uint32_t largoStringId = LARGO_STRING_HEADER_ID;
+	char idString[largoStringId];
+	strcpy(idString, intToArrayZerosLeft(headerId, 4));
+	printf("mensajeHeaderSolo: %s\n", idString);
+	return enviarMensaje(serverSocket, idString);
 }
 
 /* ******************************** funciones para recibir mensajes ********************************/
@@ -40,7 +47,7 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
 		largoMensajeSerializado += largoStringTamMensaje;
 		largoMensajeSerializado += string_length(arrayMensajes[i]);
 	}
-	void *mensajeSerializado = malloc(largoMensajeSerializado);
+	char *mensajeSerializado = malloc(largoMensajeSerializado);
 
 	//agrego el id del mensaje a la serialización
 	char *idString = intToArrayZerosLeft(idMensaje, largoStringId);
@@ -66,14 +73,13 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
  * devuelve el id del header como int
  */
 uint32_t deserializarHeader(int socketCliente) {
-	char* idString = malloc(LARGO_STRING_HEADER_ID + 1);
+	char idString[LARGO_STRING_HEADER_ID + 1];
 	recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
 	if (idString < 0) {
 		return -1;
 	}
 	idString[LARGO_STRING_HEADER_ID] = '\0';
 	uint32_t headerId = atoi(idString);
-	free(idString);
 	return headerId;
 }
 

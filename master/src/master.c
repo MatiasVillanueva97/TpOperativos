@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 
 	uint32_t headerId = deserializarHeader(socketYama);
 	if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
-		/* ************************************************************** */
+
 		//envía a yama el archivo con el que quiere trabajar
 		//hago un paquete serializado con el mensaje a enviar
 		int cantStrings = protocoloCantidadMensajes[TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR];
@@ -86,7 +86,40 @@ int main(int argc, char *argv[]) {
 		}
 		free(arrayMensajes);
 		puts("envió archivo");
+		headerId = deserializarHeader(socketYama);
+		if (headerId == TIPO_MSJ_TABLA_TRANSFORMACION) {
+			char **arrayMensajesCantMensajes = deserializarMensaje(socketYama, 1);
+			int cantMensajes = atoi(arrayMensajes[0]);
+			printf("cantMensajes: %d\n", cantMensajes);
+			free(arrayMensajesCantMensajes);
+
+			int j, cantColumnasTabla = 6;
+			for (i = 0; i < cantMensajes; i++) {
+				j = 0;
+				char **arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
+				printf("\nfila %d\n", i);
+				puts("------------------------");
+				printf("nodo: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+				j++;
+				printf("IP: %s\n", arrayMensajesTablaTransformacion[j]);
+				j++;
+				printf("puerto: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+				j++;
+				printf("bloque: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+				j++;
+				printf("bytes: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+				j++;
+				printf("temporal: %s\n", arrayMensajesTablaTransformacion[j]);
+				j++;
+				free(arrayMensajesTablaTransformacion);
+			}
+		} else {
+			puts("error de lo que me mandaron");
+		}
+	} else {
+		puts("me banneó el hdp!!!!!");
 	}
+	/* ************************************************************** */
 
 	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
 	int socketWorker = conectarA(datosConfigMaster[NODO_IP], datosConfigMaster[NODO_PUERTO]);

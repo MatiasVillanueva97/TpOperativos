@@ -41,7 +41,8 @@ typedef struct {
 	int bloque1;
 	int nodo2;
 	int bloque2;
-} nodosPorBloque;
+	int bytes;
+} nodosPorPedazoArchivo;
 
 typedef struct {
 	int carga;
@@ -53,8 +54,8 @@ typedef struct {
 /*
  * se fija si existe un bloque determinado en un nodo determinado
  */
-int existeBloqueEnNodo(int bloque, int nodo, nodosPorBloque *nodosPorBloque) { //nodos arrancan de 1
-	if (nodosPorBloque[bloque].nodo1 == nodo || nodosPorBloque[bloque].nodo2 == nodo) //el nodo existe en la matriz en la fila de ese bloque
+int existeParteArchivoEnNodo(int bloque, int nodo, nodosPorPedazoArchivo *nodosPorPedazoArchivo) { //nodos arrancan de 1
+	if (nodosPorPedazoArchivo[bloque].nodo1 == nodo || nodosPorPedazoArchivo[bloque].nodo2 == nodo) //el nodo existe en la matriz en la fila de ese bloque
 		return 1;
 	return 0;
 }

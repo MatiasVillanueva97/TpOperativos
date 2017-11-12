@@ -1,4 +1,3 @@
-
 #include "utils.c"
 
 #ifndef UTILS_H_
@@ -7,8 +6,8 @@
 /*
  * convierte un entero en char* completando con ceros a la izquierda hasta alcanzar el largo deseado
  */
-char* intToArrayZerosLeft(int valor,int largoStringDesado);
+char* intToArrayZerosLeft(int valor, int largoStringDesado);
 
-
+char* copiarString(char *origen, int sizeDestino);
 
 #endif /* UTILS_H_ */
