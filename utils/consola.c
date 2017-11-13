@@ -12,7 +12,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-
 //Prototipados
 
 void ayuda(char ** comandoConsola);
@@ -33,52 +32,52 @@ void info(char ** comandoConsola);
 
 //FUNCIONES
 
-void IniciarConsola() {
-char * linea;
-char * barraDeComando = string_from_format("%s>",getlogin());
-puts("Iniciando Consola");
-sleep(1);
-puts("Consola lista");
-while(1) {
-linea =readline(barraDeComando);
-if(linea)
-	add_history(linea);
-if(!strncmp(linea,"exit",4))
-{ 	puts("Saliendo de consola...");
-	free(linea);
-break;
-}
-if(!strncmp(linea,"\n",1))
-{ 	puts("");
-	free(linea);
-}
-char** comandoConsola = NULL;//Esta variable es para cortar el mensaje en 2.
-comandoConsola = string_split(linea, " "); // separa la entrada en un char**
+void * IniciarConsola() {
+	char * linea;
+	char * barraDeComando = string_from_format("%s>", getlogin());
+	puts("Iniciando Consola");
+	sleep(1);
+	puts("Consola lista");
+	while (1) {
+		linea = readline(barraDeComando);
+		if (linea)
+			add_history(linea);
+		if (!strncmp(linea, "exit", 4)) {
+			puts("Saliendo de consola...");
+			free(linea);
+			break;
+		}
+		if (!strncmp(linea, "\n", 1)) {
+			puts("");
+			free(linea);
+		}
+		char** comandoConsola = NULL; //Esta variable es para cortar el mensaje en 2.
+		comandoConsola = string_split(linea, " "); // separa la entrada en un char**
 
-//POLIMORFISMO
-format(comandoConsola);
-ayuda(comandoConsola);
-rm(comandoConsola);
-rmDir(comandoConsola);
-rmBloq(comandoConsola);
-renombrar(comandoConsola);
-mv(comandoConsola);
-cat(comandoConsola);
-mk__dir(comandoConsola);
-cpfrom(comandoConsola);
-cpto(comandoConsola);
-cpblock(comandoConsola);
-md5(comandoConsola);
-ls(comandoConsola);
-info(comandoConsola);
+		//POLIMORFISMO
+		format(comandoConsola);
+		ayuda(comandoConsola);
+		rm(comandoConsola);
+		rmDir(comandoConsola);
+		rmBloq(comandoConsola);
+		renombrar(comandoConsola);
+		mv(comandoConsola);
+		cat(comandoConsola);
+		mk__dir(comandoConsola);
+		cpfrom(comandoConsola);
+		cpto(comandoConsola);
+		cpblock(comandoConsola);
+		md5(comandoConsola);
+		ls(comandoConsola);
+		info(comandoConsola);
 
 		free(linea);
 		//liberar vector comandoConsola
-}
+	}
 }
 //USAR COMMONS string_split para despues
-void ayuda(char ** comandoConsola){
-	if(!strcmp(comandoConsola[0],"help")){
+void ayuda(char ** comandoConsola) {
+	if (!strcmp(comandoConsola[0], "help")) {
 		printf("\n");
 		printf("format // Formatea el FileSystem\n");
 		printf("\n");
@@ -109,179 +108,188 @@ void ayuda(char ** comandoConsola){
 		printf("info [path_archivo] //Muestra toda la información del archivo\n");
 		printf("\n");
 
-
-
-		}}
-void format(char ** comandoConsola){
-	if(!strcmp(comandoConsola[0],"format")){
+	}
+}
+void format(char ** comandoConsola) {
+	if (!strcmp(comandoConsola[0], "format")) {
 		puts("formatearea algo");
 	}
 }
 
-void rm(char ** comandoConsola){
+void rm(char ** comandoConsola) {
 	char buf[1024];
-	if(!strcmp(comandoConsola[0],"rm")){
-			if(comandoConsola[1]==NULL){
-					puts("Faltan parametros");
-					puts("escriba help si necesita ayuda");
-				}else{
-				snprintf(buf, sizeof(buf), "rm '%s'", comandoConsola[1]);
-				system(buf);
-		}}
-	}
-void rmDir(char ** comandoConsola){
-	char buf[1024];
-	if(!strcmp(comandoConsola[0],"rmDir")){
-				if(comandoConsola[1]==NULL){
-						puts("Faltan parametros");
-						puts("escriba help si necesita ayuda");
-					}else{
-				snprintf(buf, sizeof(buf), "rm -r '%s'", comandoConsola[1]);
-				system(buf);
-			}}
-
-}
-void rmBloq(char ** comandoConsola){
-	if(!strcmp(comandoConsola[0],"rmBloq")){
-				if((comandoConsola[1]==NULL) || comandoConsola[2]==NULL || comandoConsola[3]==NULL){
-						puts("Faltan parametros");
-						puts("escriba help si necesita ayuda");
-					}else{
-				puts("rumuevo algo");
-				puts("ruta");
-				puts(comandoConsola[1]);
-				puts("bloque");
-				puts(comandoConsola[2]);
-				puts("id");
-				puts(comandoConsola[3]);
-			}}
-
-}
-void renombrar(char ** comandoConsola){
-	char buf[1024];
-	if(!strcmp(comandoConsola[0],"rename")){
-		if(comandoConsola[1]==NULL || comandoConsola[2]== NULL){
-				puts("Faltan parametros");
-				puts("escriba help si necesita ayuda");
-			}else{
-				snprintf(buf, sizeof(buf),"mv '%s' '%s'", comandoConsola[1],comandoConsola[2]);
-				system(buf);
-	}}
-}
-
-void mv(char ** comandoConsola){
-	char buf[1024];
-	if(!strcmp(comandoConsola[0],"mv")){
-		if(comandoConsola[1]==NULL || comandoConsola[2]== NULL){
-				puts("Faltan parametros");
-				puts("escriba help si necesita ayuda");
-			}else{
-				puts(comandoConsola[1]);
-
-				puts(comandoConsola[2]);
-				snprintf(buf, sizeof(buf), "mv '%s' '%s'", comandoConsola[1],comandoConsola[2]);
-				system(buf);
-			}}
-}
-void cat(char ** comandoConsola){
-	char buf[1024];
-	if(!strcmp(comandoConsola[0],"cat")){
-		if(comandoConsola[1]==NULL){
-		puts("Faltan parametros");
-		puts("escriba help si necesita ayuda");
-	}else {
-		snprintf(buf, sizeof(buf), "cat '%s'", comandoConsola[1]);
-		system(buf);
-	}
-}}
-void mk__dir(char ** comandoConsola){
-	char buf[1024];
-	if(!strcmp(comandoConsola[0],"mkdir")){
-		if(comandoConsola[1]==NULL){
-				puts("Faltan parametros");
-				puts("escriba help si necesita ayuda");
-			}else {
-				snprintf(buf, sizeof(buf), "mkdir '%s'", comandoConsola[1]);
-				system(buf);
-	}
-}}
-void cpfrom(char ** comandoConsola){
-
-	if(!strcmp(comandoConsola[0],"cpfrom")){
-		if(comandoConsola[1]==NULL || comandoConsola[2]== NULL){
+	if (!strcmp(comandoConsola[0], "rm")) {
+		if (comandoConsola[1] == NULL) {
 			puts("Faltan parametros");
 			puts("escriba help si necesita ayuda");
-		}else {
-		puts(" Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.");
-		puts("Path archivo origen");
-		puts(comandoConsola[1]);
-		puts("directorio filesystem");
-		puts(comandoConsola[2]);
-	}
-}}
-
-void cpto(char ** comandoConsola){
-	char buf[1024];
-	if(!strcmp(comandoConsola[0],"cpto")){
-
-		if(comandoConsola[1]==NULL || comandoConsola[2]== NULL){
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		}else {
-			snprintf(buf, sizeof(buf), "cp '%s''%s'", comandoConsola[1],comandoConsola[2]);
+		} else {
+			snprintf(buf, sizeof(buf), "rm '%s'", comandoConsola[1]);
 			system(buf);
+		}
 	}
-}}
-void cpblock(char ** comandoConsola){
-	if(!strcmp(comandoConsola[0],"cpblock")){
-		if(comandoConsola[1]==NULL || comandoConsola[2]== NULL || comandoConsola[3] == NULL){
-				puts("Faltan parametros");
-				puts("escriba help si necesita ayuda");
-
-	}else {
-		puts("creo copias de bloques");
-		puts("Path archivo");
-		puts(comandoConsola[1]);
-		puts("nro de bloque");
-		puts(comandoConsola[2]);
-		puts("id nodo");
-		puts(comandoConsola[3]);
-
-	}
-}}
-void md5(char ** comandoConsola){
+}
+void rmDir(char ** comandoConsola) {
 	char buf[1024];
-	if(!strcmp(comandoConsola[0],"md5")){
-		if(comandoConsola[1]==NULL){
-		puts("Faltan parametros");
-		puts("escriba help si necesita ayuda");
-	}else {
-		snprintf(buf, sizeof(buf), "md5sum '%s'", comandoConsola[1]);
-		system(buf);
+	if (!strcmp(comandoConsola[0], "rmDir")) {
+		if (comandoConsola[1] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			snprintf(buf, sizeof(buf), "rm -r '%s'", comandoConsola[1]);
+			system(buf);
+		}
 	}
-}}
-void ls(char ** comandoConsola){
+
+}
+void rmBloq(char ** comandoConsola) {
+	if (!strcmp(comandoConsola[0], "rmBloq")) {
+		if ((comandoConsola[1] == NULL) || comandoConsola[2] == NULL || comandoConsola[3] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			puts("rumuevo algo");
+			puts("ruta");
+			puts(comandoConsola[1]);
+			puts("bloque");
+			puts(comandoConsola[2]);
+			puts("id");
+			puts(comandoConsola[3]);
+		}
+	}
+
+}
+void renombrar(char ** comandoConsola) {
 	char buf[1024];
-	if(!strcmp(comandoConsola[0],"ls")){
-		if(comandoConsola[1]==NULL){
+	if (!strcmp(comandoConsola[0], "rename")) {
+		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			snprintf(buf, sizeof(buf), "mv '%s' '%s'", comandoConsola[1], comandoConsola[2]);
+			system(buf);
+		}
+	}
+}
+
+void mv(char ** comandoConsola) {
+	char buf[1024];
+	if (!strcmp(comandoConsola[0], "mv")) {
+		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			puts(comandoConsola[1]);
+
+			puts(comandoConsola[2]);
+			snprintf(buf, sizeof(buf), "mv '%s' '%s'", comandoConsola[1], comandoConsola[2]);
+			system(buf);
+		}
+	}
+}
+void cat(char ** comandoConsola) {
+	char buf[1024];
+	if (!strcmp(comandoConsola[0], "cat")) {
+		if (comandoConsola[1] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			snprintf(buf, sizeof(buf), "cat '%s'", comandoConsola[1]);
+			system(buf);
+		}
+	}
+}
+void mk__dir(char ** comandoConsola) {
+	char buf[1024];
+	if (!strcmp(comandoConsola[0], "mkdir")) {
+		if (comandoConsola[1] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			snprintf(buf, sizeof(buf), "mkdir '%s'", comandoConsola[1]);
+			system(buf);
+		}
+	}
+}
+void cpfrom(char ** comandoConsola) {
+
+	if (!strcmp(comandoConsola[0], "cpfrom")) {
+		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			puts(" Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.");
+			puts("Path archivo origen");
+			puts(comandoConsola[1]);
+			puts("directorio filesystem");
+			puts(comandoConsola[2]);
+		}
+	}
+}
+
+void cpto(char ** comandoConsola) {
+	char buf[1024];
+	if (!strcmp(comandoConsola[0], "cpto")) {
+
+		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			snprintf(buf, sizeof(buf), "cp '%s''%s'", comandoConsola[1], comandoConsola[2]);
+			system(buf);
+		}
+	}
+}
+void cpblock(char ** comandoConsola) {
+	if (!strcmp(comandoConsola[0], "cpblock")) {
+		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL || comandoConsola[3] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+
+		} else {
+			puts("creo copias de bloques");
+			puts("Path archivo");
+			puts(comandoConsola[1]);
+			puts("nro de bloque");
+			puts(comandoConsola[2]);
+			puts("id nodo");
+			puts(comandoConsola[3]);
+
+		}
+	}
+}
+void md5(char ** comandoConsola) {
+	char buf[1024];
+	if (!strcmp(comandoConsola[0], "md5")) {
+		if (comandoConsola[1] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
+			snprintf(buf, sizeof(buf), "md5sum '%s'", comandoConsola[1]);
+			system(buf);
+		}
+	}
+}
+void ls(char ** comandoConsola) {
+	char buf[1024];
+	if (!strcmp(comandoConsola[0], "ls")) {
+		if (comandoConsola[1] == NULL) {
 			system("ls");
-			}
-		else{
-		snprintf(buf, sizeof(buf), "ls '%s'", comandoConsola[1]);
-		system(buf);
+		} else {
+			snprintf(buf, sizeof(buf), "ls '%s'", comandoConsola[1]);
+			system(buf);
+		}
 	}
-}}
-void info(char ** comandoConsola){
-	if(!strcmp(comandoConsola[0],"info")){
-		if(comandoConsola[1]==NULL){
-		puts("Faltan parametros");
-		puts("escriba help si necesita ayuda");
-	}
-		else{
+}
+void info(char ** comandoConsola) {
+	if (!strcmp(comandoConsola[0], "info")) {
+		if (comandoConsola[1] == NULL) {
+			puts("Faltan parametros");
+			puts("escriba help si necesita ayuda");
+		} else {
 
-
-		puts("informo cosas de archivos");
-		puts("path del archivo");
-		puts(comandoConsola[1]);
+			puts("informo cosas de archivos");
+			puts("path del archivo");
+			puts(comandoConsola[1]);
+		}
 	}
-	}}
+}

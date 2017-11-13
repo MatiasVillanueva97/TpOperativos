@@ -5,8 +5,7 @@
  *      Author: utnso
  */
 
-//////////////////////////////////////////////////////////////////////////////
-//Tipos de mensajes para el protocolo de comunicación
+// Tipos de mensajes para el protocolo de comunicación
 enum tiposMensajes {
 	TIPO_MSJ_TABLA_TRANSFORMACION,
 	TIPO_MSJ_TABLA_REDUCCION_LOCAL,
@@ -32,10 +31,7 @@ enum tiposMensajes {
 	TIPO_MSJ_ALM_FINAL_ERROR
 };
 
-//tener en cuenta!!!!!!!!!!!!!!!!!
-//dentro del corchete de los array va el último elemento del enum
-//si se agrega algo al final del enum modificar este parámetros en los arrays
-//de esta forma al sumarle 1 se genera el array del tamaño necesario
+// OJO! Si se agrega algo en el enum de arriba actualizar dejar siempre acá el último valor del array
 const int protocoloCantidadMensajes[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
 		1,
 		1,
@@ -59,6 +55,7 @@ const int protocoloCantidadMensajes[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
 		1,
 		0,
 		0 };
+
 const char* protocoloMensajesPredefinidos[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
 		"TABLA_TRANSFORMACION",
 		"TABLA_REDUCCION_LOCAL",

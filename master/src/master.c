@@ -121,21 +121,57 @@ int main(int argc, char *argv[]) {
 	}
 	/* ************************************************************** */
 
-	// 3º) conectarse a un worker y pasarle instrucciones (pasar a HILOS!)
-	int socketWorker = conectarA(datosConfigMaster[NODO_IP], datosConfigMaster[NODO_PUERTO]);
+    // 3º) Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
+/*
+     int socketWorker = conectarA(datosConfigMaster[NODO_IP], datosConfigMaster[NODO_PUERTO]);
 
-	pthread_t hiloWorker;
+             pthread_t hiloWorker;
 
-	pthread_create(&hiloWorker, NULL, printDataAndWait, NULL);
+             pthread_create(&hiloWorker, NULL, printDataAndWait, NULL);
 
-	pthread_join(hiloWorker, NULL);
+             pthread_join(hiloWorker, NULL);
 
-	// Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
-	// Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
-	// Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
 
-	//cerrarCliente(socketYama);
-	return EXIT_SUCCESS;
+             recibir de yama tabla serializada (array de structs)
+
+             char ** tablaTransformacion =
+                             deserializarMensaje();
+             enviarAWorker;
+
+     struct filaTablaTransformacion {
+             nodo
+
+             int job;
+             int master;
+
+             int nodo;
+             int ipWorker;
+             int bloque;
+             int bytesOcupados;
+             int archivoTemporal;
+
+             struct filaTablaEstados *siguiente;
+
+
+
+             //      A qué procesos Worker deberá conectarse con su IP y Puerto
+             //      Sobre qué bloque de cada Worker debe aplicar el programa de Transformación.
+                //      El nombre de archivo temporal donde deberá almacenar el resultado del script de Transformación.
+                //      El proceso Master deberá entonces:
+                //      Iniciar un hilo por cada etapa de Transformación indicada por el proceso YAMA.
+                //      Cada hilo se conectará al correspondiente Worker, le enviará el programa de Transformación y le indicará el bloque sobre el cuál quiere ejecutar el programa, la cantidad de bytes ocupados en dicho bloque y el nombre del archivo temporal donde guardará el resultado. Quedará a la espera de la confirmación por parte del proceso Worker.
+                //      Notificara del éxito o fracaso de la operación al proceso YAMA.
+
+*/
+
+        // 4º) Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
+
+
+        // 5º) Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
+
+        // 6º) Desconectar Yama
+        //cerrarCliente(socketYama);
+        return EXIT_SUCCESS;
 }
 
 void* printDataAndWait() {
