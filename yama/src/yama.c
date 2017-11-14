@@ -557,8 +557,8 @@ int main(int argc, char *argv[]) {
 
 									nodosArchivo[0].numero = 1;
 									memset(nodosArchivo[0].ip, '\0', sizeof(nodosArchivo[0].ip));
-									strcpy(nodosArchivo[0].ip, "192168001152");
-									nodosArchivo[0].puerto = 4050;
+									strcpy(nodosArchivo[0].ip, "127.000.000.001");
+									nodosArchivo[0].puerto = 5300;
 
 									nodosArchivo[1].numero = 2;
 									memset(nodosArchivo[1].ip, '\0', sizeof(nodosArchivo[1].ip));

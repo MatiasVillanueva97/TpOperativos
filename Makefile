@@ -15,7 +15,7 @@ DATANODE=datanode
 
 default: all
 
-all: filesystem master yama worker datanode
+all: filesystem worker datanode yama master
 .PHONY: filesystem master yama worker datanode
 
 filesystem:
@@ -48,8 +48,8 @@ clean:
 run:
 	terminator --working-directory="$(DIR)" --title "FileSystem" --command="cd filesystem/bin/; ./filesystem; bash" --geometry=640x400+0+0 &
 	sleep 1
-	terminator --working-directory="$(DIR)" --title "YAMA" --command="cd yama/bin/; ./yama; bash" --geometry=640x400-0+0 &
+	terminator --working-directory="$(DIR)" --title "Worker" --command="cd worker/bin/; ./worker; bash" --geometry=640x400-0+0 &
 	sleep 1
-	terminator --working-directory="$(DIR)" --title "Master" --command="cd master/bin/; ./master ../../scripts/transformador.sh ../../scripts/reductor.rb yamafs:/datos.csv yamafs:/analisis/resultado.json; bash" --geometry=640x400+0-0 &
+	terminator --working-directory="$(DIR)" --title "YAMA" --command="cd yama/bin/; ./yama; bash" --geometry=640x400+0-0 &
 	sleep 1
-	terminator --working-directory="$(DIR)" --title "Worker" --command="cd worker/bin/; ./worker; bash" --geometry=640x400-0-0 &
+	terminator --working-directory="$(DIR)" --title "Master" --command="cd master/bin/; ./master ../../scripts/transformador.sh ../../scripts/reductor.rb yamafs:/datos.csv yamafs:/analisis/resultado.json; bash" --geometry=640x400-0-0 &
