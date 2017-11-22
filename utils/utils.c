@@ -12,6 +12,7 @@ char* intToArrayZerosLeft(int valor, int largoStringDesado) {
 	return sz;
 }
 
+//en desuso porque funciona mal
 char* copiarString(char *origen, int sizeDestino) {
 	char *destino = malloc(sizeDestino);
 	memset(destino, '\0', sizeof(sizeDestino));

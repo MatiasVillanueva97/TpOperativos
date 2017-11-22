@@ -49,15 +49,17 @@ typedef struct {
 
 int cantPartesArchivo, cantNodosArchivo;
 
+#define LARGO_IP 16
+
 typedef struct {
 	int numero;
-	char ip[13];
+	char ip[LARGO_IP];
 	int puerto;
 } datosConexionNodo;
 
 typedef struct {
 	int nroNodo;
-	char ipNodo[13];
+	char ipNodo[LARGO_IP];
 	int puertoNodo;
 	int bloque;
 	int bytesOcupados;
@@ -111,16 +113,18 @@ int recibirConexion(int listenningSocket) {
 
 int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	int cantStrings = 1, i;
-	char **arrayMensajesSerializar = malloc(cantStrings);
+	char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
+	printf("archivo a trabajar: %s\n", archivo);
+	printf("largo del archivo a trabajar: %d\n", string_length(archivo));
 	arrayMensajesSerializar[0] = malloc(string_length(archivo) + 1);
-	//memset(arrayMensajesSerializar[0], '\0', string_length(arrayMensajesSerializar[0]));
-	//strcpy(arrayMensajesSerializar[0], archivo);
-	arrayMensajesSerializar[0] = copiarString(archivo, string_length(arrayMensajesSerializar[0]));
-
+	if (!arrayMensajesSerializar[0])
+		perror("error de malloc");
+	strcpy(arrayMensajesSerializar[0], archivo);
+	printf("arrayMensajesSerializar[0]: %s\n", arrayMensajesSerializar[0]);
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PEDIDO_METADATA_ARCHIVO, arrayMensajesSerializar, cantStrings);
-	/*for (i = 0; i < cantStrings; i++) {
-	 free(arrayMensajesSerializar[i]);
-	 }*/
+	for (i = 0; i < cantStrings; i++) {
+		free(arrayMensajesSerializar[i]);
+	}
 	free(arrayMensajesSerializar);
 	return enviarMensaje(socketFS, mensajeSerializado);
 }
@@ -196,7 +200,7 @@ datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 
 typedef struct {
 	int nroNodo;
-	char ip[13];
+	char ip[LARGO_IP];
 	int puerto;
 	int bloque;
 	int bytesOcupados;
@@ -285,7 +289,6 @@ void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos, nodoParaAsigna
 			for (j = 0; j < cantNodosArchivo; j++) {//recorro nodosArchivo para buscar la ip y el puerto
 				//nodosArchivo tiene el número, ip y puerto de cada nodo
 				if (nodoActual.numero == nodos[j].numero) {
-					memset(asignacionesNodos[parteArchivo].ip, '\0', sizeof(asignacionesNodos[parteArchivo].ip));
 					strcpy(asignacionesNodos[parteArchivo].ip, nodos[j].ip);
 					asignacionesNodos[parteArchivo].puerto = nodos[j].puerto;
 					break;
@@ -334,49 +337,57 @@ char* serializarNodosTransformacion(tablaTransformacion respuestaTransformacion[
 	int i, j, k, cantStringsASerializar, largoStringDestinoCopia;
 
 	cantStringsASerializar = (cantPartesArchivo * 6) + 1;
-	char **arrayMensajes = malloc(cantStringsASerializar);
+	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 
 	largoStringDestinoCopia = 4 + 1;
 	arrayMensajes[0] = malloc(largoStringDestinoCopia);
-	arrayMensajes[0] = copiarString(intToArrayZerosLeft(cantPartesArchivo, 4), largoStringDestinoCopia);
+	strcpy(arrayMensajes[0], intToArrayZerosLeft(cantPartesArchivo, 4));
 	j = 1;
 	for (i = 0; i < cantPartesArchivo; i++) {
-		//printf("\nnodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", respuestaTransformacion[i].nroNodo, respuestaTransformacion[i].ipNodo, respuestaTransformacion[i].puertoNodo, respuestaTransformacion[i].bloque, respuestaTransformacion[i].bytesOcupados, respuestaTransformacion[i].temporal);
+		printf("\nnodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", respuestaTransformacion[i].nroNodo, respuestaTransformacion[i].ipNodo, respuestaTransformacion[i].puertoNodo, respuestaTransformacion[i].bloque, respuestaTransformacion[i].bytesOcupados, respuestaTransformacion[i].temporal);
 
 		//número de nodo
 		largoStringDestinoCopia = 4 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4), largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4));
+		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4), largoStringDestinoCopia);
+		printf("nro nodo guardado: %s\n",arrayMensajes[j]);
 		j++;
 
 		//IP
 		largoStringDestinoCopia = string_length(respuestaTransformacion[i].ipNodo) + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		arrayMensajes[j] = copiarString(respuestaTransformacion[i].ipNodo, largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], respuestaTransformacion[i].ipNodo);
+		//arrayMensajes[j] = copiarString(respuestaTransformacion[i].ipNodo, largoStringDestinoCopia);
 		j++;
 
 		//puerto
 		largoStringDestinoCopia = 4 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4), largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4));
+		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4), largoStringDestinoCopia);
+		printf("puerto guardado: %s\n",arrayMensajes[j]);
 		j++;
 
 		//bloque
 		largoStringDestinoCopia = 4 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bloque, 4), largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].bloque, 4));
+		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bloque, 4), largoStringDestinoCopia);
 		j++;
 
 		//bytes ocupados
 		largoStringDestinoCopia = 8 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bytesOcupados, 8), largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].bytesOcupados, 8));
+		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bytesOcupados, 8), largoStringDestinoCopia);
 		j++;
 
 		//temporal
 		largoStringDestinoCopia = string_length(respuestaTransformacion[i].temporal) + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		arrayMensajes[j] = copiarString(respuestaTransformacion[i].temporal, largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], respuestaTransformacion[i].temporal);
+		//arrayMensajes[j] = copiarString(respuestaTransformacion[i].temporal, largoStringDestinoCopia);
 		j++;
 	}
 
@@ -386,7 +397,6 @@ char* serializarNodosTransformacion(tablaTransformacion respuestaTransformacion[
 }
 
 int main(int argc, char *argv[]) {
-
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int preparadoEnviarFs = 1, i, j, k, master, job;
 	int cantElementosTablaEstados = 0, maxMasterTablaEstados = 0;
@@ -422,48 +432,53 @@ int main(int argc, char *argv[]) {
 	maxFD = listenningSocket; // so far, it's this one
 	/* *********** crea la lista para la tabla de estados ********************* */
 	//t_list * listaTablaEstados = list_create();
-	int socketCliente, numMaster, socketConectado, cantStrings;
+	int socketCliente, numMaster, socketConectado, cantStrings, h = 0,
+			bytesRecibidos = 0, nroSocket;
+	printf("valor de listenningSocket: %d\n", listenningSocket);
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
-
+		printf("pasóoo %d\n", h);
+		h++;
 		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
 
-			for (i = 0; i <= maxFD; i++) {
-				if (FD_ISSET(i, &socketsLecturaTemp)) {
-					if (i == listenningSocket) {	//conexión nueva
+			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
+				printf("valor de nroSocket %d\n", nroSocket);
+				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
+					if (nroSocket == listenningSocket) {	//conexión nueva
 						if ((socketCliente = recibirConexion(listenningSocket)) >= 0) {
 							numMaster = socketCliente;
 						}
 						uint32_t headerId = deserializarHeader(socketCliente);
 
-						if (headerId == TIPO_MSJ_HANDSHAKE) { // && handshake() == ok)
+						if (headerId == TIPO_MSJ_HANDSHAKE) {
 							int cantidadMensajes = protocoloCantidadMensajes[headerId];
 							char **arrayMensajesRHS = deserializarMensaje(socketCliente, cantidadMensajes);
 							int idEmisorMensaje = atoi(arrayMensajesRHS[0]);
 							free(arrayMensajesRHS);
 							if (idEmisorMensaje == NUM_PROCESO_MASTER) {
 								FD_SET(socketCliente, &socketsLecturaMaster); // add to master set
-								FD_SET(socketCliente, &socketsLecturaTemp); // add to master set
+								//FD_SET(socketCliente, &socketsLecturaTemp); // add to master set
 								if (socketCliente > maxFD) { // keep track of the max
 									maxFD = socketCliente;
 								}
-								memset(mensajeHeaderSolo, '\0', sizeof(mensajeHeaderSolo));
 								strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, 4));
 							} else {
-								memset(mensajeHeaderSolo, '\0', sizeof(mensajeHeaderSolo));
 								strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO, 4));
 							}
 							enviarMensaje(socketCliente, mensajeHeaderSolo);
 						}
 					} else {	//conexión preexistente
 						/* *************************** recepción de un mensaje ****************************/
-						socketConectado = i;
+						socketConectado = nroSocket;
+						printf("valor de socketConectado: %d\n", socketConectado);
 						uint32_t headerId = deserializarHeader(socketConectado);
+						printf("valor de headerId: %d\n", headerId);
 						if (headerId < 0) {	//error
 							//close(socketConectado); // bye!
 							//FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 						}
 						int cantidadMensajes = protocoloCantidadMensajes[headerId];
+						printf("valor de cantidadMensajes: %d\n", cantidadMensajes);
 						char **arrayMensajes = deserializarMensaje(socketConectado, cantidadMensajes);
 						switch (headerId) {
 
@@ -502,7 +517,8 @@ int main(int argc, char *argv[]) {
 						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
 							;
 							char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
-							archivo = copiarString(arrayMensajes[0], string_length(archivo));
+							strcpy(archivo, arrayMensajes[0]);
+							//archivo = copiarString(arrayMensajes[0], string_length(archivo));
 							free(arrayMensajes);
 							//pide la metadata del archivo al FS
 							if (preparadoEnviarFs) {
@@ -556,18 +572,15 @@ int main(int argc, char *argv[]) {
 									cantPartesArchivo = 6;
 
 									nodosArchivo[0].numero = 1;
-									memset(nodosArchivo[0].ip, '\0', sizeof(nodosArchivo[0].ip));
-									strcpy(nodosArchivo[0].ip, "127000000001");
+									strcpy(nodosArchivo[0].ip, "127.000.000.001");
 									nodosArchivo[0].puerto = 5300;
 
 									nodosArchivo[1].numero = 2;
-									memset(nodosArchivo[1].ip, '\0', sizeof(nodosArchivo[1].ip));
-									strcpy(nodosArchivo[1].ip, "192168001095");
+									strcpy(nodosArchivo[1].ip, "192.168.001.095");
 									nodosArchivo[1].puerto = 5250;
 
 									nodosArchivo[2].numero = 3;
-									memset(nodosArchivo[2].ip, '\0', sizeof(nodosArchivo[2].ip));
-									strcpy(nodosArchivo[2].ip, "192168001201");
+									strcpy(nodosArchivo[2].ip, "192.168.001.201");
 									nodosArchivo[2].puerto = 4095;
 
 									cantNodosArchivo = 3;
@@ -593,7 +606,6 @@ int main(int argc, char *argv[]) {
 										fila.bloque = asignacionesNodos[i].bloque;
 										fila.etapa = TRANSFORMACION;
 										char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
-										memset(fila.temporal, '\0', sizeof(fila.temporal));
 										strcpy(fila.temporal, temporal);
 										fila.estado = EN_PROCESO;
 										fila.siguiente = NULL;
@@ -602,12 +614,10 @@ int main(int argc, char *argv[]) {
 
 										//genera una fila en la tabla de transformación para el master
 										respuestaTransformacion[i].nroNodo = asignacionesNodos[i].nroNodo;
-										memset(respuestaTransformacion[i].ipNodo, '\0', sizeof(respuestaTransformacion[i].ipNodo));
 										strcpy(respuestaTransformacion[i].ipNodo, asignacionesNodos[i].ip);
 										respuestaTransformacion[i].puertoNodo = asignacionesNodos[i].puerto;
 										respuestaTransformacion[i].bloque = asignacionesNodos[i].bloque;
 										respuestaTransformacion[i].bytesOcupados = asignacionesNodos[i].bytesOcupados;
-										memset(respuestaTransformacion[i].temporal, '\0', sizeof(respuestaTransformacion[i].temporal));
 										strcpy(respuestaTransformacion[i].temporal, temporal);
 									}
 
@@ -637,15 +647,17 @@ int main(int argc, char *argv[]) {
 						default:
 							;
 							free(arrayMensajes);
+							puts("pasó por default");
 							break;
 						}
-					}
-				}
-			}
+					} // END handle data from client
+				} //if (FD_ISSET(i, &socketsLecturaTemp)) END got new incoming connection
+				printf("valor de nroSocket al final del bucle: %d\n", nroSocket);
+			} //for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) END looping through file descriptors
 		} else {
 			perror("Error en select()");
 		}
-	}
+	} // END for(;;)
 
 //cerrarServer(listenningSocket);
 //cerrarServer(socketCliente);

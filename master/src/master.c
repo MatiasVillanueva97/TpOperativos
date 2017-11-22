@@ -17,8 +17,8 @@ NULL };
 char* datosConfigMaster[4];
 
 struct datosWorker {
-    char *ip[15];
-    char *puerto[4];
+	char *ip[15];
+	char *puerto[4];
 };
 
 // ================================================================ //
@@ -64,7 +64,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* ******************** SOLO PARA PRUEBAS ******************* */
-	int cantStringsHandshake = protocoloCantidadMensajes[TIPO_MSJ_HANDSHAKE];
+	int bytesEnviados = 0,
+			cantStringsHandshake = protocoloCantidadMensajes[TIPO_MSJ_HANDSHAKE];
 	char **arrayMensajesHandshake = malloc(cantStringsHandshake);
 	char *mensaje = intToArrayZerosLeft(NUM_PROCESO_MASTER, 4);
 	arrayMensajesHandshake[0] = malloc(string_length(mensaje) + 1);
@@ -85,17 +86,16 @@ int main(int argc, char *argv[]) {
 		strcpy(arrayMensajes[0], archivoRequerido);
 		arrayMensajes[0][string_length(archivoRequerido)] = '\0';
 		char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR, arrayMensajes, cantStrings);
-		enviarMensaje(socketYama, mensajeSerializado);
+		bytesEnviados += enviarMensaje(socketYama, mensajeSerializado);
 		for (i = 0; i < cantStrings; i++) {
 			free(arrayMensajes[i]);
 		}
 		free(arrayMensajes);
-		puts("envió archivo");
-		
+		printf("bytesEnviados: %d\n", bytesEnviados);
 		headerId = deserializarHeader(socketYama);
 		if (headerId == TIPO_MSJ_TABLA_TRANSFORMACION) {
 			// conectarse a workers y hacer transformacion
-			
+
 			char **arrayMensajesCantMensajes = deserializarMensaje(socketYama, 1);
 			int cantMensajes = atoi(arrayMensajes[0]);
 			printf("cantMensajes: %d\n", cantMensajes);
@@ -103,69 +103,62 @@ int main(int argc, char *argv[]) {
 
 			int j, cantColumnasTabla = 6;
 			//for (i = 0; i < cantMensajes; i++) {
-			
-				// cada msje es una fila de la tabla transformacion
-				j = 0;
-				char **arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
-				// crear hilo y conectar a worker i
 
-				pthread_t hiloWorker1;
+			// cada msje es una fila de la tabla transformacion
+			j = 0;
+			char **arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
+			// crear hilo y conectar a worker i
 
-				//char ** conexion = malloc(2);
-				//conexion[0] = malloc(12);
-				//conexion[1] = malloc(4);
+			pthread_t hiloWorker1;
 
-				struct datosWorker *datos = malloc(sizeof(struct datosWorker)+1);
-				strcpy(datos->ip, arrayMensajesTablaTransformacion[1]);
-				strcpy(datos->puerto, arrayMensajesTablaTransformacion[2]);
+			//char ** conexion = malloc(2);
+			//conexion[0] = malloc(12);
+			//conexion[1] = malloc(4);
 
-				pthread_create(&hiloWorker1, NULL, conectarAWorkerTransformacion, (void*)  datos);
+			struct datosWorker *datos = malloc(sizeof(struct datosWorker) + 1);
+			strcpy(datos->ip, arrayMensajesTablaTransformacion[1]);
+			strcpy(datos->puerto, arrayMensajesTablaTransformacion[2]);
 
-			    pthread_join(hiloWorker1, NULL);
-				
-				//printf("nodo: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-				j++;
-				//printf("IP: %s\n", arrayMensajesTablaTransformacion[j]);
-				j++;
-				//printf("puerto: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-				j++;
-				//printf("bloque: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-				j++;
-				//printf("bytes: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-				j++;
-				//printf("temporal: %s\n", arrayMensajesTablaTransformacion[j]);
-				j++;
-				free(arrayMensajesTablaTransformacion);
+			pthread_create(&hiloWorker1, NULL, conectarAWorkerTransformacion, (void*) datos);
+
+			pthread_join(hiloWorker1, NULL);
+
+			//printf("nodo: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+			j++;
+			//printf("IP: %s\n", arrayMensajesTablaTransformacion[j]);
+			j++;
+			//printf("puerto: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+			j++;
+			//printf("bloque: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+			j++;
+			//printf("bytes: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
+			j++;
+			//printf("temporal: %s\n", arrayMensajesTablaTransformacion[j]);
+			j++;
+			free(arrayMensajesTablaTransformacion);
 			//}
 		} else {
 			puts("error de lo que me mandaron");
 		}
-		
-		
+
 	} else {
 		puts("me banneó el hdp!!!!!");
 	}
 	/* ************************************************************** */
 
-    // 3º) Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
-
-             //      A qué procesos Worker deberá conectarse con su IP y Puerto
-             //      Sobre qué bloque de cada Worker debe aplicar el programa de Transformación.
-                //      El nombre de archivo temporal donde deberá almacenar el resultado del script de Transformación.
-                //      El proceso Master deberá entonces:
-                //      Iniciar un hilo por cada etapa de Transformación indicada por el proceso YAMA.
-                //      Cada hilo se conectará al correspondiente Worker, le enviará el programa de Transformación y le indicará el bloque sobre el cuál quiere ejecutar el programa, la cantidad de bytes ocupados en dicho bloque y el nombre del archivo temporal donde guardará el resultado. Quedará a la espera de la confirmación por parte del proceso Worker.
-                //      Notificara del éxito o fracaso de la operación al proceso YAMA.
-
-
-        // 4º) Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
-
-
-        // 5º) Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
-
-        // 6º) Desconectar Yama
-        //cerrarCliente(socketYama);
-        return EXIT_SUCCESS;
+	// 3º) Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
+	//      A qué procesos Worker deberá conectarse con su IP y Puerto
+	//      Sobre qué bloque de cada Worker debe aplicar el programa de Transformación.
+	//      El nombre de archivo temporal donde deberá almacenar el resultado del script de Transformación.
+	//      El proceso Master deberá entonces:
+	//      Iniciar un hilo por cada etapa de Transformación indicada por el proceso YAMA.
+	//      Cada hilo se conectará al correspondiente Worker, le enviará el programa de Transformación y le indicará el bloque sobre el cuál quiere ejecutar el programa, la cantidad de bytes ocupados en dicho bloque y el nombre del archivo temporal donde guardará el resultado. Quedará a la espera de la confirmación por parte del proceso Worker.
+	//      Notificara del éxito o fracaso de la operación al proceso YAMA.
+	// 4º) Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
+	// 5º) Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
+	// 6º) Desconectar Yama
+	//cerrarCliente(socketYama);
+	return EXIT_SUCCESS;
 }
 
 void* conectarAWorkerTransformacion(void *arg) {
@@ -174,9 +167,8 @@ void* conectarAWorkerTransformacion(void *arg) {
 	int socketWorker = conectarA(datos->ip, datos->puerto);
 //	int socketWorker = conectarA("127.0.0.1", "5300");
 
-
-	printf(datos->ip,"\n");
-	printf(datos->puerto,"\n");
+	printf(datos->ip, "\n");
+	printf(datos->puerto, "\n");
 
 	printf("Worker 1\n");
 	sleep(10000);

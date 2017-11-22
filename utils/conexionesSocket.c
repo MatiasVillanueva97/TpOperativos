@@ -35,13 +35,13 @@ int conectarA(char *ipServer, char *puertoServer){
 	int socketServer = socket(serverInfo->ai_family,serverInfo->ai_socktype, serverInfo->ai_protocol);
 
 	if(socketServer<0){
-		perror("socket");
+		perror("Error socket");
 		return -1;
 	}
 
 	// Me conecto al server usando el file descriptor del socket previo.
 	if(connect(socketServer, serverInfo->ai_addr, serverInfo->ai_addrlen)<0){
-		perror("connect");
+		perror("Error connect");
 		return -1;
 	}
 	freeaddrinfo(serverInfo);	// No lo necesitamos mas

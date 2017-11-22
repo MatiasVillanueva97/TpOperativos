@@ -10,7 +10,7 @@ int enviarMensaje(int serverSocket, char *message) {
 		puts("Error. No se enviaron todos los bytes del mensaje\n");
 		return 0;
 	}
-	return 1;
+	return cantBytesEnviados;
 }
 
 int enviarHeaderSolo(int serverSocket, uint32_t headerId) {
@@ -47,13 +47,12 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
 		largoMensajeSerializado += largoStringTamMensaje;
 		largoMensajeSerializado += string_length(arrayMensajes[i]);
 	}
-	char *mensajeSerializado = malloc(largoMensajeSerializado);
+	char *mensajeSerializado = malloc(largoMensajeSerializado+1);
 
 	//agrego el id del mensaje a la serialización
 	char *idString = intToArrayZerosLeft(idMensaje, largoStringId);
 	memcpy(mensajeSerializado + offsetPuntero, idString, largoStringId);
 	offsetPuntero += largoStringId;
-
 	//cada vuelta del for agrega el tamaño del mensaje y el mensaje
 	for (i = 0; i < cantStrings; i++) {
 		uint32_t largoMensaje = string_length(arrayMensajes[i]);
@@ -61,10 +60,10 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
 		char *largoMensajeString = intToArrayZerosLeft(largoMensaje, largoStringTamMensaje);
 		memcpy(mensajeSerializado + offsetPuntero, largoMensajeString, largoStringTamMensaje);
 		offsetPuntero += largoStringTamMensaje;
-
 		memcpy(mensajeSerializado + offsetPuntero, arrayMensajes[i], largoMensaje);
 		offsetPuntero += largoMensaje;
 	}
+	mensajeSerializado[largoMensajeSerializado]='\0';
 	return mensajeSerializado;
 }
 
