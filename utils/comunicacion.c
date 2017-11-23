@@ -30,7 +30,7 @@ void recibirMensaje(char *message, int socketCliente, int packageSize) {
 	//char *message=malloc(packageSize);
 	if (recv(socketCliente, message, packageSize, 0) < 0) {
 		perror("Recepción Mensaje");
-		strcpy(message, (char*) -1);
+		strcpy(message, "-1");
 	}
 }
 

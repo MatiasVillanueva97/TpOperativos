@@ -351,7 +351,7 @@ char* serializarNodosTransformacion(tablaTransformacion respuestaTransformacion[
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
 		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4));
 		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4), largoStringDestinoCopia);
-		printf("nro nodo guardado: %s\n",arrayMensajes[j]);
+		printf("nro nodo guardado: %s\n", arrayMensajes[j]);
 		j++;
 
 		//IP
@@ -366,7 +366,7 @@ char* serializarNodosTransformacion(tablaTransformacion respuestaTransformacion[
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
 		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4));
 		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4), largoStringDestinoCopia);
-		printf("puerto guardado: %s\n",arrayMensajes[j]);
+		printf("puerto guardado: %s\n", arrayMensajes[j]);
 		j++;
 
 		//bloque
@@ -433,13 +433,15 @@ int main(int argc, char *argv[]) {
 	/* *********** crea la lista para la tabla de estados ********************* */
 	//t_list * listaTablaEstados = list_create();
 	int socketCliente, numMaster, socketConectado, cantStrings, h = 0,
-			bytesRecibidos = 0, nroSocket;
+			bytesRecibidos = 0, nroSocket, respuestaSelect;
 	printf("valor de listenningSocket: %d\n", listenningSocket);
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
 		printf("pasóoo %d\n", h);
 		h++;
-		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
+		respuestaSelect = select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL);
+		printf("respuesta del select: %d\n", respuestaSelect);
+		if (respuestaSelect != -1) {
 
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				printf("valor de nroSocket %d\n", nroSocket);
@@ -473,9 +475,10 @@ int main(int argc, char *argv[]) {
 						printf("valor de socketConectado: %d\n", socketConectado);
 						uint32_t headerId = deserializarHeader(socketConectado);
 						printf("valor de headerId: %d\n", headerId);
-						if (headerId < 0) {	//error
-							//close(socketConectado); // bye!
-							//FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+						if (headerId == -1) {	//error o desconexión de un cliente
+							puts("pasó por el header < 0");
+							close(socketConectado); // bye!
+							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 						}
 						int cantidadMensajes = protocoloCantidadMensajes[headerId];
 						printf("valor de cantidadMensajes: %d\n", cantidadMensajes);
@@ -648,6 +651,7 @@ int main(int argc, char *argv[]) {
 							;
 							free(arrayMensajes);
 							puts("pasó por default");
+							//getchar();
 							break;
 						}
 					} // END handle data from client
