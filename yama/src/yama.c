@@ -131,7 +131,7 @@ int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 
 bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	int i;
-	uint32_t headerId = deserializarHeader(socketFS);
+	int32_t headerId = deserializarHeader(socketFS);
 	if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
 		perror("El FS no mandó los bloques");
 		bloqueArchivo *bloquesError = malloc(sizeof(bloqueArchivo));
@@ -169,7 +169,7 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 
 datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 	int i;
-	uint32_t headerId = deserializarHeader(socketFS);
+	int32_t headerId = deserializarHeader(socketFS);
 	printf("headerId nodos: %d\n", headerId);
 	/*if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
 	 printf("El FS no mandó los nodos\n");
@@ -429,7 +429,7 @@ int main(int argc, char *argv[]) {
 						if ((socketCliente = recibirConexion(listenningSocket)) >= 0) {
 							numMaster = socketCliente;
 						}
-						uint32_t headerId = deserializarHeader(socketCliente);
+						int32_t headerId = deserializarHeader(socketCliente);
 
 						if (headerId == TIPO_MSJ_HANDSHAKE) {
 							int cantidadMensajes = protocoloCantidadMensajes[headerId];
@@ -451,7 +451,8 @@ int main(int argc, char *argv[]) {
 					} else {	//conexión preexistente
 						/* *************************** recepción de un mensaje ****************************/
 						socketConectado = nroSocket;
-						uint32_t headerId = deserializarHeader(socketConectado);
+						printf("socketConectado: %d\n",socketConectado);
+						int32_t headerId = deserializarHeader(socketConectado);
 						if (headerId == -1) {//error o desconexión de un cliente
 							close(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set

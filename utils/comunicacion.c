@@ -13,8 +13,8 @@ int enviarMensaje(int serverSocket, char *message) {
 	return cantBytesEnviados;
 }
 
-int enviarHeaderSolo(int serverSocket, uint32_t headerId) {
-	uint32_t largoStringId = LARGO_STRING_HEADER_ID;
+int enviarHeaderSolo(int serverSocket, int32_t headerId) {
+	int32_t largoStringId = LARGO_STRING_HEADER_ID;
 	char idString[largoStringId];
 	strcpy(idString, intToArrayZerosLeft(headerId, 4));
 	printf("mensajeHeaderSolo: %s\n", idString);
@@ -35,11 +35,11 @@ void recibirMensaje(char *message, int socketCliente, int packageSize) {
 }
 
 /* **************** funciones para serializar y deserializar mensajes ************ */
-char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantStrings) {
+char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings) {
 	int i;
-	uint32_t offsetPuntero = 0;
-	uint32_t largoStringId = LARGO_STRING_HEADER_ID;
-	uint32_t largoStringTamMensaje = LARGO_STRING_TAM_MENSAJE;
+	int32_t offsetPuntero = 0;
+	int32_t largoStringId = LARGO_STRING_HEADER_ID;
+	int32_t largoStringTamMensaje = LARGO_STRING_TAM_MENSAJE;
 
 	//pido memoria para el mensaje serializado calculando el tamaño a poner en el malloc
 	int largoMensajeSerializado = largoStringId;
@@ -55,7 +55,7 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
 	offsetPuntero += largoStringId;
 	//cada vuelta del for agrega el tamaño del mensaje y el mensaje
 	for (i = 0; i < cantStrings; i++) {
-		uint32_t largoMensaje = string_length(arrayMensajes[i]);
+		int32_t largoMensaje = string_length(arrayMensajes[i]);
 
 		char *largoMensajeString = intToArrayZerosLeft(largoMensaje, largoStringTamMensaje);
 		memcpy(mensajeSerializado + offsetPuntero, largoMensajeString, largoStringTamMensaje);
@@ -71,14 +71,14 @@ char* serializarMensaje(uint32_t idMensaje, char **arrayMensajes, int cantString
  * hace un recv del tamaño del header para extraer el mismo del mensaje serializado
  * devuelve el id del header como int
  */
-uint32_t deserializarHeader(int socketCliente) {
+int32_t deserializarHeader(int socketCliente) {
 	char idString[LARGO_STRING_HEADER_ID + 1];
 	recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
 	if (idString < 0) {
 		return -1;
 	}
 	idString[LARGO_STRING_HEADER_ID] = '\0';
-	uint32_t headerId = atoi(idString);
+	int32_t headerId = atoi(idString);
 	return headerId;
 }
 
