@@ -432,19 +432,13 @@ int main(int argc, char *argv[]) {
 	maxFD = listenningSocket; // so far, it's this one
 	/* *********** crea la lista para la tabla de estados ********************* */
 	//t_list * listaTablaEstados = list_create();
-	int socketCliente, numMaster, socketConectado, cantStrings, h = 0,
-			bytesRecibidos = 0, nroSocket, respuestaSelect;
-	printf("valor de listenningSocket: %d\n", listenningSocket);
+	int socketCliente, numMaster, socketConectado, cantStrings,
+			bytesRecibidos = 0, nroSocket;
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
-		printf("pasóoo %d\n", h);
-		h++;
-		respuestaSelect = select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL);
-		printf("respuesta del select: %d\n", respuestaSelect);
-		if (respuestaSelect != -1) {
+		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
 
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
-				printf("valor de nroSocket %d\n", nroSocket);
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
 					if (nroSocket == listenningSocket) {	//conexión nueva
 						if ((socketCliente = recibirConexion(listenningSocket)) >= 0) {
@@ -472,16 +466,12 @@ int main(int argc, char *argv[]) {
 					} else {	//conexión preexistente
 						/* *************************** recepción de un mensaje ****************************/
 						socketConectado = nroSocket;
-						printf("valor de socketConectado: %d\n", socketConectado);
 						uint32_t headerId = deserializarHeader(socketConectado);
-						printf("valor de headerId: %d\n", headerId);
-						if (headerId == -1) {	//error o desconexión de un cliente
-							puts("pasó por el header < 0");
+						if (headerId == -1) {//error o desconexión de un cliente
 							close(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 						}
 						int cantidadMensajes = protocoloCantidadMensajes[headerId];
-						printf("valor de cantidadMensajes: %d\n", cantidadMensajes);
 						char **arrayMensajes = deserializarMensaje(socketConectado, cantidadMensajes);
 						switch (headerId) {
 
@@ -650,13 +640,10 @@ int main(int argc, char *argv[]) {
 						default:
 							;
 							free(arrayMensajes);
-							puts("pasó por default");
-							//getchar();
 							break;
 						}
 					} // END handle data from client
 				} //if (FD_ISSET(i, &socketsLecturaTemp)) END got new incoming connection
-				printf("valor de nroSocket al final del bucle: %d\n", nroSocket);
 			} //for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) END looping through file descriptors
 		} else {
 			perror("Error en select()");
