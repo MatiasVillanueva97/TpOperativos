@@ -59,12 +59,12 @@ typedef struct {
 
 typedef struct {
 	int nroNodo;
-	char ipNodo[LARGO_IP];
-	int puertoNodo;
+	char ip[LARGO_IP];
+	int puerto;
 	int bloque;
 	int bytesOcupados;
 	char temporal[40];
-} tablaTransformacion;
+} nodoParaAsignar;
 
 #define CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO 5
 #define CANT_MENSAJES_POR_NODO 3
@@ -198,14 +198,7 @@ datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 	return nodos;
 }
 
-typedef struct {
-	int nroNodo;
-	char ip[LARGO_IP];
-	int puerto;
-	int bloque;
-	int bytesOcupados;
-	char temporal[40];
-} nodoParaAsignar;
+
 
 void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos, nodoParaAsignar asignacionesNodos[cantPartesArchivo]) {
 
@@ -333,7 +326,7 @@ void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos, nodoParaAsigna
 	return;
 }
 
-char* serializarNodosTransformacion(tablaTransformacion respuestaTransformacion[cantPartesArchivo]) {
+char* serializarNodosTransformacion(nodoParaAsignar datosParaTransformacion[cantPartesArchivo]) {
 	int i, j, k, cantStringsASerializar, largoStringDestinoCopia;
 
 	cantStringsASerializar = (cantPartesArchivo * 6) + 1;
@@ -344,50 +337,42 @@ char* serializarNodosTransformacion(tablaTransformacion respuestaTransformacion[
 	strcpy(arrayMensajes[0], intToArrayZerosLeft(cantPartesArchivo, 4));
 	j = 1;
 	for (i = 0; i < cantPartesArchivo; i++) {
-		printf("\nnodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", respuestaTransformacion[i].nroNodo, respuestaTransformacion[i].ipNodo, respuestaTransformacion[i].puertoNodo, respuestaTransformacion[i].bloque, respuestaTransformacion[i].bytesOcupados, respuestaTransformacion[i].temporal);
+		printf("\nnodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", datosParaTransformacion[i].nroNodo, datosParaTransformacion[i].ip, datosParaTransformacion[i].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
 
 		//número de nodo
 		largoStringDestinoCopia = 4 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4));
-		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].nroNodo, 4), largoStringDestinoCopia);
-		printf("nro nodo guardado: %s\n", arrayMensajes[j]);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosParaTransformacion[i].nroNodo, 4));
 		j++;
 
 		//IP
-		largoStringDestinoCopia = string_length(respuestaTransformacion[i].ipNodo) + 1;
+		largoStringDestinoCopia = string_length(datosParaTransformacion[i].ip) + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], respuestaTransformacion[i].ipNodo);
-		//arrayMensajes[j] = copiarString(respuestaTransformacion[i].ipNodo, largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], datosParaTransformacion[i].ip);
 		j++;
 
 		//puerto
 		largoStringDestinoCopia = 4 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4));
-		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].puertoNodo, 4), largoStringDestinoCopia);
-		printf("puerto guardado: %s\n", arrayMensajes[j]);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosParaTransformacion[i].puerto, 4));
 		j++;
 
 		//bloque
 		largoStringDestinoCopia = 4 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].bloque, 4));
-		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bloque, 4), largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosParaTransformacion[i].bloque, 4));
 		j++;
 
 		//bytes ocupados
 		largoStringDestinoCopia = 8 + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], intToArrayZerosLeft(respuestaTransformacion[i].bytesOcupados, 8));
-		//arrayMensajes[j] = copiarString(intToArrayZerosLeft(respuestaTransformacion[i].bytesOcupados, 8), largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosParaTransformacion[i].bytesOcupados, 8));
 		j++;
 
 		//temporal
-		largoStringDestinoCopia = string_length(respuestaTransformacion[i].temporal) + 1;
+		largoStringDestinoCopia = string_length(datosParaTransformacion[i].temporal) + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], respuestaTransformacion[i].temporal);
-		//arrayMensajes[j] = copiarString(respuestaTransformacion[i].temporal, largoStringDestinoCopia);
+		strcpy(arrayMensajes[j], datosParaTransformacion[i].temporal);
 		j++;
 	}
 
@@ -589,7 +574,6 @@ int main(int argc, char *argv[]) {
 
 									//guarda la info de los bloques del archivo en la tabla de estados
 									struct filaTablaEstados fila;
-									tablaTransformacion respuestaTransformacion[cantPartesArchivo];
 									for (i = 0; i < cantPartesArchivo; i++) {
 										//printf("parte de archivo %d asignado a: nodo %d - bloque %d\n", i, asignacionesNodos[i][0], asignacionesNodos[i][1]);
 										//genera una fila en la tabla de estados
@@ -605,20 +589,16 @@ int main(int argc, char *argv[]) {
 										if (!agregarElemTablaEstados(fila))
 											perror("Error al agregar elementos a la tabla de estados");
 
-										//genera una fila en la tabla de transformación para el master
-										respuestaTransformacion[i].nroNodo = asignacionesNodos[i].nroNodo;
-										strcpy(respuestaTransformacion[i].ipNodo, asignacionesNodos[i].ip);
-										respuestaTransformacion[i].puertoNodo = asignacionesNodos[i].puerto;
-										respuestaTransformacion[i].bloque = asignacionesNodos[i].bloque;
-										respuestaTransformacion[i].bytesOcupados = asignacionesNodos[i].bytesOcupados;
-										strcpy(respuestaTransformacion[i].temporal, temporal);
+										//guarda el archivo temporal en el vector que se va a usar
+										//en la tabla de transformación para el master
+										strcpy(asignacionesNodos[i].temporal, temporal);
 									}
 
 									//puts("\nlista de elementos asignados a transformación");
 									//mostrarListaElementos();
 
 									//envía al master la lista de nodos donde trabajar cada bloque
-									char *mensajeSerializado = serializarNodosTransformacion(respuestaTransformacion);
+									char *mensajeSerializado = serializarNodosTransformacion(asignacionesNodos);
 									printf("mensaje serializado: %s\n", mensajeSerializado);
 									if (!enviarMensaje(socketConectado, mensajeSerializado)) {
 										return 0;
