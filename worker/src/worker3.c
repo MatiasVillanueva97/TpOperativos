@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 
 	// 2º) inicializar server y aguardar conexiones (de master)
 	//HAY QUE VER COMO SE CONECTA CON OTROS WORKERS
-	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
+	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], "5303");
 
 	if (listenningSocket < 0) {
 		log_error(logWorker, "No pude iniciar como servidor");
