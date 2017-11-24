@@ -2,4 +2,4 @@ IP_PROPIA=127.0.0.1
 PUERTO_PROPIO=5300
 FS_IP=127.0.0.1
 FS_PUERTO=5000
-RUTA_DATABIN=/home/utnso/data.bin
+RUTA_DATABIN=/home/utnso/data1.bin

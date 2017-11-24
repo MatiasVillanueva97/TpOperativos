@@ -556,12 +556,12 @@ int main(int argc, char *argv[]) {
 									nodosArchivo[0].puerto = 5300 + masterJobActual.nroJob;
 
 									nodosArchivo[1].numero = 2;
-									strcpy(nodosArchivo[1].ip, "192.168.001.095");
-									nodosArchivo[1].puerto = 5250;
+									strcpy(nodosArchivo[1].ip, "127.000.000.001");
+									nodosArchivo[1].puerto = 5302;
 
 									nodosArchivo[2].numero = 3;
-									strcpy(nodosArchivo[2].ip, "192.168.001.201");
-									nodosArchivo[2].puerto = 4095;
+									strcpy(nodosArchivo[2].ip, "127.000.000.001");
+									nodosArchivo[2].puerto = 5303;
 
 									cantNodosArchivo = 3;
 									/* ************* inicio planificación *************** */

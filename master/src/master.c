@@ -93,6 +93,7 @@ int main(int argc, char *argv[]) {
 		free(arrayMensajes);
 		printf("bytesEnviados: %d\n", bytesEnviados);
 		headerId = deserializarHeader(socketYama);
+
 		if (headerId == TIPO_MSJ_TABLA_TRANSFORMACION) {
 			// conectarse a workers y hacer transformacion
 
@@ -102,41 +103,41 @@ int main(int argc, char *argv[]) {
 			free(arrayMensajesCantMensajes);
 
 			int j, cantColumnasTabla = 6;
-			//for (i = 0; i < cantMensajes; i++) {
 
-			// cada msje es una fila de la tabla transformacion
-			j = 0;
-			char **arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
-			// crear hilo y conectar a worker i
+			pthread_t hilosWorker[3];
+			char **arrayMensajesTablaTransformacion;
+			struct datosWorker *datos [3];
 
-			pthread_t hiloWorker1;
+			for (i = 0; i < 3; i++) {
+				// por cada tarea leo la fila de la tabla y creo un hilo para conectarme al worker q corresponda
+				// cada msje es una fila de la tabla transformacion
+				j = 0;
 
-			//char ** conexion = malloc(2);
-			//conexion[0] = malloc(12);
-			//conexion[1] = malloc(4);
+				arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
 
-			struct datosWorker *datos = malloc(sizeof(struct datosWorker) + 1);
-			strcpy(datos->ip, arrayMensajesTablaTransformacion[1]);
-			strcpy(datos->puerto, arrayMensajesTablaTransformacion[2]);
+				//char ** conexion = malloc(2);
+				//conexion[0] = malloc(12);
+				//conexion[1] = malloc(4);
 
-			pthread_create(&hiloWorker1, NULL, conectarAWorkerTransformacion, (void*) datos);
+				datos[i] = malloc(sizeof(struct datosWorker) + 1);
+				strcpy(datos[i]->ip, arrayMensajesTablaTransformacion[1]);
+				strcpy(datos[i]->puerto, arrayMensajesTablaTransformacion[2]);
 
-			pthread_join(hiloWorker1, NULL);
+				pthread_create(&(hilosWorker[i]), NULL, conectarAWorkerTransformacion, (void*) datos[i]);
 
-			//printf("nodo: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-			j++;
-			//printf("IP: %s\n", arrayMensajesTablaTransformacion[j]);
-			j++;
-			//printf("puerto: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-			j++;
-			//printf("bloque: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-			j++;
-			//printf("bytes: %d\n", atoi(arrayMensajesTablaTransformacion[j]));
-			j++;
-			//printf("temporal: %s\n", arrayMensajesTablaTransformacion[j]);
-			j++;
-			free(arrayMensajesTablaTransformacion);
-			//}
+				//free(arrayMensajesTablaTransformacion);
+				//arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
+				//struct datosWorker *datos2 = malloc(sizeof(struct datosWorker) + 1);
+				//strcpy(datos2->ip, arrayMensajesTablaTransformacion[1]);
+				//strcpy(datos2->puerto, arrayMensajesTablaTransformacion[2]);
+				//pthread_create(&hiloWorker2, NULL, conectarAWorkerTransformacion, (void*) datos2);
+
+				free(arrayMensajesTablaTransformacion);
+			}
+			pthread_join(hilosWorker[0], NULL);
+			pthread_join(hilosWorker[1], NULL);
+			pthread_join(hilosWorker[2], NULL);
+
 		} else {
 			puts("error de lo que me mandaron");
 		}
@@ -144,6 +145,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		puts("me banneó el hdp!!!!!");
 	}
+
 	/* ************************************************************** */
 
 	// 3º) Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
@@ -170,8 +172,8 @@ void* conectarAWorkerTransformacion(void *arg) {
 	printf(datos->ip, "\n");
 	printf(datos->puerto, "\n");
 
-	printf("Worker 1\n");
-	sleep(10000);
+	printf("Worker\n");
+	sleep(100000);
 	return EXIT_SUCCESS;
 
 }
