@@ -8,6 +8,4 @@
  */
 char* intToArrayZerosLeft(int valor, int largoStringDesado);
 
-char* copiarString(char *origen, int sizeDestino);
-
 #endif /* UTILS_H_ */

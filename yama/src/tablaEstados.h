@@ -12,10 +12,12 @@
 
 int agregarElemTablaEstados(struct filaTablaEstados fila);
 
-void mostrarListaElementos();
+void mostrarTablaEstados();
 
 struct filaTablaEstados* buscarElemTablaEstadosPorJMNBE(struct filaTablaEstados busqueda);
 
 int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEstados datosNuevos);
+
+int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int etapa, int estadoActual, int estadoNuevo);
 
 #endif /* YAMA_SRC_TABLAESTADOS_H_ */
