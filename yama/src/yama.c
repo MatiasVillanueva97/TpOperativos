@@ -13,6 +13,7 @@
 #include "../../utils/includes.h"
 #include "tablaEstados.h"
 #include "planificacion.h"
+#include "nroMasterJob.c"
 
 //para el select
 #include <sys/time.h>
@@ -198,8 +199,6 @@ datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 	return nodos;
 }
 
-
-
 void planificar(bloqueArchivo *bloques, datosConexionNodo *nodos, nodoParaAsignar asignacionesNodos[cantPartesArchivo]) {
 
 	int i, j;
@@ -383,9 +382,7 @@ char* serializarNodosTransformacion(nodoParaAsignar datosParaTransformacion[cant
 
 int main(int argc, char *argv[]) {
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	int preparadoEnviarFs = 1, i, j, k, master, job;
-	int cantElementosTablaEstados = 0, maxMasterTablaEstados = 0;
-	int maxJobTablaEstados = 0;
+	int preparadoEnviarFs = 1, i, j, k;
 	char mensajeHeaderSolo[4];
 	log_info(logYAMA, "Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***\n");
@@ -419,6 +416,7 @@ int main(int argc, char *argv[]) {
 	//t_list * listaTablaEstados = list_create();
 	int socketCliente, numMaster, socketConectado, cantStrings,
 			bytesRecibidos = 0, nroSocket;
+	nroMasterJob masterJobActual;
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
 		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
@@ -438,10 +436,10 @@ int main(int argc, char *argv[]) {
 							free(arrayMensajesRHS);
 							if (idEmisorMensaje == NUM_PROCESO_MASTER) {
 								FD_SET(socketCliente, &socketsLecturaMaster); // add to master set
-								//FD_SET(socketCliente, &socketsLecturaTemp); // add to master set
 								if (socketCliente > maxFD) { // keep track of the max
 									maxFD = socketCliente;
 								}
+								asignarNroMasterJob(getNuevoNroMaster(), getNuevoNroJob(), socketCliente);
 								strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, 4));
 							} else {
 								strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO, 4));
@@ -451,7 +449,10 @@ int main(int argc, char *argv[]) {
 					} else {	//conexión preexistente
 						/* *************************** recepción de un mensaje ****************************/
 						socketConectado = nroSocket;
-						printf("socketConectado: %d\n",socketConectado);
+						masterJobActual = getNroMasterJobByFD(socketConectado);
+						printf("socketConectado: %d\n", socketConectado);
+						printf("master actual: %d\n", masterJobActual.nroMaster);
+						printf("job actual: %d\n", masterJobActual.nroJob);
 						int32_t headerId = deserializarHeader(socketConectado);
 						if (headerId == -1) {//error o desconexión de un cliente
 							close(socketConectado); // bye!
@@ -552,7 +553,7 @@ int main(int argc, char *argv[]) {
 
 									nodosArchivo[0].numero = 1;
 									strcpy(nodosArchivo[0].ip, "127.000.000.001");
-									nodosArchivo[0].puerto = 5300;
+									nodosArchivo[0].puerto = 5300 + masterJobActual.nroJob;
 
 									nodosArchivo[1].numero = 2;
 									strcpy(nodosArchivo[1].ip, "192.168.001.095");
@@ -563,9 +564,6 @@ int main(int argc, char *argv[]) {
 									nodosArchivo[2].puerto = 4095;
 
 									cantNodosArchivo = 3;
-									/* ********************************************************************************** */
-									master = 1;	//modificar
-									job = 1;	//modificar
 									/* ************* inicio planificación *************** */
 									//indexado por partes del archivo, contiene el nodo, bloque y bytes
 									//al cual fue asignado el pedazo de archivo
@@ -578,8 +576,8 @@ int main(int argc, char *argv[]) {
 									for (i = 0; i < cantPartesArchivo; i++) {
 										//printf("parte de archivo %d asignado a: nodo %d - bloque %d\n", i, asignacionesNodos[i][0], asignacionesNodos[i][1]);
 										//genera una fila en la tabla de estados
-										fila.job = master;
-										fila.master = job;
+										fila.job = masterJobActual.nroJob;
+										fila.master = masterJobActual.nroMaster;
 										fila.nodo = asignacionesNodos[i].nroNodo;
 										fila.bloque = asignacionesNodos[i].bloque;
 										fila.etapa = TRANSFORMACION;
