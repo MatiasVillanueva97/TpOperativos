@@ -6,14 +6,7 @@
  ============================================================================
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/log.h>
-#include "../../utils/conexionesSocket.h"
-#include "../../utils/archivoConfig.h"
+#include "../../utils/includes.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -39,8 +32,8 @@ char* datosConfigWorker[2];
 
 int main(int argc, char *argv[]) {
 
-    #define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
-    //tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
+#define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
+	//tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
 
 	t_log* logWorker;
 	logWorker = log_create("logFile.log", "WORKER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
@@ -50,7 +43,7 @@ int main(int argc, char *argv[]) {
 
 	// 1º) leer archivo de config.
 	char *nameArchivoConfig = "configNodo.txt";
-	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) {//leerArchivoConfig devuelve 1 si hay error
+	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) { //leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
@@ -77,66 +70,64 @@ int main(int argc, char *argv[]) {
 		log_info(logWorker, "Worker conectado, esperando mensajes");
 		puts("Ya me conecté, ahora estoy esperando mensajes\n");
 
-		int pipe_padreAHijo[2]; //PIPES: 0 lectura, 1 escritura
-		int pipe_hijoAPadre[2];
+		//int pipe_padreAHijo[2]; //PIPES: 0 lectura, 1 escritura
+		//int pipe_hijoAPadre[2];
 
-		pipe(pipe_padreAHijo);
-		pipe(pipe_hijoAPadre);
+		//pipe(pipe_padreAHijo);
+		//pipe(pipe_hijoAPadre);
 
 		pid_t pid;
 		int status;
-		char* buffer=malloc(SIZE);
+		//char* buffer=malloc(SIZE);
+		pid = fork();
+		if (pid < 0) {
+			puts("error de pid");
+		} else if (pid == 0) { //aca ya se hizo el proceso hijo
+			puts("estoy dentro del hijo");
 
-		if ((pid=fork()) == 0 ) //aca ya se hizo el proceso hijo
-		{
-		    dup2(pipe_padreAHijo[0],STDIN_FILENO);
-		    dup2(pipe_hijoAPadre[1],STDOUT_FILENO);
+			close(listenningSocket);
+			char lalala[6];
+			recibirMensaje(lalala, socketCliente, 6);
+			printf("%s\n", lalala);
+			//dup2(pipe_padreAHijo[0],STDIN_FILENO);
+			//dup2(pipe_hijoAPadre[1],STDOUT_FILENO);
 
-		    // Cerramos pipes duplicados
-		    close(pipe_padreAHijo[1]);
-		    close(pipe_hijoAPadre[0]);
-		    close(pipe_hijoAPadre[1]);
-		    close(pipe_padreAHijo[0]);
+			// Cerramos pipes duplicados
+			//close(pipe_padreAHijo[1]);
+			//close(pipe_hijoAPadre[0]);
+			//close(pipe_hijoAPadre[1]);
+			//close(pipe_padreAHijo[0]);
 
+			char *argv[] = { NULL };
+			char *envp[] = { NULL };
+			//ACA CORRER CON SYSTEM --> ej:   system("echo hola pepe | ./script_transformacion.py > /tmp/resultado");
+			//execve("./script_transformacion.py", argv, envp);
+			exit(0);
+			//aca termina el hijo
+		} else {
+			puts("pasó por acá");
+			close(socketCliente);
+			//close(pipe_padreAHijo[0]); //Lado de lectura de lo que el padre le pasa al hijo.
+			//close(pipe_hijoAPadre[1]); //Lado de escritura de lo que hijo le pasa al padre.
 
-		    char *argv[] = {NULL};
-		    char *envp[] = {NULL};
-		    //ACA CORRER CON SYSTEM --> ej:   system("echo hola pepe | ./script_transformacion.py > /tmp/resultado");
-		    //execve("./script_transformacion.py", argv, envp);
-		    exit(1);
+			/*REVISAR
+			 write(pipe_padreAHijo[1],argv[1],strlen(argv[1])); //codigo
+			 write(pipe_padreAHijo[1],argv[2],strlen(argv[2])); //origen
+			 write(pipe_padreAHijo[1],argv[3],strlen(argv[3])); //destino
+			 */
 
-		} //aca termina el hijo
-
-		else {
-		    close(pipe_padreAHijo[0]); //Lado de lectura de lo que el padre le pasa al hijo.
-		    close(pipe_hijoAPadre[1]); //Lado de escritura de lo que hijo le pasa al padre.
-
-		    /*REVISAR
-		    write(pipe_padreAHijo[1],argv[1],strlen(argv[1])); //codigo
-		    write(pipe_padreAHijo[1],argv[2],strlen(argv[2])); //origen
-		    write(pipe_padreAHijo[1],argv[3],strlen(argv[3])); //destino
-		    */
-
-		    close(pipe_padreAHijo[1]);
-		    waitpid(pid,&status,0);
-
-		    read(pipe_hijoAPadre[0], buffer, SIZE);
-		    close(pipe_hijoAPadre[0]);
-
+			//close(pipe_padreAHijo[1]);
+			//waitpid(pid,&status,0);
+			//read(pipe_hijoAPadre[0], buffer, SIZE);
+			//close(pipe_hijoAPadre[0]);
+			//exit(0);
 		}
 
 		//FILE* fd = fopen("/tmp/resultado","w"); //ESCRIBIR RESULTADO
 		//fputs(buffer,fd);
 		//fclose(fd);
 
-
-		free(buffer);
-		return 0;
-
-
-
-
-
+		//free(buffer);
 
 		// 3º) creo forks para ejecutar instrucciones de master
 //		int pid = fork();
