@@ -43,6 +43,7 @@ typedef struct {
 	char* nodo;
 	uint32_t total;
 	uint32_t libre;
+	int socket;
 } ContenidoXNodo;
 
 typedef struct {
@@ -92,6 +93,7 @@ typedef struct{
 typedef struct  {
 	char* nodo;
 	t_bitarray 	*bitarray;
+	int cantidadBloques;
 } tablaBitmapXNodos;
 
 //Variables
