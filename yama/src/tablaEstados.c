@@ -15,13 +15,15 @@ enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK
 };
 
+
+
 struct filaTablaEstados {
 	int job;
 	int master;
 	int nodo;
 	int bloque;
 	int etapa;
-	char temporal[40];
+	char temporal[LARGO_TEMPORAL];
 	int estado;
 	struct filaTablaEstados *siguiente;
 };
@@ -170,3 +172,35 @@ int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int
 	return cantFilasModificadas;
 }
 
+int getCantFilasByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa, int estado) {
+	int cantidad = 0;
+	struct filaTablaEstados *auxiliar;
+	auxiliar = primeroTablaEstados;
+	while (auxiliar != NULL) {
+		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->etapa == etapa && auxiliar->estado == estado) {
+			cantidad++;
+		}
+		auxiliar = auxiliar->siguiente;
+	}
+	return cantidad;
+}
+
+char** getAllTemporalesByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa, int estado) {
+	int cantidadFilas = getCantFilasByJMNEE(nroJob, nroMaster, nroNodo, etapa, estado);
+	char **temporales = malloc(sizeof(char*) * cantidadFilas);
+	struct filaTablaEstados *auxiliar;
+	auxiliar = primeroTablaEstados;
+	int i = 0;
+	while (auxiliar != NULL) {
+		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->etapa == etapa && auxiliar->estado == estado) {
+			temporales[i] = malloc(string_length(auxiliar->temporal) + 1);
+			if (!temporales[i])
+				perror("error de malloc");
+			strcpy(temporales[i], auxiliar->temporal);
+			i++;
+		}
+		auxiliar = auxiliar->siguiente;
+
+	}
+	return temporales;
+}

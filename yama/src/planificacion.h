@@ -14,11 +14,11 @@
 
 int existeParteArchivoEnNodo(int bloque, int nodo, nodosPorPedazoArchivo*);
 
-int nodoConDisponibilidad(cargaNodo nodo);
+int nodoConDisponibilidad(int nroNodo);
 
-int calcularDisponibilidadNodo(cargaNodo nodo);
+int calcularDisponibilidadNodo(int nroNodo);
 
-cargaNodo nodoConMayorCarga(cargaNodo *listaNodos,int cantNodos);
+int nodoConMayorCarga(int cantNodos);
 
 //void ordenarMayorDisponibilidad(int *listaNodos, int cantNodos);
 

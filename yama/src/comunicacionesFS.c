@@ -8,21 +8,6 @@
 #define CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO 5
 #define CANT_MENSAJES_POR_NODO 3
 
-typedef struct {
-	int nodoCopia1;
-	int bloqueCopia1;
-	int nodoCopia2;
-	int bloqueCopia2;
-	int bytesBloque;
-} bloqueArchivo;
-
-#define LARGO_IP 16
-
-typedef struct {
-	int numero;
-	char ip[LARGO_IP];
-	int puerto;
-} datosConexionNodo;
 
 int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	int cantStrings = 1, i;
@@ -122,7 +107,7 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	return bloques;
 }
 
-datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
+void recibirNodosArchivoFS(int socketFS) {
 	/*int i;
 	 int32_t headerId = deserializarHeader(socketFS);
 	 printf("headerId nodos: %d\n", headerId);
@@ -152,20 +137,22 @@ datosConexionNodo * recibirNodosArchivoFS(int socketFS) {
 	 }*/
 
 	/* ***************** datos de bloques y nodos inventados para probar **************** */
+	int nroNodo;
 	cantNodosArchivo = 3;
-	datosConexionNodo *nodos = malloc(cantNodosArchivo * sizeof(datosConexionNodo));
-	nodos[0].numero = 1;
-	strcpy(nodos[0].ip, "127.0.0.001");
-	nodos[0].puerto = 5300;
+	nroNodo = 1;
+	listaGlobalNodos[nroNodo].numero = nroNodo;
+	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.001");
+	listaGlobalNodos[nroNodo].puerto = 5300;
 
-	nodos[1].numero = 2;
-	strcpy(nodos[1].ip, "127.168.1.10");
-	nodos[1].puerto = 5302;
+	nroNodo = 2;
+	listaGlobalNodos[nroNodo].numero = nroNodo;
+	strcpy(listaGlobalNodos[nroNodo].ip, "127.168.1.10");
+	listaGlobalNodos[nroNodo].puerto = 5302;
 
-	nodos[2].numero = 3;
-	strcpy(nodos[2].ip, "127.0.0.1");
-	nodos[2].puerto = 5303;
+	nroNodo = 3;
+	listaGlobalNodos[nroNodo].numero = nroNodo;
+	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.1");
+	listaGlobalNodos[nroNodo].puerto = 5303;
 
 	/* **************************************************************** */
-	return nodos;
 }

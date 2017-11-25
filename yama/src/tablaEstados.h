@@ -20,4 +20,8 @@ int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEsta
 
 int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int etapa, int estadoActual, int estadoNuevo);
 
+int getCantFilasByJMNE(int nroJob, int nroMaster, int nroNodo, int etapa);
+
+char** getAllTemporalesByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa, int estado);
+
 #endif /* YAMA_SRC_TABLAESTADOS_H_ */
