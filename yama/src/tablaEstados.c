@@ -76,31 +76,42 @@ void mostrarTablaEstados() {
 /*
  * busca N filas de la tabla de estados
  * recibe los datos de búsqueda
- * devuelve un array de punteros apuntando a la filas
- * EN CONSTRUCCIÓN
+ los que no sean parámetro de búsqueda se los pone en 0 o ""
+ * recibe el array de structs que va completando con los datos encontrados,
+ ese array debe tener un tamaño determinado antes de llamar a esta función
  */
-struct filaTablaEstados * buscarMuchosElemTablaEstados(struct filaTablaEstados busqueda) {
-	/*struct filaTablaEstados *auxiliar;
-	 auxiliar = primeroTablaEstados;
-	 while (auxiliar != NULL) {
-	 if (busqueda.job && busqueda.job != auxiliar->job) {
-	 auxiliar = auxiliar->siguiente;
-	 } else if (busqueda.master && busqueda.master != auxiliar->master) {
-	 auxiliar = auxiliar->siguiente;
-	 } else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
-	 auxiliar = auxiliar->siguiente;
-	 } else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
-	 auxiliar = auxiliar->siguiente;
-	 } else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
-	 auxiliar = auxiliar->siguiente;
-	 } else if (!strcmp(busqueda.temporal, "") && !strcmp(busqueda.temporal, auxiliar->temporal)) {
-	 auxiliar = auxiliar->siguiente;
-	 } else {	//es el elemento buscado
-	 return auxiliar;
-	 }
-
-	 }*/
-	return NULL;
+int buscarMuchosElemTablaEstados(struct filaTablaEstados *arrayFilasEncontradas, struct filaTablaEstados busqueda) {
+	struct filaTablaEstados *auxiliar;
+	auxiliar = primeroTablaEstados;
+	int i = 0;
+	while (auxiliar != NULL) {
+		if (busqueda.job && busqueda.job != auxiliar->job) {
+			auxiliar = auxiliar->siguiente;
+		} else if (busqueda.master && busqueda.master != auxiliar->master) {
+			auxiliar = auxiliar->siguiente;
+		} else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
+			auxiliar = auxiliar->siguiente;
+		} else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
+			auxiliar = auxiliar->siguiente;
+		} else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
+			auxiliar = auxiliar->siguiente;
+		} else if (strcmp(busqueda.temporal, "") != 0 && !strcmp(busqueda.temporal, auxiliar->temporal)) {
+			auxiliar = auxiliar->siguiente;
+		} else if (busqueda.estado && busqueda.estado != auxiliar->estado) {
+			auxiliar = auxiliar->siguiente;
+		} else {
+			arrayFilasEncontradas[i].job = busqueda.job;
+			arrayFilasEncontradas[i].master = busqueda.master;
+			arrayFilasEncontradas[i].nodo = busqueda.nodo;
+			arrayFilasEncontradas[i].bloque = busqueda.bloque;
+			arrayFilasEncontradas[i].etapa = busqueda.etapa;
+			strcpy(arrayFilasEncontradas[i].temporal, busqueda.temporal);
+			arrayFilasEncontradas[i].estado = busqueda.estado;
+			arrayFilasEncontradas[i].siguiente = NULL;
+			i++;
+		}
+	}
+	return i;
 }
 
 /*
@@ -179,6 +190,23 @@ int getCantFilasByJMNEtEs(int nroJob, int nroMaster, int nroNodo, int etapa, int
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
 		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->etapa == etapa && auxiliar->estado == estado) {
+			cantidad++;
+		}
+		auxiliar = auxiliar->siguiente;
+	}
+	return cantidad;
+}
+
+/*
+ * devuelve la cantidad de filas que respondan a los parámetros de búsqueda
+ * idem anterior sin el número de nodo
+ */
+int getCantFilasByJMEtEs(int nroJob, int nroMaster, int etapa, int estado) {
+	int cantidad = 0;
+	struct filaTablaEstados *auxiliar;
+	auxiliar = primeroTablaEstados;
+	while (auxiliar != NULL) {
+		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->etapa == etapa && auxiliar->estado == estado) {
 			cantidad++;
 		}
 		auxiliar = auxiliar->siguiente;

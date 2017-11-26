@@ -145,8 +145,8 @@ int main(int argc, char *argv[]) {
 	nroMasterJob masterJobActual;
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
+		getchar();
 		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
-
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
 					if (nroSocket == listenningSocket) {	//conexión nueva
@@ -224,7 +224,6 @@ int main(int argc, char *argv[]) {
 								getAllTemporalesByJMNEtEs(temporales, masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
 
 								//armar el string serializado
-								listaGlobalNodos[nroNodoRecibido].puerto;
 								int cantNodosReduccLocal = 1;
 								cantStrings = 1 + cantNodosReduccLocal * (4 + cantidadTemporales) + 1;
 								char **arrayMensajesSerializarRedLocal = malloc(sizeof(char*) * cantStrings);
@@ -286,6 +285,10 @@ int main(int argc, char *argv[]) {
 									free(arrayMensajesSerializarRedLocal[j]);
 								}
 								free(arrayMensajesSerializarRedLocal);
+								for (h = 0; h < cantidadTemporales; h++) {
+									free(temporales[j]); //TODO: revisar que no rompa
+								}
+								free(temporales);
 								printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedLocal);
 								enviarMensaje(socketConectado, mensajeSerializadoRedLocal);
 							}
@@ -306,9 +309,108 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							free(arrayMensajes);
+							//modificar el estado en la tabla de estados
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, FIN_OK) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
+
+							//verificar que todos los nodos del job y master hayan terminado la reducción local
+							if (getCantFilasByJMEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_LOCAL, EN_PROCESO) == 0) {
+								int nodoReduccGlobal = 2;//TODO: definir este nodo
+
+								/* ************** agregado de la fila de reducción global en tabla de estados *************** */
+								struct filaTablaEstados fila;
+								fila.job = masterJobActual.nroJob;
+								fila.master = masterJobActual.nroMaster;
+								fila.nodo = nodoReduccGlobal;
+								fila.bloque = 0;
+								fila.etapa = REDUCC_GLOBAL;
+								char* temporalRedGlobal = string_from_format("m%dj%de%d", fila.master, fila.job, fila.etapa);
+								strcpy(fila.temporal, temporalRedGlobal);
+								fila.estado = EN_PROCESO;
+								fila.siguiente = NULL;
+								if (!agregarElemTablaEstados(fila))
+									perror("Error al agregar elementos a la tabla de estados");
+
+								//iniciar la reducción global
+								int cantNodosReduccGlobal = getCantFilasByJMEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_LOCAL, FIN_OK);
+								struct filaTablaEstados filasReduccGlobal[cantNodosReduccGlobal];
+
+								struct filaTablaEstados filaBusqueda;
+								filaBusqueda.job = masterJobActual.nroJob;
+								filaBusqueda.master = masterJobActual.nroMaster;
+								filaBusqueda.nodo = 0;
+								filaBusqueda.bloque = 0;
+								filaBusqueda.etapa = REDUCC_LOCAL;
+								strcpy(filaBusqueda.temporal, "");
+								filaBusqueda.estado = FIN_OK;
+								filaBusqueda.siguiente = NULL;
+
+								int cantFilasEncontradas = buscarMuchosElemTablaEstados(filasReduccGlobal, filaBusqueda);
+								if (cantFilasEncontradas == 0) {
+									puts("no se encontró ninguna fila de la tabla de estados para hacer la reducción global");
+								}
+								if (cantFilasEncontradas != cantNodosReduccGlobal) {
+									puts("hubo un error en la cantidad de filas encontradas");
+								}
+
+								//envío de la tabla para reducción global
+								cantStrings = 1 + cantNodosReduccGlobal * 4 + 1;
+								char **arrayMensajesSerializarRedGlobal = malloc(sizeof(char*) * cantStrings);
+
+								//cantidad de nodos
+								j = 0;
+								arrayMensajesSerializarRedGlobal[j] = malloc(4 + 1);
+								if (!arrayMensajesSerializarRedGlobal[j])
+									perror("error de malloc");
+								strcpy(arrayMensajesSerializarRedGlobal[j], intToArrayZerosLeft(cantNodosReduccGlobal, 4));
+								j++;
+								int nroNodo;
+								for (i = 0; i < cantNodosReduccGlobal; i++) {
+									nroNodo = filasReduccGlobal[i].nodo;
+									//nro de nodo
+									arrayMensajesSerializarRedGlobal[j] = malloc(4 + 1);
+									if (!arrayMensajesSerializarRedGlobal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedGlobal[j], intToArrayZerosLeft(nroNodo, 4));
+									j++;
+									//IP del nodo
+									arrayMensajesSerializarRedGlobal[j] = malloc(string_length(listaGlobalNodos[nroNodo].ip) + 1);
+									if (!arrayMensajesSerializarRedGlobal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedGlobal[j], listaGlobalNodos[nroNodo].ip);
+									j++;
+									//puerto del nodo
+									arrayMensajesSerializarRedGlobal[j] = malloc(4 + 1);
+									if (!arrayMensajesSerializarRedGlobal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedGlobal[j], intToArrayZerosLeft(listaGlobalNodos[nroNodo].puerto, 4));
+									j++;
+									//temporal de la fila
+									arrayMensajesSerializarRedGlobal[j] = malloc(string_length(filasReduccGlobal[i].temporal) + 1);
+									if (!arrayMensajesSerializarRedGlobal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedGlobal[j], filasReduccGlobal[i].temporal);
+									j++;
+								}
+								//temporal global
+								arrayMensajesSerializarRedGlobal[j] = malloc(string_length(temporalRedGlobal) + 1);
+								if (!arrayMensajesSerializarRedGlobal[j])
+									perror("error de malloc");
+								strcpy(arrayMensajesSerializarRedGlobal[j], temporalRedGlobal);
+								j++;
+
+								///////////////mensaje serializado
+								char *mensajeSerializadoRedGlobal = serializarMensaje(TIPO_MSJ_TABLA_REDUCCION_LOCAL, arrayMensajesSerializarRedGlobal, cantStrings);
+								for (j = 0; j < cantStrings; j++) {
+									free(arrayMensajesSerializarRedGlobal[j]);
+								}
+								free(arrayMensajesSerializarRedGlobal);
+								printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedGlobal);
+								enviarMensaje(socketConectado, mensajeSerializadoRedGlobal);
+
+							}
+
 							break;
 						case TIPO_MSJ_REDUCC_LOCAL_ERROR:
 							;
@@ -350,8 +452,7 @@ int main(int argc, char *argv[]) {
 							//pide la metadata del archivo al FS
 							preparadoEnviarFs = 1;
 							if (preparadoEnviarFs) {
-								//if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
-								if (1) {
+								if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
 									/* ************* solicitud de info del archivo al FS *************** */
 									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
 									//enviarHeaderSolo(socketFS, TIPO_MSJ_OK);
@@ -417,7 +518,8 @@ int main(int argc, char *argv[]) {
 		} else {
 			perror("Error en select()");
 		}
-	} // END for(;;)
+	}
+	// END for(;;)
 
 //cerrarServer(listenningSocket);
 //cerrarServer(socketCliente);
