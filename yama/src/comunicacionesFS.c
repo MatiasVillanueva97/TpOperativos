@@ -8,7 +8,6 @@
 #define CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO 5
 #define CANT_MENSAJES_POR_NODO 3
 
-
 int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	int cantStrings = 1, i;
 	char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
@@ -24,7 +23,8 @@ int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 		free(arrayMensajesSerializar[i]);
 	}
 	free(arrayMensajesSerializar);
-	return enviarMensaje(socketFS, mensajeSerializado);
+	//return enviarMensaje(socketFS, mensajeSerializado);
+	return 1;
 }
 
 bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
@@ -139,17 +139,26 @@ void recibirNodosArchivoFS(int socketFS) {
 	/* ***************** datos de bloques y nodos inventados para probar **************** */
 	int nroNodo;
 	cantNodosArchivo = 3;
-	nroNodo = 1;
+
+	char **nodo=malloc(sizeof(char*)*3);
+
+	nodo = string_split("NODO_1", "_");
+	nroNodo = atoi(nodo[1]);
 	listaGlobalNodos[nroNodo].numero = nroNodo;
+	printf("nodo: %d\n",nroNodo);
 	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.001");
 	listaGlobalNodos[nroNodo].puerto = 5300;
 
-	nroNodo = 2;
+	nodo = string_split("NODO_2", "_");
+	nroNodo = atoi(nodo[1]);
+	printf("nodo: %d\n",nroNodo);
 	listaGlobalNodos[nroNodo].numero = nroNodo;
 	strcpy(listaGlobalNodos[nroNodo].ip, "127.168.1.10");
 	listaGlobalNodos[nroNodo].puerto = 5302;
 
-	nroNodo = 3;
+	nodo = string_split("NODO_3", "_");
+	nroNodo = atoi(nodo[1]);
+	printf("nodo: %d\n",nroNodo);
 	listaGlobalNodos[nroNodo].numero = nroNodo;
 	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.1");
 	listaGlobalNodos[nroNodo].puerto = 5303;
