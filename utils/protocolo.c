@@ -47,7 +47,7 @@ const int protocoloCantidadMensajes[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
 		1,
 		1,
 		1,
-		1,
+		2,
 		1,
 		1,
 		1,

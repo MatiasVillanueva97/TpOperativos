@@ -46,17 +46,10 @@ int cantPartesArchivo, cantNodosArchivo;
 #include "inicializacion.c"
 #include "comunicacionesFS.c"
 
-
-
-
-
 //para el select
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-
-
 
 char* serializarNodosTransformacion(nodoParaAsignar datosParaTransformacion[cantPartesArchivo]) {
 	int i, j, k, cantStringsASerializar, largoStringDestinoCopia;
@@ -148,7 +141,7 @@ int main(int argc, char *argv[]) {
 	/* *********** crea la lista para la tabla de estados ********************* */
 	//t_list * listaTablaEstados = list_create();
 	int socketCliente, socketConectado, cantStrings, bytesRecibidos = 0,
-			nroSocket, nroNodoReduccGlobal, nroNodoRecibido;
+			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido;
 	nroMasterJob masterJobActual;
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
@@ -196,110 +189,116 @@ int main(int argc, char *argv[]) {
 
 						case TIPO_MSJ_TRANSFORMACION_OK:
 							;
-
 							nroNodoRecibido = atoi(arrayMensajes[0]);
+							nroBloqueRecibido = atoi(arrayMensajes[1]);
 							printf("\nnodo recibido: %d\n", nroNodoRecibido);
+							printf("bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
-							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, EN_PROCESO, FIN_OK) == 0) {
+
+							//pongo la fila en estado FIN_OK
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, FIN_OK) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
+							//si no queda ninguna fila de ese nodo en proceso inicia la reducción local
+							if (getCantFilasByJMNEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, EN_PROCESO) == 0) {
+								//inicia la reducción local del nodo recibido
+
+								/* ************** agregado de la fila de reducción local en tabla de estados *************** */
+								struct filaTablaEstados fila;
+								fila.job = masterJobActual.nroJob;
+								fila.master = masterJobActual.nroMaster;
+								fila.nodo = nroNodoRecibido;
+								fila.bloque = 0;
+								fila.etapa = REDUCC_LOCAL;
+								char* temporalRedLocal = string_from_format("m%dj%dn%de%d", fila.master, fila.job, fila.nodo, fila.etapa);
+								strcpy(fila.temporal, temporalRedLocal);
+								fila.estado = EN_PROCESO;
+								fila.siguiente = NULL;
+								if (!agregarElemTablaEstados(fila))
+									perror("Error al agregar elementos a la tabla de estados");
+
+								/* *********** enviar data para reducción local ********** */
+								//obtener los registros de la tabla de estados, cantidad y temporales
+								int cantidadTemporales = getCantFilasByJMNEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
+								char **temporales = malloc(sizeof(char*) * cantidadTemporales);
+								getAllTemporalesByJMNEtEs(temporales, masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
+
+								//armar el string serializado
+								listaGlobalNodos[nroNodoRecibido].puerto;
+								int cantNodosReduccLocal = 1;
+								cantStrings = 1 + cantNodosReduccLocal * (4 + cantidadTemporales) + 1;
+								char **arrayMensajesSerializarRedLocal = malloc(sizeof(char*) * cantStrings);
+
+								//cantidad de nodos
+								j = 0;
+								arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
+								if (!arrayMensajesSerializarRedLocal[j])
+									perror("error de malloc");
+								strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(cantNodosReduccLocal, 4));
+								j++;
+
+								//para cada nodo
+								for (k = 0; k < cantNodosReduccLocal; k++) {
+									//nro de nodo
+									arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
+									if (!arrayMensajesSerializarRedLocal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(nroNodoRecibido, 4));
+									j++;
+									//IP del nodo
+									arrayMensajesSerializarRedLocal[j] = malloc(string_length(listaGlobalNodos[nroNodoRecibido].ip) + 1);
+									if (!arrayMensajesSerializarRedLocal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedLocal[j], listaGlobalNodos[nroNodoRecibido].ip);
+									j++;
+									//puerto del nodo
+									arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
+									if (!arrayMensajesSerializarRedLocal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(listaGlobalNodos[nroNodoRecibido].puerto, 4));
+									j++;
+									//cantidad de temporales
+									arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
+									if (!arrayMensajesSerializarRedLocal[j])
+										perror("error de malloc");
+									strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(cantidadTemporales, 4));
+									j++;
+									//todos los temporales uno a continuación del otro
+									for (h = 0; h < cantidadTemporales; h++) {
+										//temporal h
+										printf("temporal %s\n", temporales[h]);
+										arrayMensajesSerializarRedLocal[j] = malloc(string_length(temporales[h]) + 1);
+										if (!arrayMensajesSerializarRedLocal[j])
+											perror("error de malloc");
+										strcpy(arrayMensajesSerializarRedLocal[j], temporales[h]);
+										j++;
+									}
+								}
+								arrayMensajesSerializarRedLocal[j] = malloc(string_length(temporalRedLocal) + 1);
+								if (!arrayMensajesSerializarRedLocal[j])
+									perror("error de malloc");
+								strcpy(arrayMensajesSerializarRedLocal[j], temporalRedLocal);
+								j++;
+
+								///////////////mensaje serializado
+								char *mensajeSerializadoRedLocal = serializarMensaje(TIPO_MSJ_TABLA_REDUCCION_LOCAL, arrayMensajesSerializarRedLocal, cantStrings);
+								for (j = 0; j < cantStrings; j++) {
+									free(arrayMensajesSerializarRedLocal[j]);
+								}
+								free(arrayMensajesSerializarRedLocal);
+								printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedLocal);
+								enviarMensaje(socketConectado, mensajeSerializadoRedLocal);
+							}
+
 							//puts("\nlista de elementos asignados a transformación");
 							//mostrarTablaEstados();
 
-							/* ************** agregado en tabla de estados *************** */
-
-							struct filaTablaEstados fila;
-							fila.job = masterJobActual.nroJob;
-							fila.master = masterJobActual.nroMaster;
-							fila.nodo = nroNodoRecibido;
-							fila.bloque = 0;
-							fila.etapa = REDUCC_LOCAL;
-							char* temporalRedLocal = string_from_format("m%dj%dn%de%d", fila.master, fila.job, fila.nodo, fila.etapa);
-							strcpy(fila.temporal, temporalRedLocal);
-							fila.estado = EN_PROCESO;
-							fila.siguiente = NULL;
-							if (!agregarElemTablaEstados(fila))
-								perror("Error al agregar elementos a la tabla de estados");
-
-							//guarda el archivo temporal en el vector que se va a usar
-							//en la tabla de transformación para el master
-							//strcpy(asignacionesNodos[i].temporal, temporal);
-							mostrarTablaEstados();
-							/* *********** enviar data para reducción local ********** */
-
-							//obtener los registros de la tabla de estados, cantidad y temporales
-							char **temporales = getAllTemporalesByJMNEE(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
-							int cantidadTemporales = getCantFilasByJMNEE(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
-
-							//armar el string serializado
-
-							listaGlobalNodos[nroNodoRecibido].puerto;
-							int cantNodosReduccLocal = 1;
-							cantStrings = 1 + cantNodosReduccLocal * (4 + cantidadTemporales) + 1;
-							char **arrayMensajesSerializarRedLocal = malloc(sizeof(char*) * cantStrings);
-
-							//cantidad de nodos
-							j = 0;
-							arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
-							if (!arrayMensajesSerializarRedLocal[j])
-								perror("error de malloc");
-							strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(cantNodosReduccLocal, 4));
-							j++;
-							for (k = 0; k < cantNodosReduccLocal; k++) {
-								//nro de nodo
-								arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
-								if (!arrayMensajesSerializarRedLocal[j])
-									perror("error de malloc");
-								strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(nroNodoRecibido, 4));
-								j++;
-								//IP del nodo
-								arrayMensajesSerializarRedLocal[j] = malloc(string_length(listaGlobalNodos[nroNodoRecibido].ip) + 1);
-								if (!arrayMensajesSerializarRedLocal[j])
-									perror("error de malloc");
-								strcpy(arrayMensajesSerializarRedLocal[j], listaGlobalNodos[nroNodoRecibido].ip);
-								j++;
-								//puerto del nodo
-								arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
-								if (!arrayMensajesSerializarRedLocal[j])
-									perror("error de malloc");
-								strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(listaGlobalNodos[nroNodoRecibido].puerto, 4));
-								j++;
-								//cantidad de temporales
-								arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
-								if (!arrayMensajesSerializarRedLocal[j])
-									perror("error de malloc");
-								strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(cantidadTemporales, 4));
-								j++;
-								for (h = 0; h < cantidadTemporales; h++) {
-									//temporal h
-									printf("temporal %s\n", temporales[h]);
-									arrayMensajesSerializarRedLocal[j] = malloc(string_length(temporales[h]) + 1);
-									if (!arrayMensajesSerializarRedLocal[j])
-										perror("error de malloc");
-									strcpy(arrayMensajesSerializarRedLocal[j], temporales[h]);
-									j++;
-								}
-							}
-							arrayMensajesSerializarRedLocal[j] = malloc(string_length(temporalRedLocal) + 1);
-							if (!arrayMensajesSerializarRedLocal[j])
-								perror("error de malloc");
-							strcpy(arrayMensajesSerializarRedLocal[j], temporalRedLocal);
-							j++;
-
-							///////////////mensaje serializado
-
-							char *mensajeSerializadoRedLocal = serializarMensaje(TIPO_MSJ_TABLA_REDUCCION_LOCAL, arrayMensajesSerializarRedLocal, cantStrings);
-							for (j = 0; j < cantStrings; j++) {
-								free(arrayMensajesSerializarRedLocal[j]);
-							}
-							free(arrayMensajesSerializarRedLocal);
-							printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedLocal);
 							break;
 						case TIPO_MSJ_TRANSFORMACION_ERROR:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							free(arrayMensajes);
-							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, EN_PROCESO, ERROR) == 0) {
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
 							break;
@@ -307,7 +306,7 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							free(arrayMensajes);
-							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, REDUCC_LOCAL, EN_PROCESO, FIN_OK) == 0) {
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, FIN_OK) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
 							break;
@@ -315,7 +314,7 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							free(arrayMensajes);
-							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, REDUCC_LOCAL, EN_PROCESO, ERROR) == 0) {
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
 							break;
@@ -323,7 +322,7 @@ int main(int argc, char *argv[]) {
 							;
 							free(arrayMensajes);
 							nroNodoReduccGlobal = 1;
-							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, REDUCC_GLOBAL, EN_PROCESO, FIN_OK) == 0) {
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, FIN_OK) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
 							break;
@@ -331,7 +330,7 @@ int main(int argc, char *argv[]) {
 							;
 							free(arrayMensajes);
 							nroNodoReduccGlobal = 1;
-							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, REDUCC_GLOBAL, EN_PROCESO, ERROR) == 0) {
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
 							break;
@@ -349,9 +348,10 @@ int main(int argc, char *argv[]) {
 							strcpy(archivo, arrayMensajes[0]);
 							free(arrayMensajes);
 							//pide la metadata del archivo al FS
+							preparadoEnviarFs = 1;
 							if (preparadoEnviarFs) {
-								if (pedirMetadataArchivoFS(socketFS, archivo)) {
-
+								//if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
+								if (1) {
 									/* ************* solicitud de info del archivo al FS *************** */
 									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
 									//enviarHeaderSolo(socketFS, TIPO_MSJ_OK);

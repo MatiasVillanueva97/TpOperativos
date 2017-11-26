@@ -15,8 +15,6 @@ enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK
 };
 
-
-
 struct filaTablaEstados {
 	int job;
 	int master;
@@ -108,15 +106,15 @@ struct filaTablaEstados * buscarMuchosElemTablaEstados(struct filaTablaEstados b
 /*
  * busca una fila de la tabla de estados
  * recibe los datos de la fila de búsqueda
- * datos obligatorios: job, master, nodo, bloque, etapa
+ * datos obligatorios: job, master, nodo, bloque, etapa, estado
  * devuelve un puntero apuntando a la fila encontrada (nodo de la lista enlazada)
  * o NULL si no encuentra los datos
  */
-struct filaTablaEstados * buscarElemTablaEstadosPorJMNBE(struct filaTablaEstados busqueda) {
+struct filaTablaEstados * buscarElemTablaEstadosPorJMNBEE(struct filaTablaEstados busqueda) {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
-		if (busqueda.job == auxiliar->job && busqueda.master == auxiliar->master && busqueda.nodo == auxiliar->nodo && busqueda.bloque == auxiliar->bloque && busqueda.etapa == auxiliar->etapa) {
+		if (busqueda.job == auxiliar->job && busqueda.master == auxiliar->master && busqueda.nodo == auxiliar->nodo && busqueda.bloque == auxiliar->bloque && busqueda.etapa == auxiliar->etapa && busqueda.estado == auxiliar->estado) {
 			return auxiliar;
 		}
 		auxiliar = auxiliar->siguiente;
@@ -131,7 +129,7 @@ struct filaTablaEstados * buscarElemTablaEstadosPorJMNBE(struct filaTablaEstados
  * devuelve 1 si pudo modificar o 0 si no encontró la fila que se buscaba
  */
 int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEstados datosNuevos) {
-	struct filaTablaEstados *filaAModificar = buscarElemTablaEstadosPorJMNBE(fila);
+	struct filaTablaEstados *filaAModificar = buscarElemTablaEstadosPorJMNBEE(fila);
 	if (filaAModificar == NULL) {	//no se encontró la fila a modificar
 		return 0;
 	}
@@ -158,12 +156,12 @@ int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEsta
  * recibe el estado nuevo al que hay que actualizar las filas correspondientes
  * devuelve la cantidad de filas que pudo modificar
  */
-int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int etapa, int estadoActual, int estadoNuevo) {
+int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int nroBloque, int etapa, int estadoActual, int estadoNuevo) {
 	int cantFilasModificadas = 0;
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
-		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->etapa == etapa && auxiliar->estado == estadoActual) {
+		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->bloque == nroBloque && auxiliar->etapa == etapa && auxiliar->estado == estadoActual) {
 			auxiliar->estado = estadoNuevo;
 			cantFilasModificadas++;
 		}
@@ -172,7 +170,10 @@ int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int
 	return cantFilasModificadas;
 }
 
-int getCantFilasByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa, int estado) {
+/*
+ * devuelve la cantidad de filas que respondan a los parámetros de búsqueda
+ */
+int getCantFilasByJMNEtEs(int nroJob, int nroMaster, int nroNodo, int etapa, int estado) {
 	int cantidad = 0;
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
@@ -185,12 +186,10 @@ int getCantFilasByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa, int e
 	return cantidad;
 }
 
-char** getAllTemporalesByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa, int estado) {
-	int cantidadFilas = getCantFilasByJMNEE(nroJob, nroMaster, nroNodo, etapa, estado);
-	char **temporales = malloc(sizeof(char*) * cantidadFilas);
+void getAllTemporalesByJMNEtEs(char **temporales, int nroJob, int nroMaster, int nroNodo, int etapa, int estado) {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
-	int i = 0;
+	int j, i = 0;
 	while (auxiliar != NULL) {
 		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->etapa == etapa && auxiliar->estado == estado) {
 			temporales[i] = malloc(string_length(auxiliar->temporal) + 1);
@@ -200,7 +199,5 @@ char** getAllTemporalesByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa
 			i++;
 		}
 		auxiliar = auxiliar->siguiente;
-
 	}
-	return temporales;
 }

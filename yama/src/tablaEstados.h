@@ -14,14 +14,14 @@ int agregarElemTablaEstados(struct filaTablaEstados fila);
 
 void mostrarTablaEstados();
 
-struct filaTablaEstados* buscarElemTablaEstadosPorJMNBE(struct filaTablaEstados busqueda);
+struct filaTablaEstados* buscarElemTablaEstadosPorJMNBEE(struct filaTablaEstados busqueda);
 
 int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEstados datosNuevos);
 
-int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int etapa, int estadoActual, int estadoNuevo);
+int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int nroBloque, int etapa, int estadoActual, int estadoNuevo);
 
 int getCantFilasByJMNE(int nroJob, int nroMaster, int nroNodo, int etapa);
 
-char** getAllTemporalesByJMNEE(int nroJob, int nroMaster, int nroNodo, int etapa, int estado);
+void getAllTemporalesByJMNEtEs(char **temporales, int nroJob, int nroMaster, int nroNodo, int etapa, int estado);
 
 #endif /* YAMA_SRC_TABLAESTADOS_H_ */
