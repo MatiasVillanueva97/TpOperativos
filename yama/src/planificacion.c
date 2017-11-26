@@ -84,17 +84,17 @@ int nodoConMayorCarga(int cantNodos, datosPropiosNodo *nodosParaPlanificar) {
 }
 
 void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacionesNodos, int cantPartesArchivo, int cantNodosArchivo, datosPropiosNodo *nodosParaPlanificar) {
-	printf("cantPartesArchivo recibido: %d\n", cantPartesArchivo);
-	printf("cantNodosArchivo recibido: %d\n", cantNodosArchivo);
+//	printf("cantPartesArchivo recibido: %d\n", cantPartesArchivo);
+//	printf("cantNodosArchivo recibido: %d\n", cantNodosArchivo);
 
 	int i, j;
 
-	puts("nodos por bloque reecibidos");
-	for (i = 0; i < cantPartesArchivo; i++) {
-		printf("parte archivo %d: Nodo copia1 %d - Bloque copia1 %d\n", i, nodosPorPedazoArchivo[i].nodoCopia1, nodosPorPedazoArchivo[i].bloqueCopia1);
-		printf("parte archivo %d: Nodo copia2 %d - Bloque copia2 %d\n", i, nodosPorPedazoArchivo[i].nodoCopia2, nodosPorPedazoArchivo[i].bloqueCopia2);
-	}
-	printf("\n");
+//	puts("nodos por bloque reecibidos");
+//	for (i = 0; i < cantPartesArchivo; i++) {
+//		printf("parte archivo %d: Nodo copia1 %d - Bloque copia1 %d\n", i, nodosPorPedazoArchivo[i].nodoCopia1, nodosPorPedazoArchivo[i].bloqueCopia1);
+//		printf("parte archivo %d: Nodo copia2 %d - Bloque copia2 %d\n", i, nodosPorPedazoArchivo[i].nodoCopia2, nodosPorPedazoArchivo[i].bloqueCopia2);
+//	}
+//	printf("\n");
 
 	disponibBase = 1;	//sale del archivo config?????????????
 
@@ -126,9 +126,11 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 
 	while (parteArchivo < cantPartesArchivo) {
 		datosPropiosNodo nodoActual = nodosParaPlanificar[clockMaestro];
-		//printf("\nnodo actual: %d, parte de archivo: %d\n", nodoActual.numero, parteArchivo);
-		//printf("disponibilidad del nodo: %d\n", nodoConDisponibilidad(nodoActual.numero));
-		//printf("existe la parte del archivo en el nodo: %d\n", existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo));
+//		printf("clockMaestro: %d\n", clockMaestro);
+//		printf("parte de archivo: %d\n", parteArchivo);
+//		printf("nro nodo actual: %d - carga %d - disponibilidad %d\n", nodoActual.numero, nodoActual.carga, nodoActual.disponibilidad);
+//		printf("disponibilidad del nodo: %d\n", nodoConDisponibilidad(nodoActual));
+//		printf("existe la parte del archivo en el nodo: %d\n", existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo));
 		if (nodoConDisponibilidad(nodoActual) && existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo)) {
 			//asigno parteArchivo al nodo y bloque
 			asignacionesNodos[parteArchivo].nroNodo = nodoActual.numero;
@@ -141,7 +143,8 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 
 			nodoActual.carga++;
 			nodoActual.disponibilidad--;
-
+			nodosParaPlanificar[clockMaestro].carga = nodoActual.carga;
+			nodosParaPlanificar[clockMaestro].disponibilidad = nodoActual.disponibilidad;
 			if (clockNoExisteParteArchivo < 0 || clockMaestro == clockNoExisteParteArchivo) {
 				clockMaestro++;
 				if (clockMaestro >= cantNodosArchivo)
@@ -151,47 +154,39 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 			}
 			clockNoExisteParteArchivo = -1;
 			clockNodoSinDisponibilidad = -1;	//????? A1
-			printf("\nasignó partearchivo %d al nodo %d - bloque %d\n", parteArchivo, asignacionesNodos[parteArchivo].nroNodo, asignacionesNodos[parteArchivo].bloque);
+//			printf("asignó partearchivo %d al nodo %d - bloque %d\n", parteArchivo, asignacionesNodos[parteArchivo].nroNodo, asignacionesNodos[parteArchivo].bloque);
 			parteArchivo++;
 
 		} else if (!nodoConDisponibilidad(nodoActual)) { //el nodo no tiene disponibilidad
 			if (clockNodoSinDisponibilidad < 0) //????? A1
 				clockNodoSinDisponibilidad = clockMaestro;
 			nodoActual.disponibilidad += disponibBase;
+			nodosParaPlanificar[clockMaestro].disponibilidad = nodoActual.disponibilidad;
 			clockMaestro++;
 			if (clockMaestro >= cantNodosArchivo)
 				clockMaestro = 0;
-			//	printf("\nno disponibilidad partearchivo %d en el nodo %d\n", parteArchivo, nodoActual.numero);
+//			printf("\nno disponibilidad partearchivo %d en el nodo %d\n", parteArchivo, nodoActual.numero);
 		} else if (!existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo)) { //no se encuentra el bloque en el nodo
 			clockNoExisteParteArchivo = clockMaestro;
 			clockMaestro++;
 			if (clockMaestro >= cantNodosArchivo)
 				clockMaestro = 0;
-			//	printf("\nno existe parte de archivo %d en nodo %d\n", parteArchivo, nodoActual.numero);
-			//	printf("clock maestro: %d\n", clockMaestro);
+//			printf("\nno existe parte de archivo %d en nodo %d\n", parteArchivo, nodoActual.numero);
 		}
+//		puts("\nestado al final de la vuelta\n----------------");
+//		printf("parteArchivo: %d\n", parteArchivo);
+//		printf("clock maestro: %d\n", clockMaestro);
+//		printf("clockNodoSinDisponibilidad: %d\n", clockNodoSinDisponibilidad);
+//		printf("clockNoExisteParteArchivo: %d\n", clockNoExisteParteArchivo);
+//		printf("nodoActual.numero: %d\n", nodoActual.numero);
+//		printf("nodoActual.carga: %d\n", nodoActual.carga);
+//		printf("nodoActual.disponibilidad: %d\n", nodoActual.disponibilidad);
 		if (clockNoExisteParteArchivo == clockMaestro)
 			nodosParaPlanificar[clockMaestro].disponibilidad += disponibBase;
 
-		getchar();
+//		getchar();
+//		printf("\n-------- termina la vuelta -----------\n");
 	}
-	puts("pasóoo");
 	return;
 }
-
-/*
- * ordena la lista de nodos de mayor a menor disponibilidad
- */
-/*void ordenarMayorDisponibilidad(int *listaNodos, int cantNodos) {
- int i, j, temp;
- for (i = 0; i < cantNodos; i++) {
- for (j = 0; j < cantNodos - 1; j++) {
- if (calcularDisponibilidadNodo(listaNodos[j]) < calcularDisponibilidadNodo(listaNodos[j + 1])) {
- temp = listaNodos[j];
- listaNodos[j] = listaNodos[j + 1];
- listaNodos[j + 1] = temp;
- }
- }
- }
- }*/
 
