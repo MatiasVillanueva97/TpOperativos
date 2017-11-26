@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
 	fd_set socketsLecturaTemp;  // temp file descriptor list for select()
 	int maxFD;        // maximum file descriptor number
 
-// 1º) leer archivo de config.
+	// 1º) leer archivo de config.
 	if (!getDatosConfiguracion()) {
 		return EXIT_FAILURE;
 	}
@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
 	//t_list * listaTablaEstados = list_create();
 	int socketCliente, socketConectado, cantStrings, bytesRecibidos = 0,
 			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido,
-			cantPartesArchivo = 0, cantNodosArchivo = 0;
+			cantPartesArchivo, cantNodosArchivo;
 	int32_t headerId;
 	nroMasterJob masterJobActual;
 	for (;;) {
@@ -409,6 +409,7 @@ int main(int argc, char *argv[]) {
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
+							//TODO: replanificar
 							break;
 						case TIPO_MSJ_REDUCC_LOCAL_OK:
 							;
@@ -472,6 +473,10 @@ int main(int argc, char *argv[]) {
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
+							//abortar el job
+							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+							cerrarCliente(socketConectado);
+							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							break;
 						case TIPO_MSJ_REDUCC_GLOBAL_OK:
 							;
@@ -510,6 +515,10 @@ int main(int argc, char *argv[]) {
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
+							//abortar el job
+							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+							cerrarCliente(socketConectado);
+							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							break;
 						case TIPO_MSJ_ALM_FINAL_OK:
 							;
@@ -519,12 +528,17 @@ int main(int argc, char *argv[]) {
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, ALMAC_FINAL, EN_PROCESO, FIN_OK) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
+							enviarHeaderSolo(socketConectado, TIPO_MSJ_FINALIZAR_JOB);
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							break;
 						case TIPO_MSJ_ALM_FINAL_ERROR:
 							;
 							free(arrayMensajes);
+							//abortar el job
+							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+							cerrarCliente(socketConectado);
+							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							break;
 						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
 							;
@@ -547,7 +561,6 @@ int main(int argc, char *argv[]) {
 									//cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
 									cantPartesArchivo = 6;
 									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
-									//enviarHeaderSolo(socketFS, TIPO_MSJ_OK);
 
 									/* ********************* */
 									//recibir la info de los nodos donde están esos archivos
@@ -560,15 +573,15 @@ int main(int argc, char *argv[]) {
 									//cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
 									cantNodosArchivo = 3;
 									//guardar los nodos en la listaGlobal
-									recibirNodosArchivoFS(socketFS, cantNodosArchivo);
-									//enviarHeaderSolo(socketFS, TIPO_MSJ_OK);
+									datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
+									recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
 									/* ***************************************************************** */
 
 									/* ************* inicio planificación *************** */
 									//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
 									//indexado por partes del archivo
 									nodoParaAsignar asignacionesNodos[cantPartesArchivo];
-									planificar(bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo);
+									planificar(bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
 									/* ************* fin planificación *************** */
 
 									/* ************** agregado en tabla de estados *************** */

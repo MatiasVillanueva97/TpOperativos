@@ -28,11 +28,13 @@ enum tiposMensajes {
 	TIPO_MSJ_REDUCC_GLOBAL_OK,
 	TIPO_MSJ_REDUCC_GLOBAL_ERROR,
 	TIPO_MSJ_ALM_FINAL_OK,
-	TIPO_MSJ_ALM_FINAL_ERROR
+	TIPO_MSJ_ALM_FINAL_ERROR,
+	TIPO_MSJ_FINALIZAR_JOB,
+	TIPO_MSJ_ABORTAR_JOB
 };
 
 // OJO! Si se agrega algo en el enum de arriba actualizar dejar siempre acá el último valor del array
-const int protocoloCantidadMensajes[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
+const int protocoloCantidadMensajes[TIPO_MSJ_ABORTAR_JOB + 1] = {
 		1,
 		1,
 		1,
@@ -54,9 +56,11 @@ const int protocoloCantidadMensajes[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
 		1,
 		1,
 		0,
+		0,
+		0,
 		0 };
 
-const char* protocoloMensajesPredefinidos[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
+const char* protocoloMensajesPredefinidos[TIPO_MSJ_ABORTAR_JOB + 1] = {
 		"TABLA_TRANSFORMACION",
 		"TABLA_REDUCCION_LOCAL",
 		"TABLA_REDUCCION_GLOBAL",
@@ -78,4 +82,6 @@ const char* protocoloMensajesPredefinidos[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
 		"TIPO_MSJ_REDUCC_GLOBAL_OK",
 		"TIPO_MSJ_REDUCC_GLOBAL_ERROR",
 		"TIPO_MSJ_ALM_FINAL_OK",
-		"TIPO_MSJ_ALM_FINAL_ERROR" };
+		"TIPO_MSJ_ALM_FINAL_ERROR",
+		"TIPO_MSJ_FINALIZAR_JOB",
+		"TIPO_MSJ_ABORTAR_JOB" };

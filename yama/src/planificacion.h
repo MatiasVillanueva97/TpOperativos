@@ -12,13 +12,13 @@
 
 //void guardarNodosPorBloque(int bloque, int nodo1, int nodo2);
 
-int existeParteArchivoEnNodo(int bloque, int nodo, nodosPorPedazoArchivo*);
+int existeParteArchivoEnNodo(int bloque, int nodo, bloqueArchivo*);
 
-int nodoConDisponibilidad(int nroNodo);
+int nodoConDisponibilidad(datosPropiosNodo nodo);
 
-int calcularDisponibilidadNodo(int nroNodo);
+int calcularDisponibilidadNodo(datosPropiosNodo nodosParaPlanificar);
 
-int nodoConMayorCarga(int cantNodos);
+int nodoConMayorCarga(int cantNodos, datosPropiosNodo *nodosParaPlanificar);
 
 //void ordenarMayorDisponibilidad(int *listaNodos, int cantNodos);
 
