@@ -27,26 +27,15 @@ int pedirMetadataArchivoFS(int socketFS, char *archivo) {
 	return 1;
 }
 
-bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
-	/*int i;
-	 int32_t headerId = deserializarHeader(socketFS);
-	 if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
-	 perror("El FS no mandó los bloques");
-	 bloqueArchivo *bloquesError = malloc(sizeof(bloqueArchivo));
-	 bloquesError[0].nodoCopia1 = 0;
-	 bloquesError[0].bloqueCopia1 = 0;
-	 bloquesError[0].nodoCopia2 = 0;
-	 bloquesError[0].bloqueCopia2 = 0;
-	 bloquesError[0].bytesBloque = 0;
-	 return bloquesError;
-	 }
-	 int cantidadMensajes = protocoloCantidadMensajes[headerId];
-	 char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
-	 //guardar la data en algún lado
-	 cantPartesArchivo = atoi(arrayMensajes[0]);
-	 printf("cantPartesArchivo: %d\n", cantPartesArchivo);
+int getCantidadPartesArchivoFS(int socketFS, int cantMensajes) {
+	char **arrayMensajes = deserializarMensaje(socketFS, cantMensajes);
+	return atoi(arrayMensajes[0]);
+}
 
-	 arrayMensajes = deserializarMensaje(socketFS, cantPartesArchivo * CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO);
+bloqueArchivo* recibirMetadataArchivoFS(int socketFS, int cantPartesArchivo) {
+	/*int i;
+
+	 char **arrayMensajes = deserializarMensaje(socketFS, cantPartesArchivo * CANT_MENSAJES_POR_BLOQUE_DE_ARCHIVO);
 	 bloqueArchivo *bloques = malloc(cantPartesArchivo * sizeof(bloqueArchivo));
 	 int j = 0;
 	 for (i = 0; i < cantPartesArchivo; i++) {
@@ -64,9 +53,7 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	 }*/
 
 	/* ***************** datos de bloques y nodos inventados para probar **************** */
-	cantPartesArchivo = 6;
 	bloqueArchivo *bloques = malloc(cantPartesArchivo * sizeof(bloqueArchivo));
-	//bloqueArchivo bloquesPrueba[cantPartesArchivo];
 	bloques[0].nodoCopia1 = 1;
 	bloques[0].bloqueCopia1 = 33;
 	bloques[0].nodoCopia2 = 3;
@@ -107,58 +94,51 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS) {
 	return bloques;
 }
 
-void recibirNodosArchivoFS(int socketFS) {
-	/*int i;
-	 int32_t headerId = deserializarHeader(socketFS);
-	 printf("headerId nodos: %d\n", headerId);
-	 if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
-	 printf("El FS no mandó los nodos\n");
-	 datosConexionNodo *nodosError = malloc(sizeof(bloqueArchivo));
-	 nodosError[0].numero = 0;
-	 strcpy(nodosError[0].ip, "");
-	 nodosError[0].puerto = 0;
-	 return nodosError;
-	 }
-	 int cantidadMensajes = protocoloCantidadMensajes[headerId];
-	 char **arrayMensajes = deserializarMensaje(socketFS, cantidadMensajes);
-	 //guardar la data en algún lado
-	 cantNodosArchivo = atoi(arrayMensajes[0]);
-	 printf("cantNodos: %d\n", cantNodosArchivo);
-	 arrayMensajes = deserializarMensaje(socketFS, cantNodosArchivo * CANT_MENSAJES_POR_NODO);
-	 datosConexionNodo *nodos = malloc(cantNodosArchivo * sizeof(datosConexionNodo));
-	 int j = 0;
-	 for (i = 0; i < cantNodosArchivo; i++) {
-	 nodos[i].numero = atoi(arrayMensajes[j]);
-	 j++;
-	 strcpy(nodos[i].ip, arrayMensajes[j]);
-	 j++;
-	 nodos[i].puerto = atoi(arrayMensajes[j]);
-	 j++;
-	 }*/
+int getCantidadNodosFS(int socketFS, int cantMensajes) {
+	char **arrayMensajes = deserializarMensaje(socketFS, cantMensajes);
+	return atoi(arrayMensajes[0]);
+}
+
+void recibirNodosArchivoFS(int socketFS, int cantNodosArchivo) {
+	int nroNodo, i;
+	char **nodo = malloc(sizeof(char*) * 3);	//se usa para el string_split
+	int cantMensajes = cantNodosArchivo * CANT_MENSAJES_POR_NODO;
+	/*char **arrayMensajes = deserializarMensaje(socketFS, cantMensajes);
+	int j = 0;
+	for (i = 0; i < cantNodosArchivo; i++) {
+		nodo = string_split(arrayMensajes[j], "_");
+		nroNodo = atoi(nodo[1]);
+		listaGlobalNodos[nroNodo].numero = nroNodo;
+		j++;
+		strcpy(listaGlobalNodos[nroNodo].ip, arrayMensajes[j]);
+		j++;
+		listaGlobalNodos[nroNodo].puerto = atoi(arrayMensajes[j]);
+		j++;
+	}
+	for (i = 0; i < cantMensajes; i++) {
+		free(arrayMensajes[i]);
+	}
+	free(arrayMensajes);*/
 
 	/* ***************** datos de bloques y nodos inventados para probar **************** */
-	int nroNodo;
-	cantNodosArchivo = 3;
-
-	char **nodo=malloc(sizeof(char*)*3);
 
 	nodo = string_split("NODO_1", "_");
 	nroNodo = atoi(nodo[1]);
 	listaGlobalNodos[nroNodo].numero = nroNodo;
-	printf("nodo: %d\n",nroNodo);
+	printf("nodo: %d\n", nroNodo);
 	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.001");
 	listaGlobalNodos[nroNodo].puerto = 5300;
 
 	nodo = string_split("NODO_2", "_");
 	nroNodo = atoi(nodo[1]);
-	printf("nodo: %d\n",nroNodo);
+	printf("nodo: %d\n", nroNodo);
 	listaGlobalNodos[nroNodo].numero = nroNodo;
 	strcpy(listaGlobalNodos[nroNodo].ip, "127.168.1.10");
 	listaGlobalNodos[nroNodo].puerto = 5302;
 
 	nodo = string_split("NODO_3", "_");
 	nroNodo = atoi(nodo[1]);
-	printf("nodo: %d\n",nroNodo);
+	printf("nodo: %d\n", nroNodo);
 	listaGlobalNodos[nroNodo].numero = nroNodo;
 	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.1");
 	listaGlobalNodos[nroNodo].puerto = 5303;

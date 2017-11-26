@@ -38,8 +38,6 @@ typedef struct {
 	int bytesBloque;
 } bloqueArchivo;
 
-int cantPartesArchivo, cantNodosArchivo;
-
 #include "../../utils/includes.h"
 #include "tablaEstados.h"
 #include "planificacion.h"
@@ -52,7 +50,7 @@ int cantPartesArchivo, cantNodosArchivo;
 #include <sys/types.h>
 #include <unistd.h>
 
-char* serializarNodosTransformacion(nodoParaAsignar datosParaTransformacion[cantPartesArchivo]) {
+char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, int cantPartesArchivo) {
 	int i, j, k, cantStringsASerializar, largoStringDestinoCopia;
 
 	cantStringsASerializar = (cantPartesArchivo * 6) + 1;
@@ -316,11 +314,12 @@ int main(int argc, char *argv[]) {
 	/* *********** crea la lista para la tabla de estados ********************* */
 	//t_list * listaTablaEstados = list_create();
 	int socketCliente, socketConectado, cantStrings, bytesRecibidos = 0,
-			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido;
+			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido,
+			cantPartesArchivo = 0, cantNodosArchivo = 0;
+	int32_t headerId;
 	nroMasterJob masterJobActual;
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
-		getchar();
 		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
@@ -536,10 +535,32 @@ int main(int argc, char *argv[]) {
 							preparadoEnviarFs = 1;
 							if (preparadoEnviarFs) {
 								if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
+
 									/* ************* solicitud de info del archivo al FS *************** */
-									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS);
+									//recibir las partes del archivo
+									//headerId = deserializarHeader(socketFS);
+									int32_t headerId = TIPO_MSJ_METADATA_ARCHIVO;
+									if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
+										perror("El FS no mandó los bloques");
+									}
+
+									//cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
+									cantPartesArchivo = 6;
+									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
 									//enviarHeaderSolo(socketFS, TIPO_MSJ_OK);
-									recibirNodosArchivoFS(socketFS);
+
+									/* ********************* */
+									//recibir la info de los nodos donde están esos archivos
+									//headerId = deserializarHeader(socketFS);
+									headerId = TIPO_MSJ_DATOS_CONEXION_NODOS;
+									if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
+										printf("El FS no mandó los nodos\n");
+									}
+
+									//cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
+									cantNodosArchivo = 3;
+									//guardar los nodos en la listaGlobal
+									recibirNodosArchivoFS(socketFS, cantNodosArchivo);
 									//enviarHeaderSolo(socketFS, TIPO_MSJ_OK);
 									/* ***************************************************************** */
 
@@ -547,7 +568,7 @@ int main(int argc, char *argv[]) {
 									//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
 									//indexado por partes del archivo
 									nodoParaAsignar asignacionesNodos[cantPartesArchivo];
-									planificar(bloques, asignacionesNodos);
+									planificar(bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo);
 									/* ************* fin planificación *************** */
 
 									/* ************** agregado en tabla de estados *************** */
@@ -578,7 +599,7 @@ int main(int argc, char *argv[]) {
 
 									/* ****** envío de nodos para la transformación ******************* */
 									//envía al master la lista de nodos donde trabajar cada bloque
-									char *mensajeSerializado = serializarNodosTransformacion(asignacionesNodos);
+									char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
 									printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
 									enviarMensaje(socketConectado, mensajeSerializado);
 									/* **************************************************************** */

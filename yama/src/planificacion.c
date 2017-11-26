@@ -92,7 +92,7 @@ int nodoConMayorCarga(int cantNodos) {
 	return nroNodoMayorCarga;
 }
 
-void planificar(bloqueArchivo *bloques, nodoParaAsignar asignacionesNodos[cantPartesArchivo]) {
+void planificar(bloqueArchivo *bloques, nodoParaAsignar *asignacionesNodos, int cantPartesArchivo, int cantNodosArchivo) {
 
 	int i, j;
 
