@@ -10,6 +10,7 @@ enum tiposMensajes {
 	TIPO_MSJ_TABLA_TRANSFORMACION,
 	TIPO_MSJ_TABLA_REDUCCION_LOCAL,
 	TIPO_MSJ_TABLA_REDUCCION_GLOBAL,
+	TIPO_MSJ_TABLA_ALMACENAMIENTO_FINAL,
 	TIPO_MSJ_ERROR,
 	TIPO_MSJ_OK,
 	TIPO_MSJ_HANDSHAKE,
@@ -33,6 +34,7 @@ enum tiposMensajes {
 
 // OJO! Si se agrega algo en el enum de arriba actualizar dejar siempre acá el último valor del array
 const int protocoloCantidadMensajes[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
+		1,
 		1,
 		1,
 		1,
@@ -60,6 +62,7 @@ const char* protocoloMensajesPredefinidos[TIPO_MSJ_ALM_FINAL_ERROR + 1] = {
 		"TABLA_TRANSFORMACION",
 		"TABLA_REDUCCION_LOCAL",
 		"TABLA_REDUCCION_GLOBAL",
+		"TABLA_ALMACENAMIENTO_FINAL",
 		"ERROR",
 		"OK",
 		"HANDSHAKE",
