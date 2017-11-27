@@ -225,6 +225,7 @@ void partirArchivoDeTexto(char * PATH){
 	int * posicionArchivoTerminado;
 	char * nombre = conseguirNombreDePath(PATH);
 	tablaArchivo * nuevoArchivo = malloc(sizeof(tablaArchivo));
+	nuevoArchivo->bloqueCopias = list_create();
 
 t_list * posiciones =list_create();
 
@@ -277,18 +278,14 @@ t_list * posiciones =list_create();
 						nuevoArchivo->nombre=nombre;
 						nuevoArchivo->directorioPadre=1;
 						nuevoArchivo->tipo=1;
-						nuevoArchivo->bloqueCopias = list_create();
-						Bloque * bloques = malloc(sizeof(Bloque));
-						bloques->bloqueNodo = list_create();
 						ContenidoBloque * contenido = malloc(sizeof(ContenidoBloque));
-
+						log_info(logFs,"Archivo %s",nuevoArchivo->nombre);
 
 			if(posicionActual==0){
 			contenidoAEnviar=malloc(*posicion);
 			fread(contenidoAEnviar,*posicion,1,archivo);
 
 
-			bloques->bytesBloque=*posicion;
 
 			tablaBitmapXNodos * nodo = obtenerNodoConMayorPosicionLibre();
 			int posicion0 = buscarPosicionLibre(nodo->bitarray,nodo->cantidadBloques);
@@ -296,25 +293,32 @@ t_list * posiciones =list_create();
 			printf("Guarde original en %s\n",nodo->nodo);
 			printf("\n");
 
-			contenido->bloque=posicion0;
-			contenido->nodo=nodo->nodo;
-			list_add(bloques->bloqueNodo,contenido);
-			list_add(nuevoArchivo->bloqueCopias,bloques);
+			contenido->bytes = *posicion;
+			contenido->bloque = posicion0;
+			contenido->nodo = nodo->nodo;
+			list_add(nuevoArchivo->bloqueCopias,contenido);
+
+			log_info(logFs,"Archivo - bloque %d ",contenido->bloque);
+			log_info(logFs,"Archivo  - nodo %s",contenido->nodo);
 
 			fwrite(contenidoAEnviar,*posicion,1,archivo2);//aca haria el send
 
 			tablaBitmapXNodos * nodo1 = obtenerNodoConMayorPosicionLibre();
-			int posicion = buscarPosicionLibre(nodo1->bitarray,nodo1->cantidadBloques);
-			bitarray_set_bit(nodo1->bitarray,posicion);
+			int posicion7 = buscarPosicionLibre(nodo1->bitarray,nodo1->cantidadBloques);
+			bitarray_set_bit(nodo1->bitarray,posicion7);
 			printf("Guarde copia en %s\n",nodo1->nodo);
 			printf("\n");
 
+			ContenidoBloque * contenido2 = malloc(sizeof(ContenidoBloque));
+			contenido2->bytes = *posicion;
+			contenido2->bloque = posicion7;
+			contenido2->nodo = nodo1->nodo;
+			list_add(nuevoArchivo->bloqueCopias,contenido2);
+
 			//segundo send para la copia
 
-			contenido->bloque=posicion;
-			contenido->nodo=nodo1->nodo;
-			list_add(bloques->bloqueNodo,contenido);
-			list_add(nuevoArchivo->bloqueCopias,bloques);
+			log_info(logFs,"Archivo - bloque %d ",contenido->bloque);
+			log_info(logFs,"Archivo  - nodo %s",contenido->nodo);
 
 
 			}else {
@@ -324,7 +328,6 @@ t_list * posiciones =list_create();
 				fread(contenidoAEnviar,(*posicion)-posicionAnterior,1,archivo);
 
 
-				bloques->bytesBloque=(*posicion)-posicionAnterior;
 
 				tablaBitmapXNodos * nodo2 = obtenerNodoConMayorPosicionLibre();
 				int posicion1 = buscarPosicionLibre(nodo2->bitarray,nodo2->cantidadBloques);
@@ -332,10 +335,14 @@ t_list * posiciones =list_create();
 							printf("Guarde original en %s\n",nodo2->nodo);
 							printf("\n");
 
-							contenido->bloque=posicion1;
-							contenido->nodo=nodo2->nodo;
-							list_add(bloques->bloqueNodo,contenido);
-							list_add(nuevoArchivo->bloqueCopias,bloques);
+							ContenidoBloque * contenido3 = malloc(sizeof(ContenidoBloque));
+							contenido3->bytes = (*posicion)-posicionAnterior;
+									contenido3->bloque = posicion1;
+									contenido3->nodo = nodo2->nodo;
+									list_add(nuevoArchivo->bloqueCopias,contenido3);
+
+						log_info(logFs,"Archivo - bloque %d ",contenido->bloque);
+						log_info(logFs,"Archivo  - nodo %s",contenido->nodo);
 
 				fwrite(contenidoAEnviar,(*posicion)-posicionAnterior,1,archivo2);
 
@@ -344,11 +351,14 @@ t_list * posiciones =list_create();
 							bitarray_set_bit(nodo3->bitarray,posicion2);
 							printf("Guarde copia en %s\n",nodo3->nodo);
 							printf("\n");
+							ContenidoBloque * contenido4 = malloc(sizeof(ContenidoBloque));
+							contenido4->bytes = (*posicion)-posicionAnterior;
+							contenido4->bloque = posicion2;
+							contenido4->nodo = nodo3->nodo;
+							list_add(nuevoArchivo->bloqueCopias,contenido4);
 
-							contenido->bloque=posicion2;
-							contenido->nodo=nodo3->nodo;
-							list_add(bloques->bloqueNodo,contenido);
-							list_add(nuevoArchivo->bloqueCopias,bloques);
+							log_info(logFs,"Archivo - bloque %d ",contenido->bloque);
+							log_info(logFs,"Archivo  - nodo %s",contenido->nodo);
 
 				//aca el otro send? gg
 
@@ -635,17 +645,25 @@ int main() {
 	registrarNodo("Nodo2",90,3,"192.168.1.1","5000");
 	registrarNodo("Nodo3",150,4,"192.168.1.1","5000");
 	registrarNodo("Nodo4",150,5,"192.168.1.1","5000");
-	//partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
+	partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
 	//partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
-/*
-	tablaArchivo * archivo = buscarArchivoPorNombre("Nuevo.txt");
-	printf("%s\n",archivo->nombre);
-	printf("bytes : %d\n",archivo->tamanio);
-	tablaArchivo * archivo2 = buscarArchivoPorNombre("FileSystem.h");
-	printf("%s\n",archivo2->nombre);
-	printf("bytes : %d\n",archivo2->tamanio);
 
-*/
+	tablaArchivo * archivo = buscarArchivoPorNombre("Nuevo.txt");
+
+
+	void  * impresion(ContenidoBloque * hola ){
+		printf("bloque %d\n",hola->bloque);
+		printf("bytes %d\n",hola->bytes);
+		printf("nodo %s\n",hola->nodo);
+
+
+	}
+	list_iterate(archivo->bloqueCopias,impresion);
+
+	/*tablaArchivo * archivo2 = buscarArchivoPorNombre("FileSystem.h");
+	printf("%s\n",archivo2->nombre);
+	printf("bytes : %d\n",archivo2->tamanio);*/
+
 
 	fclose(directorios);
 	fclose(nodos);

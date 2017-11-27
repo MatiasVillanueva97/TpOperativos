@@ -75,6 +75,7 @@ typedef struct{
 typedef struct {
 	char * nodo;
 	int bloque;
+	int bytes;
 }ContenidoBloque;
 
 typedef struct {
