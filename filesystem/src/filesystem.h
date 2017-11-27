@@ -41,9 +41,11 @@ typedef struct{
 //Tabla de Nodos
 typedef struct {
 	char* nodo;
+	char * puerto;
+	char * ip;
 	uint32_t total;
 	uint32_t libre;
-	int socket;
+	uint32_t socket;
 } ContenidoXNodo;
 
 typedef struct {
@@ -62,22 +64,22 @@ typedef struct {
 }BloqueCopia;
 
 typedef struct{
+	char * nombre;
+	uint32_t directorioPadre;
 	int tamanio;
 	int tipo;
-	t_list* bloqueCopia;
+	t_list* bloqueCopias;
 }tablaArchivo;
 
 //info para yama---------------------
 typedef struct {
-	int nodo;
+	char * nodo;
 	int bloque;
-}BloqueCopiaParaArchivo;
+}ContenidoBloque;
 
 typedef struct {
-	int numeroDeBloque;
-	BloqueCopiaParaArchivo copia1;
-	BloqueCopiaParaArchivo copia2;
-	int finArchivo;
+	t_list * bloqueNodo;
+	int bytesBloque;
 }Bloque;
 
 typedef struct{
@@ -92,8 +94,8 @@ typedef struct{
 //Bitmap por Nodo
 typedef struct  {
 	char* nodo;
-	t_bitarray 	*bitarray;
-	int cantidadBloques;
+	t_bitarray 	* bitarray;
+	uint32_t cantidadBloques;
 } tablaBitmapXNodos;
 
 //Variables
@@ -106,7 +108,6 @@ t_list * listaDeBitMap;
 tablaDeNodos * tablaNodosGlobal;
 
 t_log * logFs;
-t_config * configFs;
 t_config * configFs;
 t_bitarray* bitMap ;
 

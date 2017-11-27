@@ -1,5 +1,17 @@
 #include "filesystem.h"
 
+int buscarPosicionLibre(t_bitarray * bitmap,int cantBloque){
+		int i;
+		for(i=0;i<cantBloque;i++){
+			if(!bitarray_test_bit(bitmap,i)){
+			//	log_info(logFs,"Se encontro la posicion %d en el bitmap libre.",i);
+				return i;
+			}
+		}
+		return -1;
+		log_info(logFs,"No hay posicion libre");
+	}
+
 int cantidadDeBloquesLibresEnBitmap(t_bitarray * bitmap,int cantBloques){
 int k;
 int i=0;
@@ -45,13 +57,31 @@ tablaBitmapXNodos * obtenerNodoConMayorPosicionLibre(){
 		return nodoMasLibre;
 		}
 
-tablaBitmapXNodos * buscarNodoPorNombre(char * Nodo){
+tablaBitmapXNodos * buscarNodoPorNombreB(char * Nodo){
 
 bool buscarEnLISTA(tablaBitmapXNodos * elemento){
 		return strcmp(elemento->nodo,Nodo)==0;
 	}
  tablaBitmapXNodos * nodoEncontrado = list_find(listaDeBitMap,(void*)buscarEnLISTA);
  return nodoEncontrado;
+}
+
+ContenidoXNodo * buscarNodoPorNombreS(char * Nodo){
+
+bool buscarEnLISTA(ContenidoXNodo * elemento){
+		return strcmp(elemento->nodo,Nodo)==0;
+	}
+ContenidoXNodo * nodoEncontrado = list_find(tablaNodos,(void*)buscarEnLISTA);
+ return nodoEncontrado;
+}
+
+tablaArchivo * buscarArchivoPorNombre(char * nombreArchivo){
+
+bool buscarEnLISTA(tablaArchivo * elemento){
+		return strcmp(elemento->nombre,nombreArchivo)==0;
+	}
+tablaArchivo * archivoEncontrado = list_find(tablaArchivos,(void*)buscarEnLISTA);
+ return archivoEncontrado;
 }
 
 void crearBitmap(char * PATH ,char * nodoConectado,int cantBloques){
@@ -104,7 +134,35 @@ void crearBitmapDeNodosConectados(char * NodoConectado,int cantBloques){
 
 }
 
-int cantidadBloques(char * PATH){
+void registrarNodo(char * nombre,int bloques,int socket ,char * IP,char * puerto){
+
+	crearBitmapDeNodosConectados(nombre,bloques);
+	tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(nombre);
+	ContenidoXNodo * nodo = malloc(sizeof(ContenidoXNodo));
+	nodo->nodo=nombre;
+	nodo->ip=IP;
+	nodo->libre= cantidadDeBloquesLibresEnBitmap(nodoConBitmap->bitarray,bloques);
+	nodo->puerto=puerto;
+	nodo->socket=socket;
+	nodo->total=bloques;
+
+	list_add(tablaNodos,nodo);
+
+
+}
+
+char * conseguirNombreDePath(char * PATH){
+	char** pathDividido = NULL;
+	pathDividido = string_split(PATH, "/");
+	int q=0;
+	while(pathDividido[q]!=NULL){
+		q++;
+	}
+	char * nombre =pathDividido[q-1];
+	return nombre;
+}
+
+int cantidadBloquesAMandar(char * PATH){
 	FILE* archivo=fopen(PATH,"r+");
 	int tamanoArchivo =1;
 	int cantidadBloques =0;
@@ -125,26 +183,23 @@ void partirArchivoBinario(char* PATH){
 
 	void * archivoABytes = malloc(buff.st_size);
 	void * contenidoAEnviar = malloc(1048576);
+int i=50;
 	while (tamano >= 0) {
-
-		char * nuevaruta=string_new();
-		string_append(&nuevaruta,"/home/utnso/Escritorio/archivonuevo");
-		string_append(&nuevaruta,"hola");
-
-		FILE*archivo2=fopen(nuevaruta,"a+");
+		char * puta=string_new();
+					string_append(&puta,"/home/utnso/Escritorio/archivonuevo");
+					string_append(&puta,string_itoa(i));
+					FILE*archivo2=fopen(puta,"a+");
 
 		if (tamano > 0 && tamano < 1048576) {
 			fread(contenidoAEnviar, tamano, 1, archivo);
-			fwrite(contenidoAEnviar,tamano,1,archivo2);//aca haria el send
-			//send
+			fwrite(contenidoAEnviar,tamano,1,archivo2);//aca haria el send?
 			break;
 		} else {
 			fread(contenidoAEnviar, 1048576, 1, archivo);
-			//send
-			fwrite(contenidoAEnviar,tamano,1,archivo2);//aca haria el send
+			fwrite(contenidoAEnviar,1048576,1,archivo2);
 			tamano -= 1048576;
 		}
-
+i++;
 	}
 
 	free(contenidoAEnviar);
@@ -152,19 +207,24 @@ void partirArchivoBinario(char* PATH){
 	fclose(archivo);
 }
 
-void partiArchivoDeTexto(char * PATH){
+void partirArchivoDeTexto(char * PATH){
+
 	FILE*archivo=fopen(PATH,"r+");
 	int fd=fileno(archivo);
 	struct stat buff;
 	fstat(fd,&buff);
+	int tamano = buff.st_size;
 	char caracter;
 	int a;
 	int ultimoBarraN=0;
 	int ultimoBarraNAnterior=0;
+	int i= 1;
 	int ultimoBarraNAntesDeMega=0;
 	void * contenidoAEnviar;
 	int * posicionBarraN;
 	int * posicionArchivoTerminado;
+	char * nombre = conseguirNombreDePath(PATH);
+	tablaArchivo * nuevoArchivo = malloc(sizeof(tablaArchivo));
 
 t_list * posiciones =list_create();
 
@@ -207,29 +267,97 @@ t_list * posiciones =list_create();
 
 		void partir(int * posicion){
 
-			char * nuevaruta=string_new();
-			string_append(&nuevaruta,"/home/utnso/Escritorio/archivonuevo");
-			string_append(&nuevaruta,string_itoa(posicionActual));
+			char * puta=string_new();
+			string_append(&puta,"/home/utnso/Escritorio/archivonuevo");
+			string_append(&puta,string_itoa(posicionActual));
 
-			FILE*archivo2=fopen(nuevaruta,"a+");
+			FILE*archivo2=fopen(puta,"a+");
+
+						nuevoArchivo->tamanio=tamano;
+						nuevoArchivo->nombre=nombre;
+						nuevoArchivo->directorioPadre=1;
+						nuevoArchivo->tipo=1;
+						nuevoArchivo->bloqueCopias = list_create();
+						Bloque * bloques = malloc(sizeof(Bloque));
+						bloques->bloqueNodo = list_create();
+						ContenidoBloque * contenido = malloc(sizeof(ContenidoBloque));
+
+
 			if(posicionActual==0){
 			contenidoAEnviar=malloc(*posicion);
 			fread(contenidoAEnviar,*posicion,1,archivo);
-			fwrite(contenidoAEnviar,*posicion,1,archivo2);//aca haria el send?
-			//aca haria el send
+
+
+			bloques->bytesBloque=*posicion;
+
+			tablaBitmapXNodos * nodo = obtenerNodoConMayorPosicionLibre();
+			int posicion0 = buscarPosicionLibre(nodo->bitarray,nodo->cantidadBloques);
+			bitarray_set_bit(nodo->bitarray,posicion0);
+			printf("Guarde original en %s\n",nodo->nodo);
+			printf("\n");
+
+			contenido->bloque=posicion0;
+			contenido->nodo=nodo->nodo;
+			list_add(bloques->bloqueNodo,contenido);
+			list_add(nuevoArchivo->bloqueCopias,bloques);
+
+			fwrite(contenidoAEnviar,*posicion,1,archivo2);//aca haria el send
+
+			tablaBitmapXNodos * nodo1 = obtenerNodoConMayorPosicionLibre();
+			int posicion = buscarPosicionLibre(nodo1->bitarray,nodo1->cantidadBloques);
+			bitarray_set_bit(nodo1->bitarray,posicion);
+			printf("Guarde copia en %s\n",nodo1->nodo);
+			printf("\n");
+
+			//segundo send para la copia
+
+			contenido->bloque=posicion;
+			contenido->nodo=nodo1->nodo;
+			list_add(bloques->bloqueNodo,contenido);
+			list_add(nuevoArchivo->bloqueCopias,bloques);
+
 
 			}else {
+
 				int posicionAnterior=*((int*)list_get(posiciones,posicionActual-1));
 				contenidoAEnviar=malloc((*posicion)-posicionAnterior);
 				fread(contenidoAEnviar,(*posicion)-posicionAnterior,1,archivo);
-				fwrite(contenidoAEnviar,*posicion,1,archivo2);//aca haria el send?
-				//aca el otro send
+
+
+				bloques->bytesBloque=(*posicion)-posicionAnterior;
+
+				tablaBitmapXNodos * nodo2 = obtenerNodoConMayorPosicionLibre();
+				int posicion1 = buscarPosicionLibre(nodo2->bitarray,nodo2->cantidadBloques);
+							bitarray_set_bit(nodo2->bitarray,posicion1);
+							printf("Guarde original en %s\n",nodo2->nodo);
+							printf("\n");
+
+							contenido->bloque=posicion1;
+							contenido->nodo=nodo2->nodo;
+							list_add(bloques->bloqueNodo,contenido);
+							list_add(nuevoArchivo->bloqueCopias,bloques);
+
+				fwrite(contenidoAEnviar,(*posicion)-posicionAnterior,1,archivo2);
+
+				tablaBitmapXNodos * nodo3 = obtenerNodoConMayorPosicionLibre();
+				int posicion2 = buscarPosicionLibre(nodo3->bitarray,nodo3->cantidadBloques);
+							bitarray_set_bit(nodo3->bitarray,posicion2);
+							printf("Guarde copia en %s\n",nodo3->nodo);
+							printf("\n");
+
+							contenido->bloque=posicion2;
+							contenido->nodo=nodo3->nodo;
+							list_add(bloques->bloqueNodo,contenido);
+							list_add(nuevoArchivo->bloqueCopias,bloques);
+
+				//aca el otro send? gg
 
 			}
 			posicionActual++;
 		fclose(archivo2);
 		}
 		list_iterate(posiciones,(void*)partir);
+		list_add(tablaArchivos,nuevoArchivo);
 		fclose(archivo);
 		free(contenidoAEnviar);
 }
@@ -239,7 +367,7 @@ void almacenarArchivo(char * PATH, int TipoArchivo){
 	if (TipoArchivo == 1) {
 		partirArchivoBinario(PATH);
 	} else {
-		partiArchivoDeTexto(PATH);
+		partirArchivoDeTexto(PATH);
 	}
 }
 
@@ -323,19 +451,6 @@ void enviarInfoBloques(int socketCliente) {
 	enviarMensaje(socketCliente, mensajeSerializado);
 }
 
-
-	int buscarPosicionLibre(int cantBloque){
-		int i;
-		for(i=0;i<cantBloque+1;i++){
-			if(!bitarray_test_bit(bitMap,i)){
-				log_info(logFs,"Se encontro la posicion %d en el bitmap libre.",i);
-				return i;
-			}
-		}
-		return -1;
-		log_info(logFs,"No hay posicion libre");
-	}
-
 void soyServidor(char * puerto) {
 	void *get_in_addr(struct sockaddr *sa) {
 		if (sa->sa_family == AF_INET) {
@@ -403,20 +518,10 @@ void soyServidor(char * puerto) {
 						}
 							break;
 						case datanode: {
-							//necesito recibir informacion del datanode,id de datanode y bitmap para la proxima entrega
-							crearBitmapDeNodosConectados("Nodo1",35);//donde dice Nodo329 iria el id del datanode
-							crearBitmapDeNodosConectados("Nodo2",35);//donde dice Nodo329 iria el id del datanode
-							crearBitmapDeNodosConectados("Nodo3",35);//donde dice Nodo329 iria el id del datanode
-							tablaBitmapXNodos * NodoEncontrado = buscarNodoPorNombre("Nodo3");
-							ContenidoXNodo * HOla = malloc(sizeof(ContenidoXNodo));
-							HOla->nodo="Nodo3";
-							HOla->total=35;
-							HOla->libre=cantidadDeBloquesLibresEnBitmap(NodoEncontrado->bitarray,NodoEncontrado->cantidadBloques);
-							HOla->socket=nuevoSocket;
-							tablaBitmapXNodos *NodoLIbre = obtenerNodoConMayorPosicionLibre();
-							printf(" Nodo con mas Disponibilidad %s\n",NodoLIbre->nodo);
-							printf("Socket %d del %s \n",HOla->socket,HOla->nodo);
-
+							registrarNodo("Nodo1",60,nuevoSocket,"192.168.1.1","5000");
+							registrarNodo("Nodo2",90,nuevoSocket,"192.168.1.1","5000");
+							registrarNodo("Nodo3",150,nuevoSocket,"192.168.1.1","5000");
+							registrarNodo("Nodo4",150,nuevoSocket,"192.168.1.1","5000");
 
 							estable = true;
 						}
@@ -433,7 +538,7 @@ void soyServidor(char * puerto) {
 					Mensaje mensaje = recibirMensaje(i, &stream);
 					if (mensaje.accion <= 0) {
 						if (mensaje.accion == 0) {*/
-							printf("Se murio socket %d hung up\n", i); ///hacer log
+							printf("Se murio socket %d \n", i); ///hacer log
 						/*} else {
 							perror("Hubo un error que no deberia pasar");
 						}*/
@@ -468,7 +573,24 @@ void soyServidor(char * puerto) {
 }
 
 
-
+int sumatoriaDeBloquesLibres(){
+	int suma = 0;
+	void sumar(tablaBitmapXNodos * elemento){
+		int a = cantidadDeBloquesLibresEnBitmap(elemento->bitarray,elemento->cantidadBloques);
+		suma = suma +a ;
+	}
+	list_iterate(listaDeBitMap,(void*)sumar);
+return suma;
+}
+int sumatoriaDeBloquesTotal(){
+	int suma = 0;
+		void sumar(tablaBitmapXNodos * elemento){
+			int a = elemento->cantidadBloques;
+			suma = suma +a ;
+		}
+		list_iterate(listaDeBitMap,(void*)sumar);
+		return suma;
+}
 
 
 /*
@@ -493,22 +615,38 @@ void enviarListaNodos(int socket){
 int main() {
 
 	char * PUERTO;
-	logFs = log_create("FileSystem.log", "FileSystem", 0, 0);
+	logFs = log_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/FileSystem.log", "FileSystem", 0, 0);
 	FILE * directorios =fopen("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/directorios.dat","w+");
 	FILE * nodos =fopen("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/nodo.bin","wb");
 	tablaNodos = list_create();
 	tablaArchivos = list_create();
-	tablaNodosGlobal=malloc(sizeof(tablaDeNodos));
+	/*tablaNodosGlobal=malloc(sizeof(tablaDeNodos));
 	tablaNodosGlobal->nodo=list_create();
-	tablaNodosGlobal->contenidoXNodo=list_create();
+	tablaNodosGlobal->contenidoXNodo=list_create();*/
 	listaDeBitMap =list_create();
 
-	pthread_t hiloConsola;
+	//pthread_t hiloConsola;
 	configFs =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/config/configFilesystem.txt");
 	PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
-	pthread_create(&hiloConsola,NULL,(void*)IniciarConsola,NULL);
-	soyServidor(PUERTO);
-	pthread_join(hiloConsola, NULL);
+	//pthread_create(&hiloConsola,NULL,(void*)IniciarConsola,NULL);
+	//soyServidor(PUERTO);
+	//pthread_join(hiloConsola, NULL);
+	registrarNodo("Nodo1",60,2,"192.168.1.1","5000");
+	registrarNodo("Nodo2",90,3,"192.168.1.1","5000");
+	registrarNodo("Nodo3",150,4,"192.168.1.1","5000");
+	registrarNodo("Nodo4",150,5,"192.168.1.1","5000");
+	//partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
+	//partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
+/*
+	tablaArchivo * archivo = buscarArchivoPorNombre("Nuevo.txt");
+	printf("%s\n",archivo->nombre);
+	printf("bytes : %d\n",archivo->tamanio);
+	tablaArchivo * archivo2 = buscarArchivoPorNombre("FileSystem.h");
+	printf("%s\n",archivo2->nombre);
+	printf("bytes : %d\n",archivo2->tamanio);
+
+*/
+
 	fclose(directorios);
 	fclose(nodos);
 	log_destroy(logFs);
