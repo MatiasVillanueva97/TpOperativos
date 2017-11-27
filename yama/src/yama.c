@@ -178,9 +178,9 @@ char* serializarMensajeReduccLocal(int nroNodoRecibido, nroMasterJob masterJobAc
 	}
 	free(arrayMensajesSerializarRedLocal);
 
-	for (h = 0; h < cantidadTemporales; h++) {
-		free(temporales[j]); //TODO: revisar que no rompa
-	}
+//	for (h = 0; h < cantidadTemporales; h++) {
+//		free(temporales[j]); //TODO: revisar que no rompa
+//	}
 	free(temporales);
 	return mensajeSerializadoRedLocal;
 }
@@ -298,6 +298,9 @@ int main(int argc, char *argv[]) {
 	int socketFS;
 	if ((socketFS = conexionAFileSystem()) < 0) {
 		preparadoEnviarFs = 0;
+	} else {
+		int modulo = yama;
+		send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 	}
 	/* ************** inicialización como server ************ */
 	int listenningSocket;
@@ -349,11 +352,12 @@ int main(int argc, char *argv[]) {
 						/* *************************** recepción de un mensaje ****************************/
 						socketConectado = nroSocket;
 						masterJobActual = getNroMasterJobByFD(socketConectado);
-						printf("socketConectado: %d\n", socketConectado);
+						printf("\n-----------------------\nsocketConectado: %d\n", socketConectado);
 						printf("master actual: %d\n", masterJobActual.nroMaster);
 						printf("job actual: %d\n", masterJobActual.nroJob);
 						int32_t headerId = deserializarHeader(socketConectado);
-						if (headerId == -1) {//error o desconexión de un cliente
+						printf("headerId: %d\n", headerId);
+						if (headerId <= 0) {//error o desconexión de un cliente
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 						}
@@ -365,7 +369,7 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
-							printf("\nnodo recibido: %d\n", nroNodoRecibido);
+							printf("nodo recibido: %d\n", nroNodoRecibido);
 							printf("bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
 
@@ -396,10 +400,9 @@ int main(int argc, char *argv[]) {
 								char *mensajeSerializadoRedLocal = serializarMensajeReduccLocal(nroNodoRecibido, masterJobActual, temporalRedLocal);
 								printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedLocal);
 								enviarMensaje(socketConectado, mensajeSerializadoRedLocal);
+								puts("\nlista de elementos luego de enviar la tabla de reducción local");
+								mostrarTablaEstados();
 							}
-
-							//puts("\nlista de elementos asignados a transformación");
-							//mostrarTablaEstados();
 
 							break;
 						case TIPO_MSJ_TRANSFORMACION_ERROR:
@@ -414,6 +417,7 @@ int main(int argc, char *argv[]) {
 						case TIPO_MSJ_REDUCC_LOCAL_OK:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
+							printf("nroNodoRecibido: %d\n", nroNodoRecibido);
 							free(arrayMensajes);
 							//modificar el estado en la tabla de estados
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, FIN_OK) == 0) {
@@ -422,8 +426,8 @@ int main(int argc, char *argv[]) {
 
 							//verificar que todos los nodos del job y master hayan terminado la reducción local
 							if (getCantFilasByJMEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_LOCAL, EN_PROCESO) == 0) {
-								int nodoReduccGlobal = 2;//TODO: definir este nodo
-
+								int nodoReduccGlobal = 2; //TODO: definir este nodo
+								puts("paso");
 								/* ************** agregado de la fila de reducción global en tabla de estados *************** */
 								struct filaTablaEstados fila;
 								fila.job = masterJobActual.nroJob;
@@ -451,7 +455,6 @@ int main(int argc, char *argv[]) {
 								strcpy(filaBusqueda.temporal, "");
 								filaBusqueda.estado = FIN_OK;
 								filaBusqueda.siguiente = NULL;
-
 								int cantFilasEncontradas = buscarMuchosElemTablaEstados(filasReduccGlobal, filaBusqueda);
 								if (cantFilasEncontradas == 0) {
 									puts("no se encontró ninguna fila de la tabla de estados para hacer la reducción global");
@@ -459,11 +462,12 @@ int main(int argc, char *argv[]) {
 								if (cantFilasEncontradas != cantNodosReduccGlobal) {
 									puts("hubo un error en la cantidad de filas encontradas");
 								}
-
 								/* ******* envío de la tabla para reducción global ****** */
 								char *mensajeSerializadoRedGlobal = serializarMensajeReduccGlobal(cantNodosReduccGlobal, filasReduccGlobal, temporalRedGlobal);
-								printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedGlobal);
+								printf("\nmensaje serializado para reducción global: %s\n", mensajeSerializadoRedGlobal);
 								enviarMensaje(socketConectado, mensajeSerializadoRedGlobal);
+								puts("\nlista de elementos luego de enviar la tabla de reducción global");
+								mostrarTablaEstados();
 							}
 							break;
 						case TIPO_MSJ_REDUCC_LOCAL_ERROR:
@@ -546,26 +550,28 @@ int main(int argc, char *argv[]) {
 							strcpy(archivo, arrayMensajes[0]);
 							free(arrayMensajes);
 							//pide la metadata del archivo al FS
-							preparadoEnviarFs = 1;
 							if (preparadoEnviarFs) {
 								if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
 
 									/* ************* solicitud de info del archivo al FS *************** */
 									//recibir las partes del archivo
-									//headerId = deserializarHeader(socketFS);
-									int32_t headerId = TIPO_MSJ_METADATA_ARCHIVO;
+									int32_t headerId = deserializarHeader(socketFS);
 									if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
 										perror("El FS no mandó los bloques");
 									}
-
-									//cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
-									cantPartesArchivo = 6;
+									printf("headerId recibido: %d\n",headerId);
+									cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
+									printf("cantPartesArchivo: %d\n", cantPartesArchivo);
 									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
 
+									for (i = 0; i < cantPartesArchivo; i++) {
+										printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
+									}
+									puts("presionar ENTER");
+									getchar();
 									/* ********************* */
 									//recibir la info de los nodos donde están esos archivos
-									//headerId = deserializarHeader(socketFS);
-									headerId = TIPO_MSJ_DATOS_CONEXION_NODOS;
+									headerId = deserializarHeader(socketFS);
 									if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
 										printf("El FS no mandó los nodos\n");
 									}
@@ -616,10 +622,13 @@ int main(int argc, char *argv[]) {
 									printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
 									enviarMensaje(socketConectado, mensajeSerializado);
 									/* **************************************************************** */
-
+									puts("\nlista de elementos luego de enviar la tabla de transformación");
+									mostrarTablaEstados();
 								} else {
 									perror("No se pudo pedir el archivo al FS");
 								}
+							} else {
+								puts("No estoy conectado al FileSystem");
 							}
 							break;
 						default:

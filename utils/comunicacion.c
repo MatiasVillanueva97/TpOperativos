@@ -100,7 +100,6 @@ char** deserializarMensaje(int socketCliente, int cantMensajes) {
 		arrayMensajes[i] = malloc(tamMensaje + 1);
 		recibirMensaje(arrayMensajes[i], socketCliente, tamMensaje);
 		arrayMensajes[i][tamMensaje] = '\0';
-
 	}
 	return arrayMensajes;
 }
