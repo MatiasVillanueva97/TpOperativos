@@ -9,7 +9,7 @@
 // tabla de estados de YAMA
 // ================================================================ //
 enum etapasTablaEstados {
-	TRANSFORMACION, REDUCC_LOCAL, REDUCC_GLOBAL,ALMAC_FINAL
+	TRANSFORMACION, REDUCC_LOCAL, REDUCC_GLOBAL, ALMAC_FINAL
 };
 enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK
@@ -85,6 +85,13 @@ int buscarMuchosElemTablaEstados(struct filaTablaEstados *arrayFilasEncontradas,
 	auxiliar = primeroTablaEstados;
 	int i = 0;
 	while (auxiliar != NULL) {
+//		printf("job %d - %d\n", busqueda.job, auxiliar->job);
+//		printf("master %d - %d\n", busqueda.master, auxiliar->master);
+//		printf("nodo %d - %d\n", busqueda.nodo, auxiliar->nodo);
+//		printf("bloque %d - %d\n", busqueda.bloque, auxiliar->bloque);
+//		printf("etapa %d - %d\n", busqueda.etapa, auxiliar->etapa);
+//		printf("temporal %s - %s\n", busqueda.temporal, auxiliar->temporal);
+//		printf("estado %d - %d\n", busqueda.estado, auxiliar->estado);
 		if (busqueda.job && busqueda.job != auxiliar->job) {
 			auxiliar = auxiliar->siguiente;
 		} else if (busqueda.master && busqueda.master != auxiliar->master) {
@@ -109,7 +116,10 @@ int buscarMuchosElemTablaEstados(struct filaTablaEstados *arrayFilasEncontradas,
 			arrayFilasEncontradas[i].estado = busqueda.estado;
 			arrayFilasEncontradas[i].siguiente = NULL;
 			i++;
+			auxiliar = auxiliar->siguiente;
 		}
+//		printf("i: %d\n", i);
+//		printf("auxiliar: %d\n", auxiliar);
 	}
 	return i;
 }
