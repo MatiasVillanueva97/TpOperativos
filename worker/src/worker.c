@@ -228,6 +228,10 @@ int main(int argc, char *argv[]) {
 
 			}
 
+			if (headerId == (int32_t)"ALMACENAMIENTO_FINAL") {
+
+			}
+
 
 			if (resultado == 0) {
 				enviarHeaderSolo(socketCliente,resultado);
