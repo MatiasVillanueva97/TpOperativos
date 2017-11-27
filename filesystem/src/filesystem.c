@@ -388,9 +388,7 @@ void enviarInfoBloques(int socketCliente) {
 	tablaArchivo * archivoRecibido = buscarArchivoPorNombre(nombre);
 
 	int cantBloquesFiles = cantidadBloquesAMandar(archivo);	//path completo yamafs:
-	printf("cantBloquesFiles: %d\n", cantBloquesFiles);
 	char *cantBloquesFileString = intToArrayZerosLeft(cantBloquesFiles, 4);
-	printf("cantBloquesFileString: %s\n", cantBloquesFileString);
 	int cantMensajesPorPedazoArchivo = 6;
 	int cantStrings = 1 + cantMensajesPorPedazoArchivo * cantBloquesFiles;
 	int i, j, k;
@@ -401,7 +399,6 @@ void enviarInfoBloques(int socketCliente) {
 	if (!arrayMensajesSerializar[i])
 		perror("error de malloc 1");
 	strcpy(arrayMensajesSerializar[i], cantBloquesFileString);
-	printf("arrayMensajesSerializar[0]: %s\n", arrayMensajesSerializar[0]);
 	i++;
 	void * impresion(ContenidoBloque * hola) {
 
@@ -487,9 +484,10 @@ void enviarInfoNodos(int socketCliente) {
 
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATOS_CONEXION_NODOS, arrayMensajesSerializar, cantStrings);
 	printf("mensaje serializado: %s\n", mensajeSerializado);
-	getchar();
 	int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);
 	printf("bytes enviados: %d\n", bytesEnviados);
+	puts("presionar ENTER");
+	getchar();
 }
 void recibirInfoDatanode(int socketData){
 	int32_t header = deserializarHeader(socketData);
@@ -554,7 +552,7 @@ void soyServidor(char * puerto) {
 						case yama: {
 							if (estable) {
 								SocketYama = nuevoSocket;
-								//enviarInfoBloques(SocketYama);
+								enviarInfoBloques(SocketYama);
 								enviarInfoNodos(SocketYama);
 								puts("conectado");
 							} else {

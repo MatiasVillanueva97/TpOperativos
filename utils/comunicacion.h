@@ -2,7 +2,7 @@
 
 int enviarMensaje(int serverSocket, char *message);
 
-void recibirMensaje(char *mensaje, int socketCliente, int packageSize);
+int recibirMensaje(char *mensaje, int socketCliente, int packageSize);
 
 char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings);
 

@@ -26,12 +26,14 @@ int enviarHeaderSolo(int serverSocket, int32_t headerId) {
  * recibe por socket un mensaje
  * parámetros: el puntero donde guardar el mensaje, socket del cliente y el largo del string (string_length)
  */
-void recibirMensaje(char *message, int socketCliente, int packageSize) {
+int recibirMensaje(char *message, int socketCliente, int packageSize) {
 	//char *message=malloc(packageSize);
-	if (recv(socketCliente, message, packageSize, 0) < 0) {
+	int cantBytesRecibidos;
+	if ((cantBytesRecibidos = recv(socketCliente, message, packageSize, MSG_WAITALL)) < 0) {
 		perror("Recepción Mensaje");
 		strcpy(message, "-1");
 	}
+	return cantBytesRecibidos;
 }
 
 /* **************** funciones para serializar y deserializar mensajes ************ */
@@ -41,19 +43,19 @@ char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings
 	int32_t largoStringId = LARGO_STRING_HEADER_ID;
 	int32_t largoStringTamMensaje = LARGO_STRING_TAM_MENSAJE;
 
-	//pido memoria para el mensaje serializado calculando el tamaño a poner en el malloc
+//pido memoria para el mensaje serializado calculando el tamaño a poner en el malloc
 	int largoMensajeSerializado = largoStringId;
 	for (i = 0; i < cantStrings; i++) {
 		largoMensajeSerializado += largoStringTamMensaje;
 		largoMensajeSerializado += string_length(arrayMensajes[i]);
 	}
-	char *mensajeSerializado = malloc(largoMensajeSerializado+1);
+	char *mensajeSerializado = malloc(largoMensajeSerializado + 1);
 
-	//agrego el id del mensaje a la serialización
+//agrego el id del mensaje a la serialización
 	char *idString = intToArrayZerosLeft(idMensaje, largoStringId);
 	memcpy(mensajeSerializado + offsetPuntero, idString, largoStringId);
 	offsetPuntero += largoStringId;
-	//cada vuelta del for agrega el tamaño del mensaje y el mensaje
+//cada vuelta del for agrega el tamaño del mensaje y el mensaje
 	for (i = 0; i < cantStrings; i++) {
 		int32_t largoMensaje = string_length(arrayMensajes[i]);
 
@@ -63,7 +65,7 @@ char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings
 		memcpy(mensajeSerializado + offsetPuntero, arrayMensajes[i], largoMensaje);
 		offsetPuntero += largoMensaje;
 	}
-	mensajeSerializado[largoMensajeSerializado]='\0';
+	mensajeSerializado[largoMensajeSerializado] = '\0';
 	return mensajeSerializado;
 }
 
@@ -89,18 +91,19 @@ int32_t deserializarHeader(int socketCliente) {
  * devuelve el mensaje
  */
 char** deserializarMensaje(int socketCliente, int cantMensajes) {
-	int i;
+	int i, cantBytesRecibidos = 0;
 	char **arrayMensajes = malloc(cantMensajes * sizeof(char*));
 	for (i = 0; i < cantMensajes; i++) {
 		char tamMensajeString[LARGO_STRING_TAM_MENSAJE + 1];
-		recibirMensaje(tamMensajeString, socketCliente, LARGO_STRING_TAM_MENSAJE);
+		cantBytesRecibidos += recibirMensaje(tamMensajeString, socketCliente, LARGO_STRING_TAM_MENSAJE);
 		tamMensajeString[LARGO_STRING_TAM_MENSAJE] = '\0';
 		int tamMensaje = atoi(tamMensajeString);
 
 		arrayMensajes[i] = malloc(tamMensaje + 1);
-		recibirMensaje(arrayMensajes[i], socketCliente, tamMensaje);
+		cantBytesRecibidos += recibirMensaje(arrayMensajes[i], socketCliente, tamMensaje);
 		arrayMensajes[i][tamMensaje] = '\0';
 	}
+	//printf("cantBytesRecibidos: %d\n", cantBytesRecibidos);
 	return arrayMensajes;
 }
 

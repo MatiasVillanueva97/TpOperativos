@@ -314,8 +314,7 @@ int main(int argc, char *argv[]) {
 	FD_SET(listenningSocket, &socketsLecturaMaster);
 	// keep track of the biggest file descriptor
 	maxFD = listenningSocket; // so far, it's this one
-	/* *********** crea la lista para la tabla de estados ********************* */
-	//t_list * listaTablaEstados = list_create();
+
 	int socketCliente, socketConectado, cantStrings, bytesRecibidos = 0,
 			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido,
 			cantPartesArchivo, cantNodosArchivo;
@@ -559,28 +558,31 @@ int main(int argc, char *argv[]) {
 									if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
 										perror("El FS no mandó los bloques");
 									}
-									printf("headerId recibido: %d\n",headerId);
+									printf("headerId recibido: %d\n", headerId);
 									cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
-									printf("cantPartesArchivo: %d\n", cantPartesArchivo);
-									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
 
+									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
 									for (i = 0; i < cantPartesArchivo; i++) {
 										printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
 									}
-									puts("presionar ENTER");
-									getchar();
+
 									/* ********************* */
 									//recibir la info de los nodos donde están esos archivos
 									headerId = deserializarHeader(socketFS);
 									if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
 										printf("El FS no mandó los nodos\n");
 									}
-
-									//cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
-									cantNodosArchivo = 3;
+									puts("nodos");
+									cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
 									//guardar los nodos en la listaGlobal
 									datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
 									recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
+									for (k = 0; k < cantNodosArchivo; k++) {
+										printf("listaGlobalNodos %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
+										printf("nodosParaPlanificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
+									}
+									puts("presionar ENTER");
+									getchar();
 									/* ***************************************************************** */
 
 									/* ************* inicio planificación *************** */
