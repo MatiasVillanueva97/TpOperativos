@@ -7,6 +7,7 @@
  */
 
 #include "../../utils/includes.h"
+#include <sys/stat.h>
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -44,6 +45,27 @@ int conexionAFileSystem() {
 // Escribe sobre el data.bin
 // Puede haber varios DataNode corriendo al mismo tiempo.
 // ================================================================ //
+void setBloque(int idBloque,char* datos, int* tamanioBloque, FILE* archivo){
+	char buffer[1048576];
+	int bytesLeidos = sizeof(char*)* strlen(datos);
+	tamanioBloque[idBloque]=bytesLeidos;
+	int posicion = idBloque * 1048576;
+	fseek(archivo, posicion, SEEK_SET);
+	fwrite(datos, sizeof(buffer), 1,archivo);
+	log_info(logDataNode, "%i bytes guardados en el bloque %i\n",bytesLeidos,idBloque);
+	printf("%i bytes guardados en el bloque %i\n",bytesLeidos,idBloque);
+}
+//leer los datos del bloque
+char* getBloque(int idBloque, int tamanioBloque[], FILE* archivo){
+	int bytesLeidos = tamanioBloque[idBloque];
+	char *buffer[bytesLeidos];
+	int posicion = idBloque * 1048576;
+	fseek(archivo, posicion, SEEK_SET);
+	fread(buffer,bytesLeidos,1,archivo);
+	log_info(logDataNode, "%i bytes leidos en el bloque %i\n",bytesLeidos,idBloque);
+	printf("%i bytes leidos en el bloque %i\n",bytesLeidos,idBloque);
+	return *buffer;
+}
 int cantidadBloquesAMandar(char * PATH) {
 	FILE* archivo = fopen(PATH, "r+");
 	int tamanoArchivo = 1;
@@ -125,8 +147,36 @@ int main(int argc, char *argv[]) {
 	}
 
 	//2°)Abro el archivo data.bin
-//	FILE* archivo = fopen("data.bin","r+");
-//	fclose(archivo);//esto solo para que no quede abierto por el momento
+	FILE* archivo = fopen(datosConfigDataNode[4],"rb+");
+
+	//tamaño de archivo data.bin
+	int fd=fileno(archivo);
+	struct stat buff;
+	fstat(fd,&buff);
+	int tamano = buff.st_size/1048576;
+	int tamanioBloque[tamano];
+
+
+	//************TEST setBloque getBoque*******************
+	char c[1048576]="hola como estas";
+	char c2[1048576]="bien gracias";
+	char* c3;
+
+	setBloque(0,c,tamanioBloque,archivo);
+	setBloque(2,c2,tamanioBloque,archivo);
+	c3=getBloque(0,tamanioBloque,archivo);
+	c3=getBloque(2,tamanioBloque,archivo);
+	setBloque(3,c,tamanioBloque,archivo);
+	setBloque(2,c,tamanioBloque,archivo);
+	c3=getBloque(0,tamanioBloque,archivo);
+	//c3=getBloque(1,tamanioBloque,archivo);
+	c3=getBloque(2,tamanioBloque,archivo);
+	c3=getBloque(3,tamanioBloque,archivo);
+	printf("tamaño ocupado en bloque 1: %i bytes\n",tamanioBloque[0]);
+
+	//******************************************************
+
+	fclose(archivo);//esto solo para que no quede abierto por el momento
 //	//3°)Me conecto al FS y espero solicitudes
 	int socketFS;
 	if ((socketFS = conexionAFileSystem()) < 0) {
