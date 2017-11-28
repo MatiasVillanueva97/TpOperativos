@@ -10,6 +10,7 @@ uint16_t maxNroMaster = 0, maxNroJob = 0;
 typedef struct {
 	uint16_t nroMaster;
 	uint16_t nroJob;
+	uint16_t nodoReduccGlobal;
 } nroMasterJob;
 
 //vector con los número de master y job asignados a cada master que se conecta
@@ -25,6 +26,10 @@ nroMasterJob getNroMasterJobByFD(int fileDescriptor) {
 void asignarNroMasterJob(uint16_t nroMaster, uint16_t nroJob, int fileDescriptor) {
 	listaNrosMasterJob[fileDescriptor].nroJob = nroJob;
 	listaNrosMasterJob[fileDescriptor].nroMaster = nroMaster;
+}
+
+void asignarNodoReduccGlobal(uint16_t nodoReduccGlobal, int fileDescriptor) {
+	listaNrosMasterJob[fileDescriptor].nodoReduccGlobal = nodoReduccGlobal;
 }
 
 uint16_t getNuevoNroMaster() {

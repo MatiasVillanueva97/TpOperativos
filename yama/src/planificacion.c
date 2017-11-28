@@ -34,7 +34,7 @@
 //sale del archivo config?????????????
 char algoritmoPlanificacion = 'W';	//C para clock; W para w-clock
 
-int cargaMaxima, disponibBase;
+int cargaMaxima, disponibBase, nodoReduccGlobal;
 
 /*
  * se fija si existe un bloque determinado en un nodo determinado
@@ -96,12 +96,13 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 //	}
 //	printf("\n");
 
-	disponibBase = 1;	//sale del archivo config?????????????
-
+	//disponibBase = 1;	//sale del archivo config?????????????
+	printf("disponibBase: %d\n", disponibBase);
 	//pongo la carga inicial de cada nodo
-	nodosParaPlanificar[0].carga = 0;
+	nodosParaPlanificar[0].carga = 1;
 	nodosParaPlanificar[1].carga = 1;
-	nodosParaPlanificar[2].carga = 1;
+	nodosParaPlanificar[2].carga = 0;
+	nodosParaPlanificar[3].carga = 10;
 	int indexNodoMaxCarga = nodoConMayorCarga(cantNodosArchivo, nodosParaPlanificar);
 	cargaMaxima = nodosParaPlanificar[indexNodoMaxCarga].carga;
 	for (i = 0; i < cantNodosArchivo; i++) {
@@ -186,6 +187,17 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 
 //		getchar();
 //		printf("\n-------- termina la vuelta -----------\n");
+	}
+
+	//ordeno los nodos de menor a mayor por carga
+	for (i = 0; i < cantNodosArchivo; i++) {
+		for (j = 0; j < (cantNodosArchivo - 1); j++) {
+			if (nodosParaPlanificar[j].carga > nodosParaPlanificar[j + 1].carga) {
+				temp = nodosParaPlanificar[j];
+				nodosParaPlanificar[j] = nodosParaPlanificar[j + 1];
+				nodosParaPlanificar[j + 1] = temp;
+			}
+		}
 	}
 	return;
 }
