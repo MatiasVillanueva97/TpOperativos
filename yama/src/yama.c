@@ -294,6 +294,7 @@ int main(int argc, char *argv[]) {
 	if (!getDatosConfiguracion()) {
 		return EXIT_FAILURE;
 	}
+	disponibBase = atoi(datosConfigYama[4]);
 	/* ************** conexión como cliente al FS *************** */
 	int socketFS;
 	if ((socketFS = conexionAFileSystem()) < 0) {
@@ -425,9 +426,9 @@ int main(int argc, char *argv[]) {
 
 							//verificar que todos los nodos del job y master hayan terminado la reducción local
 							if (getCantFilasByJMEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_LOCAL, EN_PROCESO) == 0) {
-								int nodoReduccGlobal = 2; //TODO: definir este nodo
-								puts("paso");
 								/* ************** agregado de la fila de reducción global en tabla de estados *************** */
+								int nodoReduccGlobal = (int) getNroMasterJobByFD(socketConectado).nodoReduccGlobal;
+
 								struct filaTablaEstados fila;
 								fila.job = masterJobActual.nroJob;
 								fila.master = masterJobActual.nroMaster;
@@ -460,13 +461,35 @@ int main(int argc, char *argv[]) {
 								}
 								if (cantFilasEncontradas != cantNodosReduccGlobal) {
 									puts("hubo un error en la cantidad de filas encontradas");
+								} else {
+									//hacer que el nodo donde se hace la reducción global vaya primero
+									//buscar el nodo asignado en el vector filasReduccGlobal e intercambiarlo por el primero
+									//buscar la fila por nodo, cuando la encuentra la guarda en un temporal
+									//pone la fila 0  en la fila i donde estaba la del nodo buscado
+									//pone la del temporal en la fila 0
+									struct filaTablaEstados temporal;
+									for (k = 0; k < cantNodosReduccGlobal;
+											k++) {
+										printf("k %d - nodo %d - temporal %s\n", k, filasReduccGlobal[k].nodo, filasReduccGlobal[k].temporal);
+										if (filasReduccGlobal[k].nodo == nodoReduccGlobal) {
+											temporal = filasReduccGlobal[k];
+											filasReduccGlobal[k] = filasReduccGlobal[0];
+											filasReduccGlobal[0] = temporal;
+											break;
+										}
+									}
+									for (k = 0; k < cantNodosReduccGlobal;
+											k++) {
+										printf("k %d - nodo %d - temporal %s\n", k, filasReduccGlobal[k].nodo, filasReduccGlobal[k].temporal);
+									}
+
+									/* ******* envío de la tabla para reducción global ****** */
+									char *mensajeSerializadoRedGlobal = serializarMensajeReduccGlobal(cantNodosReduccGlobal, filasReduccGlobal, temporalRedGlobal);
+									printf("\nmensaje serializado para reducción global: %s\n", mensajeSerializadoRedGlobal);
+									enviarMensaje(socketConectado, mensajeSerializadoRedGlobal);
+									puts("\nlista de elementos luego de enviar la tabla de reducción global");
+									mostrarTablaEstados();
 								}
-								/* ******* envío de la tabla para reducción global ****** */
-								char *mensajeSerializadoRedGlobal = serializarMensajeReduccGlobal(cantNodosReduccGlobal, filasReduccGlobal, temporalRedGlobal);
-								printf("\nmensaje serializado para reducción global: %s\n", mensajeSerializadoRedGlobal);
-								enviarMensaje(socketConectado, mensajeSerializadoRedGlobal);
-								puts("\nlista de elementos luego de enviar la tabla de reducción global");
-								mostrarTablaEstados();
 							}
 							break;
 						case TIPO_MSJ_REDUCC_LOCAL_ERROR:
@@ -572,7 +595,6 @@ int main(int argc, char *argv[]) {
 									if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
 										printf("El FS no mandó los nodos\n");
 									}
-									puts("nodos");
 									cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
 									//guardar los nodos en la listaGlobal
 									datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
@@ -581,8 +603,6 @@ int main(int argc, char *argv[]) {
 										printf("listaGlobalNodos %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
 										printf("nodosParaPlanificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
 									}
-									puts("presionar ENTER");
-									getchar();
 									/* ***************************************************************** */
 
 									/* ************* inicio planificación *************** */
@@ -590,6 +610,11 @@ int main(int argc, char *argv[]) {
 									//indexado por partes del archivo
 									nodoParaAsignar asignacionesNodos[cantPartesArchivo];
 									planificar(bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
+									for (i = 0; i < cantNodosArchivo; i++) {
+										printf("nro %d - carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
+									}
+									//guardo el nodo donde se va a hacer la reducción global de ese master y job
+									asignarNodoReduccGlobal((uint16_t) nodosParaPlanificar[0].numero, socketConectado);
 									/* ************* fin planificación *************** */
 
 									/* ************** agregado en tabla de estados *************** */
