@@ -11,18 +11,20 @@
 // Se conecta a FileSystem. Única instancia.
 // Solo hay un YAMA corriendo al mismo tiempo.
 // ================================================================ //
-#define LARGO_IP 16
-#define LARGO_PUERTO 4
-typedef struct {
-	int numero;
-	char ip[LARGO_IP];
-	int puerto;
-	int carga;
-	int disponibilidad;
-} datosPropiosNodo;
-datosPropiosNodo listaGlobalNodos[50];
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <commons/config.h>
+#include <commons/string.h>
+#include <commons/log.h>
+#include "../../utils/constantes.h"
+#include "../../utils/utils.h"
+#include "../../utils/conexionesSocket.h"
+#include "../../utils/archivoConfig.h"
+#include "../../utils/comunicacion.h"
 
-#define LARGO_TEMPORAL 40
+
 typedef struct {
 	int nroNodo;
 	int bloque;
@@ -38,7 +40,18 @@ typedef struct {
 	int bytesBloque;
 } bloqueArchivo;
 
-#include "../../utils/includes.h"
+typedef struct {
+	int numero;
+	char ip[LARGO_IP];
+	int puerto;
+	int carga;
+	int disponibilidad;
+	char nombre[LARGO_NOMBRE_NODO];
+} datosPropiosNodo;
+datosPropiosNodo listaGlobalNodos[50];
+
+
+#include "../../utils/protocolo.c"
 #include "tablaEstados.h"
 #include "planificacion.h"
 #include "nroMasterJob.c"
@@ -294,6 +307,7 @@ int main(int argc, char *argv[]) {
 	if (!getDatosConfiguracion()) {
 		return EXIT_FAILURE;
 	}
+	//para la planificación
 	disponibBase = atoi(datosConfigYama[4]);
 	/* ************** conexión como cliente al FS *************** */
 	int socketFS;

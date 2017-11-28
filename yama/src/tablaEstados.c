@@ -11,9 +11,19 @@
 enum etapasTablaEstados {
 	TRANSFORMACION, REDUCC_LOCAL, REDUCC_GLOBAL, ALMAC_FINAL
 };
+const char* etapasMensajesPredefinidos[4] = {
+		"Transformación",
+		"Reducción Local",
+		"Reducción Global",
+		"Alamcentamiento Final" };
+
 enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK
 };
+const char* estadosMensajesPredefinidos[3] = {
+		"En proceso",
+		"Error",
+		"Finalizó OK" };
 
 struct filaTablaEstados {
 	int job;
@@ -67,8 +77,10 @@ int agregarElemTablaEstados(struct filaTablaEstados fila) {
 void mostrarTablaEstados() {
 	struct filaTablaEstados *auxiliar;
 	auxiliar = primeroTablaEstados;
+	printf("\tTabla de Estados\n      --------------------\n");
+	printf("\tJob\tMaster\tNodo\tBloque\tEtapa\t\t\tTemporal\tEstado\n   ---------------------------------------------------------------------------------------------\n");
 	while (auxiliar != NULL) {
-		printf("job %d - master %d - nodo %d - bloque: %d - etapa: %d - temporal %s - estado %d\n", auxiliar->job, auxiliar->master, auxiliar->nodo, auxiliar->bloque, auxiliar->etapa, auxiliar->temporal, auxiliar->estado);
+		printf("\t%d\t%d\t%s\t%d\t%s\t\t%s\t%s\n", auxiliar->job, auxiliar->master, listaGlobalNodos[auxiliar->nodo].nombre, auxiliar->bloque, etapasMensajesPredefinidos[auxiliar->etapa], auxiliar->temporal, estadosMensajesPredefinidos[auxiliar->estado]);
 		auxiliar = auxiliar->siguiente;
 	}
 }

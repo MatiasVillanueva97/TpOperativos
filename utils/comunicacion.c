@@ -5,7 +5,7 @@
 //el send no manda siempre todos los bytes que le pongo por el protocolo IP
 //leer la cantidad de bytes enviados que es lo que devuelve
 int enviarMensaje(int serverSocket, char *message) {
-	int cantBytesEnviados = send(serverSocket, message, string_length(message), 0);
+	int cantBytesEnviados = send(serverSocket, message, string_length(message), MSG_WAITALL);
 	if (cantBytesEnviados != string_length(message)) {
 		puts("Error. No se enviaron todos los bytes del mensaje\n");
 		return 0;

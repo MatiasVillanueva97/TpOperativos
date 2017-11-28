@@ -95,9 +95,9 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS, int cantPartesArchivo) {
 }
 
 int getCantidadNodosFS(int socketFS, int cantMensajes) {
-	printf("cantMensajes: %d\n",cantMensajes);
+	printf("cantMensajes: %d\n", cantMensajes);
 	char **arrayMensajes = deserializarMensaje(socketFS, cantMensajes);
-	printf("cantMensajesString: %s\n",arrayMensajes[0]);
+	printf("cantMensajesString: %s\n", arrayMensajes[0]);
 	return atoi(arrayMensajes[0]);
 }
 
@@ -109,6 +109,7 @@ void recibirNodosArchivoFS(int socketFS, int cantNodosArchivo, datosPropiosNodo 
 	for (i = 0; i < cantNodosArchivo; i++) {
 		char **nodo = string_split(arrayMensajes[j], "_");
 		nroNodo = atoi(nodo[1]);
+		strcpy(listaGlobalNodos[nroNodo].nombre, arrayMensajes[j]);
 		listaGlobalNodos[nroNodo].numero = nroNodo;
 		nodosParaPlanificar[i].numero = nroNodo;
 		printf("nodo: %d\n", nroNodo);
@@ -127,35 +128,35 @@ void recibirNodosArchivoFS(int socketFS, int cantNodosArchivo, datosPropiosNodo 
 	return;
 	/* ***************** datos de bloques y nodos inventados para probar **************** */
 	/*i = 0;
-	nodo = string_split("NODO_1", "_");
-	nroNodo = atoi(nodo[1]);
-	listaGlobalNodos[nroNodo].numero = nroNodo;
-	printf("nodo: %d\n", nroNodo);
-	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.001");
-	listaGlobalNodos[nroNodo].puerto = 5300;
-	nodosParaPlanificar[i].numero = nroNodo;
-	strcpy(nodosParaPlanificar[i].ip, "127.0.0.001");
-	nodosParaPlanificar[i].puerto = 5300;
-	i++;
-	nodo = string_split("NODO_2", "_");
-	nroNodo = atoi(nodo[1]);
-	printf("nodo: %d\n", nroNodo);
-	listaGlobalNodos[nroNodo].numero = nroNodo;
-	strcpy(listaGlobalNodos[nroNodo].ip, "127.168.1.10");
-	listaGlobalNodos[nroNodo].puerto = 5302;
-	nodosParaPlanificar[i].numero = nroNodo;
-	strcpy(nodosParaPlanificar[i].ip, "127.168.1.10");
-	nodosParaPlanificar[i].puerto = 5302;
-	i++;
-	nodo = string_split("NODO_3", "_");
-	nroNodo = atoi(nodo[1]);
-	printf("nodo: %d\n", nroNodo);
-	listaGlobalNodos[nroNodo].numero = nroNodo;
-	strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.1");
-	listaGlobalNodos[nroNodo].puerto = 5303;
-	nodosParaPlanificar[i].numero = nroNodo;
-	strcpy(nodosParaPlanificar[i].ip, "127.0.0.1");
-	nodosParaPlanificar[i].puerto = 5303;
-	i++;*/
+	 nodo = string_split("NODO_1", "_");
+	 nroNodo = atoi(nodo[1]);
+	 listaGlobalNodos[nroNodo].numero = nroNodo;
+	 printf("nodo: %d\n", nroNodo);
+	 strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.001");
+	 listaGlobalNodos[nroNodo].puerto = 5300;
+	 nodosParaPlanificar[i].numero = nroNodo;
+	 strcpy(nodosParaPlanificar[i].ip, "127.0.0.001");
+	 nodosParaPlanificar[i].puerto = 5300;
+	 i++;
+	 nodo = string_split("NODO_2", "_");
+	 nroNodo = atoi(nodo[1]);
+	 printf("nodo: %d\n", nroNodo);
+	 listaGlobalNodos[nroNodo].numero = nroNodo;
+	 strcpy(listaGlobalNodos[nroNodo].ip, "127.168.1.10");
+	 listaGlobalNodos[nroNodo].puerto = 5302;
+	 nodosParaPlanificar[i].numero = nroNodo;
+	 strcpy(nodosParaPlanificar[i].ip, "127.168.1.10");
+	 nodosParaPlanificar[i].puerto = 5302;
+	 i++;
+	 nodo = string_split("NODO_3", "_");
+	 nroNodo = atoi(nodo[1]);
+	 printf("nodo: %d\n", nroNodo);
+	 listaGlobalNodos[nroNodo].numero = nroNodo;
+	 strcpy(listaGlobalNodos[nroNodo].ip, "127.0.0.1");
+	 listaGlobalNodos[nroNodo].puerto = 5303;
+	 nodosParaPlanificar[i].numero = nroNodo;
+	 strcpy(nodosParaPlanificar[i].ip, "127.0.0.1");
+	 nodosParaPlanificar[i].puerto = 5303;
+	 i++;*/
 	/* **************************************************************** */
 }

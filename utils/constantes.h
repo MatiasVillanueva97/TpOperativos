@@ -20,3 +20,12 @@
 //#define LARGO_STRING_HEADER_TAM_PAYLOAD		8
 #define LARGO_STRING_HEADER_ID		4	//es el largo del string que indica cuantos bytes tiene el id del header que se envía por socket
 #define LARGO_STRING_TAM_MENSAJE	8	//es el largo del string que indica cuantos bytes tiene el tamaño del mensaje a enviar por socket
+
+////////////////////////////////////////////////////////////////////////////////
+//largo de datos de los nodos
+#define LARGO_IP 16
+#define LARGO_PUERTO 4
+#define LARGO_NOMBRE_NODO 20
+
+//largo de los archivos temporales
+#define LARGO_TEMPORAL 40

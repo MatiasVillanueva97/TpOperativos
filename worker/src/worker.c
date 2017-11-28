@@ -34,9 +34,10 @@ t_log* logWorker;
  ================================================================
  */
 
+#define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
+
 char* guardar_script(char* codigo_script, char* nombre) {
-	char* path = string_new();
-	string_append_with_format(&path, "../tmp/script_%s", nombre);
+	char *path = string_from_format("../tmp/script_%s", nombre);
 	//path = "../tmp/script_" + nombre;
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
@@ -137,10 +138,10 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 
 		if (f1)
 			//fscanf(fr1, "%d", &fst);
-			fgets (fst, 256, fr1);
+			fgets(fst, 256, fr1);
 		if (f2)
 			//fscanf(fr2, "%d", &snd);
-			fgets (snd, 256, fr2);
+			fgets(snd, 256, fr2);
 
 		//printf("%d - %d\n", fst, snd);
 
@@ -167,19 +168,17 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	fclose(fr3);
 
 	//printf("\n\n\n");
-/*
-	for (int j = 0; j < i; j++) {
-		printf("%d\n", p[j]);
-	}
-*/
+	/*
+	 for (int j = 0; j < i; j++) {
+	 printf("%d\n", p[j]);
+	 }
+	 */
 	return 0;
 }
 
 int main(int argc, char *argv[]) {
-
-#define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
 	//tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
-
+	int i, j, k, h;
 	logWorker = log_create("logFile.log", "WORKER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 
 	log_info(logWorker, "Iniciando Worker");
@@ -212,8 +211,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		log_info(logWorker, "Master conectado al worker, esperando mensajes");
-		puts("Ya me conecté, ahora estoy esperando mensajes\n");
-
+		printf("master conectado con socket %d\n", socketCliente);
 		/*
 		 // ***** PIPES: 0 lectura, 1 escritura *****
 		 int pipe_padreAHijo[2];
@@ -252,8 +250,7 @@ int main(int argc, char *argv[]) {
 			 */
 
 			int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
-			int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
-			char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+
 			/*
 			 transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
 			 reduc local (3): script, lista de temporales (origen), temporal(destino)
@@ -264,11 +261,24 @@ int main(int argc, char *argv[]) {
 			//char* comando = "echo hola pepe | ./script_transformacion.py > /tmp/resultado";
 			int resultado;
 
-			if (headerId == (int32_t) "TRANSFORMACION") {
-				char* path_script = guardar_script(arrayMensajes[0], arrayMensajes[3]);
+			if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
+
+				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
+				char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+				char *transformadorString = malloc(string_length(arrayMensajes[0]) + 1);
+				strcpy(transformadorString, arrayMensajes[0]);
 				int bloque = atoi(arrayMensajes[1]);
 				int bytesOcupados = atoi(arrayMensajes[2]);
-				resultado = transformacion(path_script, bloque, bytesOcupados, arrayMensajes[3]);
+				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
+				strcpy(temporalDestino, arrayMensajes[3]);
+				printf("datos recibidos: transformador %s\nsocket %d - bloque %d - bytes %d - temporal %s\n", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
+
+				for (i = 0; i < cantidadMensajes; i++) {
+					free(arrayMensajes[i]);
+				}
+				free(arrayMensajes);
+				char* path_script = guardar_script(transformadorString, temporalDestino);
+				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
 			}
 
 			if (headerId == (int32_t) "REDUCCION_LOCAL") {
