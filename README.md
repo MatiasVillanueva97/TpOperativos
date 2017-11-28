@@ -100,7 +100,7 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/
 	* enviarMensaje(socketServidor,mensajeSerializado)
 
 * Del lado que recibe:
-	* uint32_t headerId = deserializarHeader(socketCliente)	//recibe el id del header para saber qué esperar
+	* int32_t headerId = deserializarHeader(socketCliente)	//recibe el id del header para saber qué esperar
 	* int cantidadMensajes = protocoloCantidadMensajes[headerId]	//averigua la cantidad de mensajes que le van a llegar
 	* char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes)	//recibe los mensajes en un array de strings
 
