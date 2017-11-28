@@ -55,7 +55,7 @@ int system_transformacion(char* path_script_transformacion, char* datos_origen, 
 
 	char* comando = string_new();
 
-	string_append_with_format(&comando, "echo %s | ./%s > ../tmp/%s",
+	string_append_with_format(&comando, "echo %s | ./%s | sort > ../tmp/%s",
 			datos_origen, path_script_transformacion, archivo_temporal);
 
 	log_trace(logWorker, "El comando a ejecutar es %s", comando);
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
 	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 
 	if (listenningSocket < 0) {
-		log_error(logWorker, "No pude iniciar como servidor");
+		log_error(logWorker, "No se pudo iniciar worker como servidor");
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
@@ -204,10 +204,12 @@ int main(int argc, char *argv[]) {
 			int32_t headerId = deserializarHeader(socketCliente);  //recibe el id del header para saber qué esperar
 			int cantidadMensajes = protocoloCantidadMensajes[headerId];  //averigua la cantidad de mensajes que le van a llegar
 			char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes);  //recibe los mensajes en un array de strings
-			//transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
-			//reduc local (3): script, lista de temporales (origen), temporal(destino)
-			//reduc global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
-			//almac final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
+			/*
+			transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
+			reduc local (3): script, lista de temporales (origen), temporal(destino)
+			reduc global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
+			almac final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
+			*/
 
 			//char* comando = "echo hola pepe | ./script_transformacion.py > /tmp/resultado";
 
