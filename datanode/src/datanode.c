@@ -28,7 +28,8 @@ char* keysConfigDataNode[] = {
 		NULL };
 
 char* datosConfigDataNode[6];
-
+FILE* archivo;
+int tamanoArchivo;
 t_log* logDataNode;
 
 int conexionAFileSystem() {
@@ -45,26 +46,30 @@ int conexionAFileSystem() {
 // Escribe sobre el data.bin
 // Puede haber varios DataNode corriendo al mismo tiempo.
 // ================================================================ //
-void setBloque(int idBloque,char* datos, int* tamanioBloque, FILE* archivo){
-	char buffer[1048576];
-	int bytesLeidos = sizeof(char*)* strlen(datos);
-	tamanioBloque[idBloque]=bytesLeidos;
-	int posicion = idBloque * 1048576;
-	fseek(archivo, posicion, SEEK_SET);
-	fwrite(datos, sizeof(buffer), 1,archivo);
-	log_info(logDataNode, "%i bytes guardados en el bloque %i\n",bytesLeidos,idBloque);
-	printf("%i bytes guardados en el bloque %i\n",bytesLeidos,idBloque);
+void setBloque(int idBloque,char* datos){
+	if (idBloque < tamanoArchivo){
+		int posicion = idBloque * 1048576;
+		fseek(archivo, posicion, SEEK_SET);
+		fwrite(datos, 1048576, 1,archivo);
+		log_info(logDataNode, "bytes guardados en el bloque %i\n",idBloque);
+	}else{
+		printf("El bloque %i no existe en este nodo\n",idBloque);
+	}
 }
 //leer los datos del bloque
-char* getBloque(int idBloque, int tamanioBloque[], FILE* archivo){
-	int bytesLeidos = tamanioBloque[idBloque];
-	char *buffer[bytesLeidos];
+char* getBloque(int idBloque){
+	if (idBloque >= tamanoArchivo){
+		printf("El bloque %i no existe en este nodo\n",idBloque);
+		return 0;
+	}
+	char *buffer = malloc(1048576);
 	int posicion = idBloque * 1048576;
 	fseek(archivo, posicion, SEEK_SET);
-	fread(buffer,bytesLeidos,1,archivo);
-	log_info(logDataNode, "%i bytes leidos en el bloque %i\n",bytesLeidos,idBloque);
-	printf("%i bytes leidos en el bloque %i\n",bytesLeidos,idBloque);
-	return *buffer;
+	fread(buffer,1048576,1,archivo);
+	log_info(logDataNode, "bytes leidos en el bloque %i\n",idBloque);
+	printf("bytes leidos en el bloque %i\n",idBloque);
+	printf("%s\n",buffer);
+	return buffer;
 }
 int cantidadBloquesAMandar(char * PATH) {
 	FILE* archivo = fopen(PATH, "r+");
@@ -147,37 +152,40 @@ int main(int argc, char *argv[]) {
 	}
 
 	//2°)Abro el archivo data.bin
-	FILE* archivo = fopen(datosConfigDataNode[4],"rb+");
+	archivo = fopen(datosConfigDataNode[4],"rb+");
 
 	//tamaño de archivo data.bin
 	int fd=fileno(archivo);
 	struct stat buff;
 	fstat(fd,&buff);
-	int tamano = buff.st_size/1048576;
-	int tamanioBloque[tamano];
-
+	tamanoArchivo = buff.st_size/1048576;
 
 	//************TEST setBloque getBoque*******************
 	char c[1048576]="hola como estas";
 	char c2[1048576]="bien gracias";
 	char* c3;
 
-	setBloque(0,c,tamanioBloque,archivo);
-	setBloque(2,c2,tamanioBloque,archivo);
-	c3=getBloque(0,tamanioBloque,archivo);
-	c3=getBloque(2,tamanioBloque,archivo);
-	setBloque(3,c,tamanioBloque,archivo);
-	setBloque(2,c,tamanioBloque,archivo);
-	c3=getBloque(0,tamanioBloque,archivo);
-	//c3=getBloque(1,tamanioBloque,archivo);
-	c3=getBloque(2,tamanioBloque,archivo);
-	c3=getBloque(3,tamanioBloque,archivo);
-	printf("tamaño ocupado en bloque 1: %i bytes\n",tamanioBloque[0]);
+	setBloque(0,"");
+	setBloque(1,"");
+	setBloque(2,"");
+	setBloque(3,"");
+	setBloque(4,"");
+	setBloque(3,"caca");
+	setBloque(9,"rata");
+	setBloque(1,c);
+	setBloque(0,c2);
+	c3=getBloque(10);
+	c3=getBloque(0);
+	c3=getBloque(1);
+	c3=getBloque(2);
+	c3=getBloque(3);
+	c3=getBloque(4);
+	//free(c3);
 
 	//******************************************************
 
 	fclose(archivo);//esto solo para que no quede abierto por el momento
-//	//3°)Me conecto al FS y espero solicitudes
+	//3°)Me conecto al FS y espero solicitudes
 	int socketFS;
 	if ((socketFS = conexionAFileSystem()) < 0) {
 		preparadoEnviarFs = 0;
