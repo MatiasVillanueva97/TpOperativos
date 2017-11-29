@@ -122,80 +122,80 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 
 }
 
-char* serializarMensajeReduccLocal(int nroNodoRecibido, nroMasterJob masterJobActual, char *temporalRedLocal) {
+char* serializarMensajeReduccLocal(int nroNodoRecibido, nroMasterJob masterJobActual, char *temporalReduccLocal) {
 	int j, k, h;
-	int cantidadTemporales = getCantFilasByJMNEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
-	char **temporales = malloc(sizeof(char*) * cantidadTemporales);
+	int cantidadTemporalesTransformacion = getCantFilasByJMNEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
+	char **temporales = malloc(sizeof(char*) * cantidadTemporalesTransformacion);
 	getAllTemporalesByJMNEtEs(temporales, masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
 
 	//armar el string serializado
 	int cantNodosReduccLocal = 1;
-	int cantStrings = 1 + cantNodosReduccLocal * (4 + cantidadTemporales) + 1;
-	char **arrayMensajesSerializarRedLocal = malloc(sizeof(char*) * cantStrings);
+	int cantStrings = 1 + cantNodosReduccLocal * (4 + cantidadTemporalesTransformacion + 1);
+	char **arrayMensajesSerializarReduccLocal = malloc(sizeof(char*) * cantStrings);
 
 	//cantidad de nodos
 	j = 0;
-	arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
-	if (!arrayMensajesSerializarRedLocal[j])
+	arrayMensajesSerializarReduccLocal[j] = malloc(4 + 1);
+	if (!arrayMensajesSerializarReduccLocal[j])
 		perror("error de malloc");
-	strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(cantNodosReduccLocal, 4));
+	strcpy(arrayMensajesSerializarReduccLocal[j], intToArrayZerosLeft(cantNodosReduccLocal, 4));
 	j++;
 
 	//para cada nodo
 	for (k = 0; k < cantNodosReduccLocal; k++) {
 		//nro de nodo
-		arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
-		if (!arrayMensajesSerializarRedLocal[j])
+		arrayMensajesSerializarReduccLocal[j] = malloc(4 + 1);
+		if (!arrayMensajesSerializarReduccLocal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(nroNodoRecibido, 4));
+		strcpy(arrayMensajesSerializarReduccLocal[j], intToArrayZerosLeft(nroNodoRecibido, 4));
 		j++;
 		//IP del nodo
-		arrayMensajesSerializarRedLocal[j] = malloc(string_length(listaGlobalNodos[nroNodoRecibido].ip) + 1);
-		if (!arrayMensajesSerializarRedLocal[j])
+		arrayMensajesSerializarReduccLocal[j] = malloc(string_length(listaGlobalNodos[nroNodoRecibido].ip) + 1);
+		if (!arrayMensajesSerializarReduccLocal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarRedLocal[j], listaGlobalNodos[nroNodoRecibido].ip);
+		strcpy(arrayMensajesSerializarReduccLocal[j], listaGlobalNodos[nroNodoRecibido].ip);
 		j++;
 		//puerto del nodo
-		arrayMensajesSerializarRedLocal[j] = malloc(LARGO_PUERTO + 1);
-		if (!arrayMensajesSerializarRedLocal[j])
+		arrayMensajesSerializarReduccLocal[j] = malloc(LARGO_PUERTO + 1);
+		if (!arrayMensajesSerializarReduccLocal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(listaGlobalNodos[nroNodoRecibido].puerto, LARGO_PUERTO));
+		strcpy(arrayMensajesSerializarReduccLocal[j], intToArrayZerosLeft(listaGlobalNodos[nroNodoRecibido].puerto, LARGO_PUERTO));
 		j++;
 		//cantidad de temporales
-		arrayMensajesSerializarRedLocal[j] = malloc(4 + 1);
-		if (!arrayMensajesSerializarRedLocal[j])
+		arrayMensajesSerializarReduccLocal[j] = malloc(4 + 1);
+		if (!arrayMensajesSerializarReduccLocal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarRedLocal[j], intToArrayZerosLeft(cantidadTemporales, 4));
+		strcpy(arrayMensajesSerializarReduccLocal[j], intToArrayZerosLeft(cantidadTemporalesTransformacion, 4));
 		j++;
 		//todos los temporales uno a continuación del otro
-		for (h = 0; h < cantidadTemporales; h++) {
+		for (h = 0; h < cantidadTemporalesTransformacion; h++) {
 			//temporal h
 			printf("temporal %s\n", temporales[h]);
-			arrayMensajesSerializarRedLocal[j] = malloc(string_length(temporales[h]) + 1);
-			if (!arrayMensajesSerializarRedLocal[j])
+			arrayMensajesSerializarReduccLocal[j] = malloc(string_length(temporales[h]) + 1);
+			if (!arrayMensajesSerializarReduccLocal[j])
 				perror("error de malloc");
-			strcpy(arrayMensajesSerializarRedLocal[j], temporales[h]);
+			strcpy(arrayMensajesSerializarReduccLocal[j], temporales[h]);
 			j++;
 		}
+		arrayMensajesSerializarReduccLocal[j] = malloc(string_length(temporalReduccLocal) + 1);
+		if (!arrayMensajesSerializarReduccLocal[j])
+			perror("error de malloc");
+		strcpy(arrayMensajesSerializarReduccLocal[j], temporalReduccLocal);
+		j++;
 	}
-	arrayMensajesSerializarRedLocal[j] = malloc(string_length(temporalRedLocal) + 1);
-	if (!arrayMensajesSerializarRedLocal[j])
-		perror("error de malloc");
-	strcpy(arrayMensajesSerializarRedLocal[j], temporalRedLocal);
-	j++;
 
 	///////////////mensaje serializado
-	char *mensajeSerializadoRedLocal = serializarMensaje(TIPO_MSJ_TABLA_REDUCCION_LOCAL, arrayMensajesSerializarRedLocal, cantStrings);
+	char *mensajeSerializadoReduccLocal = serializarMensaje(TIPO_MSJ_TABLA_REDUCCION_LOCAL, arrayMensajesSerializarReduccLocal, cantStrings);
 	for (j = 0; j < cantStrings; j++) {
-		free(arrayMensajesSerializarRedLocal[j]);
+		free(arrayMensajesSerializarReduccLocal[j]);
 	}
-	free(arrayMensajesSerializarRedLocal);
+	free(arrayMensajesSerializarReduccLocal);
 
 //	for (h = 0; h < cantidadTemporales; h++) {
 //		free(temporales[j]); //TODO: revisar que no rompa
 //	}
 	free(temporales);
-	return mensajeSerializadoRedLocal;
+	return mensajeSerializadoReduccLocal;
 }
 
 char* serializarMensajeReduccGlobal(int cantNodosReduccGlobal, struct filaTablaEstados *filasReduccGlobal, char* temporalRedGlobal) {

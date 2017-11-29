@@ -31,6 +31,13 @@ struct filaTransformacion {
 	char temporal[LARGO_TEMPORAL];
 };
 
+struct filaReduccLocal {
+	char ip[LARGO_IP];
+	int puerto;
+	char *temporalesTransformacion[LARGO_TEMPORAL];
+	char temporalReduccLocal[LARGO_TEMPORAL];
+};
+
 // ================================================================ //
 // Master ejecuta una tarea, sobre un archivo.
 // Se conecta a YAMA para pedir instrucciones,
@@ -38,47 +45,51 @@ struct filaTransformacion {
 // Puede haber varios master corriendo al mismo tiempo.
 // ================================================================ //
 
-void* conectarAWorkerTransformacion();
+void* conectarAWorkerTransformacion(void *arg);
+void* conectarAWorkerReduccLocal(void *arg);
 
-void pruebaEnviarArchivoYama(int socketYama, char *archivoRequerido) {
+void enviarArchivoYama(int socketYama, char *archivoRequerido) {
 	int bytesEnviados, i, j, k, h;
 	int cantStrings = protocoloCantidadMensajes[TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR];
 	char **arrayMensajes = malloc(cantStrings);
 	arrayMensajes[0] = malloc(string_length(archivoRequerido) + 1);
 	strcpy(arrayMensajes[0], archivoRequerido);
-	//arrayMensajes[0][string_length(archivoRequerido)] = '\0';
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR, arrayMensajes, cantStrings);
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
 	for (i = 0; i < cantStrings; i++) {
 		free(arrayMensajes[i]);
 	}
 	free(arrayMensajes);
-	printf("bytesEnviados del archivo a trabajar: %d\n", bytesEnviados);
 }
 
-void pruebaRecibirTablaTransformaciones(char **arrayTablaTransformacion, int socketYama, int cantStrings, int cantBloquesArchivo) {
+void recibirTablaTransformaciones(struct filaTransformacion *datosTransformacion, int socketYama, int cantBloquesArchivo) {
 	int bytesEnviados, i, j, k, h;
+	const int cantMensajesXBloqueArchivo = 6;
+	int cantStrings = cantMensajesXBloqueArchivo * cantBloquesArchivo;
+	char **arrayTablaTransformacion = deserializarMensaje(socketYama, cantStrings);
 
 	printf("cantBloquesArchivo: %d\n", cantBloquesArchivo);
 	printf("cantStrings: %d\n", cantStrings);
 	//recibir la tabla de transformación
-	arrayTablaTransformacion = deserializarMensaje(socketYama, cantStrings);
 	puts("datos de la tabla de transformación\n-------------------------------------");
 	for (i = 0, j = 0; i < cantBloquesArchivo; i++) {
-		printf("nro nodo: %d\n", atoi(arrayTablaTransformacion[j]));
+		// cada msje es una fila de la tabla transformacion
+		datosTransformacion[i].nodo = atoi(arrayTablaTransformacion[j]);
 		j++;
-		printf("ip nodo: %s\n", arrayTablaTransformacion[j]);
+		strcpy(datosTransformacion[i].ip, arrayTablaTransformacion[j]);
 		j++;
-		printf("puerto nodo: %d\n", atoi(arrayTablaTransformacion[j]));
+		datosTransformacion[i].puerto = atoi(arrayTablaTransformacion[j]);
 		j++;
-		printf("nro bloque: %d\n", atoi(arrayTablaTransformacion[j]));
+		datosTransformacion[i].bloque = atoi(arrayTablaTransformacion[j]);
 		j++;
-		printf("bytes bloque: %d\n", atoi(arrayTablaTransformacion[j]));
+		datosTransformacion[i].bytes = atoi(arrayTablaTransformacion[j]);
 		j++;
-		printf("temporal: %s\n", arrayTablaTransformacion[j]);
+		strcpy(datosTransformacion[i].temporal, arrayTablaTransformacion[j]);
 		j++;
 		puts("");
+		printf("nodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", datosTransformacion[i].nodo, datosTransformacion[i].ip, datosTransformacion[i].puerto, datosTransformacion[i].bloque, datosTransformacion[i].bytes, datosTransformacion[i].temporal);
 	}
+
 	for (i = 0; i < cantStrings; i++) {
 		free(arrayTablaTransformacion[i]);
 	}
@@ -88,67 +99,85 @@ void pruebaRecibirTablaTransformaciones(char **arrayTablaTransformacion, int soc
 	getchar();
 }
 
-void pruebaEnvioFinTransformacionOk(int socketYama, int nroNodo, int nroBloque) {
-	int cantStrings, bytesEnviados, i, j, k, h;
+/*
+ * headerId: TIPO_MSJ_TRANSFORMACION_OK - TIPO_MSJ_TRANSFORMACION_ERROR
+ */
+void envioFinTransformacion(int socketYama, int headerId, int nroNodo, int nroBloque) {
+	int bytesEnviados, i, j, k, h;
 
-	puts("\n\nenvío de nodo y bloque que terminó la transformación");
-	printf("nroNodo %d - nroBloque %d\n", nroNodo, nroBloque);
-	cantStrings = protocoloCantidadMensajes[TIPO_MSJ_TRANSFORMACION_OK];
+	int cantMensajes = protocoloCantidadMensajes[headerId];
 
-	char **arrayMensajes = malloc(sizeof(char*) * cantStrings);
-
+	//arma el array de strings para serializar
+	char **arrayMensajes = malloc(sizeof(char*) * cantMensajes);
 	char *nodoString = intToArrayZerosLeft(nroNodo, 4);
 	arrayMensajes[0] = malloc(string_length(nodoString) + 1);
 	strcpy(arrayMensajes[0], nodoString);
-
 	char *bloqueString = intToArrayZerosLeft(nroBloque, 4);
 	arrayMensajes[1] = malloc(string_length(bloqueString) + 1);
 	strcpy(arrayMensajes[1], bloqueString);
-	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_TRANSFORMACION_OK, arrayMensajes, cantStrings);
+
+	//serializa los mensajes y los envía
+	char *mensajeSerializado = serializarMensaje(headerId, arrayMensajes, cantMensajes);
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
-	for (i = 0; i < cantStrings; i++) {
+
+	//libera todos los pedidos de malloc
+	for (i = 0; i < cantMensajes; i++) {
 		free(arrayMensajes[i]);
 	}
 	free(arrayMensajes);
-	puts("presionar ENTER en pruebaEnvioFinTransformacionOk");
-	getchar();
-
 }
 
-void pruebaRecibirTablaRedLocal(int socketYama) {
-	int cantStrings, bytesEnviados, i, j, k, h;
+void recibirTablaReduccLocalYEnviarAWorker(int socketYama, int headerId) {
+	int cantStrings, bytesEnviados, i, j, k, h, cantTemporales;
+	char **arrayMensajesCantNodos = deserializarMensaje(socketYama, protocoloCantidadMensajes[headerId]);
+	int cantNodos = atoi(arrayMensajesCantNodos[0]);
+	free(arrayMensajesCantNodos[0]);
+	free(arrayMensajesCantNodos);
+	printf("cantNodos: %d\n", cantNodos);
 
-	int32_t headerId = deserializarHeader(socketYama);
-	if (headerId == TIPO_MSJ_TABLA_REDUCCION_LOCAL) {
-		char **arrayMensajesCantNodos = deserializarMensaje(socketYama, protocoloCantidadMensajes[TIPO_MSJ_TABLA_TRANSFORMACION]);
-		int cantNodos = atoi(arrayMensajesCantNodos[0]);
-		free(arrayMensajesCantNodos[0]);
-		free(arrayMensajesCantNodos);
-		printf("cantNodos: %d\n", cantNodos);
+	pthread_t hilosWorker[cantNodos];
+	//struct datosWorker datosWorker[cantNodos];
+	struct filaReduccLocal datosReduccLocal[cantNodos];
 
-		puts("datos para la reducción local");
-		for (i = 0, j = 0; i < cantNodos; i++) {
-			cantStrings = 4;
-			char **arrayTablaReduccLocal = deserializarMensaje(socketYama, cantStrings);
+	puts("datos para la reducción local");
+	for (i = 0; i < cantNodos; i++) {
+		cantStrings = 4;
+		char **arrayDatosNodoReduccLocal = deserializarMensaje(socketYama, cantStrings);
 
-			printf("nro nodo: %d\n", atoi(arrayTablaReduccLocal[j]));
-			j++;
-			printf("ip nodo: %s\n", arrayTablaReduccLocal[j]);
-			j++;
-			printf("puerto nodo: %d\n", atoi(arrayTablaReduccLocal[j]));
-			j++;
-			int cantTemporales = atoi(arrayTablaReduccLocal[j]);
-			printf("cantidad de temporales: %d\n", cantTemporales);
-			j++;
-			char **arrayTablaReduccLocalTemporales = deserializarMensaje(socketYama, cantTemporales);
-			for (k = 0; k < cantTemporales; k++) {
-				printf("temporal %d: %s\n", k, arrayTablaReduccLocalTemporales[k]);
+		//el nro de nodo no se usa
+		//printf("nro nodo: %d\n", atoi(arrayTablaReduccLocal[0]));
 
-			}
-			free(arrayTablaReduccLocal);
+		strcpy(datosReduccLocal[i].ip, arrayDatosNodoReduccLocal[1]);
+		printf("ip nodo: %s\n", arrayDatosNodoReduccLocal[1]);
+
+		datosReduccLocal[i].puerto = atoi(arrayDatosNodoReduccLocal[2]);
+		printf("puerto nodo: %d\n", atoi(arrayDatosNodoReduccLocal[2]));
+
+		cantTemporales = atoi(arrayDatosNodoReduccLocal[3]);
+		printf("cantidad de temporales: %d\n", cantTemporales);
+
+		for (k = 0; k < 3; k++) {
+			free(arrayDatosNodoReduccLocal[k]);
 		}
-		char **arrayMensajesTemporalReduccLocal = deserializarMensaje(socketYama, 1);
-		printf("temporal reducción local: %s\n", arrayMensajesTemporalReduccLocal[0]);
+		free(arrayDatosNodoReduccLocal);
+
+		char **arrayTablaTemporalesTransformacion = deserializarMensaje(socketYama, cantTemporales);
+		for (k = 0; k < cantTemporales; k++) {
+			printf("temporal %d: %s\n", k, arrayTablaTemporalesTransformacion[k]);
+			strcpy(datosReduccLocal[i].temporalesTransformacion[k], arrayTablaTemporalesTransformacion[k]);
+		}
+		for (k = 0; k < cantTemporales; k++) {
+			free(arrayTablaTemporalesTransformacion[k]);
+		}
+		free(arrayTablaTemporalesTransformacion);
+		//falta recibir el temporalReduccLocal
+		char **arrayTemporalReduccLocal = deserializarMensaje(socketYama, 1);
+		strcpy(datosReduccLocal[i].temporalReduccLocal, arrayTemporalReduccLocal[0]);
+		free(arrayTemporalReduccLocal[0]);
+		free(arrayTemporalReduccLocal);
+
+		pthread_create(&(hilosWorker[i]), NULL, conectarAWorkerReduccLocal, &datosReduccLocal[i]);
+
 	}
 }
 
@@ -180,27 +209,27 @@ void pruebas(int socketYama, char *archivoRequerido) {
 	int bytesEnviados = 0, i, j, k, h;
 
 	//envío de fin transformación OK, todos los del nodo 2, 1 del nodo 1 y 1 del nodo 3
-	pruebaEnvioFinTransformacionOk(socketYama, 2, 36);
-	pruebaEnvioFinTransformacionOk(socketYama, 1, 33);
-	pruebaEnvioFinTransformacionOk(socketYama, 3, 55);
-	pruebaEnvioFinTransformacionOk(socketYama, 2, 65);
+//	pruebaEnvioFinTransformacionOk(socketYama, 2, 36);
+//	pruebaEnvioFinTransformacionOk(socketYama, 1, 33);
+//	pruebaEnvioFinTransformacionOk(socketYama, 3, 55);
+//	pruebaEnvioFinTransformacionOk(socketYama, 2, 65);
+//
+//	pruebaRecibirTablaRedLocal(socketYama); //para el nodo 3
+//
+//	//envío de fin transformación OK nodo 1
+//	pruebaEnvioFinTransformacionOk(socketYama, 1, 88);
+//	pruebaEnviarFinReduccLocal(socketYama, 3);
+//	pruebaEnvioFinTransformacionOk(socketYama, 1, 74);
+//
+//	pruebaRecibirTablaRedLocal(socketYama); //para el nodo 2
+//
+//	//envía mensaje de fin de reducción local nodo 2
+//
+//	pruebaRecibirTablaRedLocal(socketYama); //para el nodo 1
+//	pruebaEnviarFinReduccLocal(socketYama, 2);
+//	pruebaEnviarFinReduccLocal(socketYama, 1);
 
-	pruebaRecibirTablaRedLocal(socketYama); //para el nodo 3
-
-	//envío de fin transformación OK nodo 1
-	pruebaEnvioFinTransformacionOk(socketYama, 1, 88);
-	pruebaEnviarFinReduccLocal(socketYama, 3);
-	pruebaEnvioFinTransformacionOk(socketYama, 1, 74);
-
-	pruebaRecibirTablaRedLocal(socketYama); //para el nodo 2
-
-	//envía mensaje de fin de reducción local nodo 2
-
-	pruebaRecibirTablaRedLocal(socketYama); //para el nodo 1
-	pruebaEnviarFinReduccLocal(socketYama, 2);
-	pruebaEnviarFinReduccLocal(socketYama, 1);
-
-	//recibe la tabla de reducción global
+//recibe la tabla de reducción global
 
 }
 
@@ -226,6 +255,14 @@ int getCantBloquesArchivo(int socketYama, int cantMensajes) {
 	free(arrayMensajes[0]);
 	free(arrayMensajes);
 	return cantBloquesArchivo;
+}
+
+int getCantNodos(int socketYama, int cantMensajes) {
+	char **arrayMensajes = deserializarMensaje(socketYama, cantMensajes);
+	int cantNodos = atoi(arrayMensajes[0]);
+	free(arrayMensajes[0]);
+	free(arrayMensajes);
+	return cantNodos;
 }
 
 int main(int argc, char *argv[]) {
@@ -265,94 +302,42 @@ int main(int argc, char *argv[]) {
 	headerId = handshakeYama(socketYama);
 	if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		//envía a yama el archivo con el que quiere trabajar
-		pruebaEnviarArchivoYama(socketYama, archivoRequerido);
+		enviarArchivoYama(socketYama, archivoRequerido);
 
-		//respuesta con la tabla de transformaciones
+		//recibe la tabla de transformaciones
 		headerId = deserializarHeader(socketYama);
 		if (headerId == TIPO_MSJ_TABLA_TRANSFORMACION) {
-			//getCantidadMensajes(socketYama,headerId);
-			int cantBloquesArchivo = getCantBloquesArchivo(socketYama, protocoloCantidadMensajes[TIPO_MSJ_TABLA_TRANSFORMACION]);
+			int cantBloquesArchivo = getCantBloquesArchivo(socketYama, protocoloCantidadMensajes[headerId]);
 			pthread_t hilosWorker[cantBloquesArchivo];
 			struct datosWorker datos[cantBloquesArchivo];
 			struct filaTransformacion datosTransformacion[cantBloquesArchivo];
 
-			const int cantMensajesXBloqueArchivo = 6;
-			int cantStrings = cantMensajesXBloqueArchivo * cantBloquesArchivo;
-			char **arrayTablaTransformacion = deserializarMensaje(socketYama, cantStrings);
-			//pruebaRecibirTablaTransformaciones(arrayTablaTransformacion, socketYama, cantStrings, cantBloquesArchivo);
-
-			for (i = 0, j = 0; i < cantBloquesArchivo; i++) {
-				// por cada tarea leo la fila de la tabla y creo un hilo para conectarme al worker q corresponda
-				// cada msje es una fila de la tabla transformacion
-				datosTransformacion[i].nodo = atoi(arrayTablaTransformacion[j]);
-				j++;
-				strcpy(datosTransformacion[i].ip, arrayTablaTransformacion[j]);
-				j++;
-				datosTransformacion[i].puerto = atoi(arrayTablaTransformacion[j]);
-				j++;
-				datosTransformacion[i].bloque = atoi(arrayTablaTransformacion[j]);
-				j++;
-				datosTransformacion[i].bytes = atoi(arrayTablaTransformacion[j]);
-				j++;
-				strcpy(datosTransformacion[i].temporal, arrayTablaTransformacion[j]);
-				j++;
-				puts("");
-				printf("nodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", datosTransformacion[i].nodo, datosTransformacion[i].ip, datosTransformacion[i].puerto, datosTransformacion[i].bloque, datosTransformacion[i].bytes, datosTransformacion[i].temporal);
-				pthread_create(&(hilosWorker[i]), NULL, conectarAWorkerTransformacion, &datosTransformacion[i]);
-//							pthread_join(hilosWorker[0], NULL);
-			}
-			for (i = 0; i < cantStrings; i++) {
-				free(arrayTablaTransformacion[i]);
-			}
-			free(arrayTablaTransformacion);
+			recibirTablaTransformaciones(datosTransformacion, socketYama, cantBloquesArchivo);
+			puts("tabla de transformación recibida con éxito\n---------------------------------------\n\n");
 			for (i = 0; i < cantBloquesArchivo; i++) {
+				// por cada tarea se crea un hilo para conectarse al worker q corresponda, se le pasa la fila de la tabla recibida
+				pthread_create(&(hilosWorker[i]), NULL, conectarAWorkerTransformacion, &datosTransformacion[i]);
+			}
+			for (i = 0; i < cantBloquesArchivo; i++) {
+				//genera el join de cada hilo creado
+				//TODO: está bien hecho así??????????
+				//TODO: no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
 				pthread_join(hilosWorker[i], NULL);
 			}
-			puts("tabla de transformación recibida con éxito\n---------------------------------------\n\n");
-			puts("presionar ENTER");
-			getchar();
-
-			//			for (i = 0; i < 3; i++) {
-			//				// por cada tarea leo la fila de la tabla y creo un hilo para conectarme al worker q corresponda
-			//				// cada msje es una fila de la tabla transformacion
-			//				j = 0;
-			//
-			//				arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
-			//
-			//				//char ** conexion = malloc(2);
-			//				//conexion[0] = malloc(12);
-			//				//conexion[1] = malloc(4);
-			//
-			//				datos[i] = malloc(sizeof(struct datosWorker) + 1);
-			//				strcpy(datos[i]->ip, arrayMensajesTablaTransformacion[1]);
-			//				strcpy(datos[i]->puerto, arrayMensajesTablaTransformacion[2]);
-			//				puts("\nIP y puerto");
-			//				printf("IP: %s\n", datos[i]->ip);
-			//				printf("Puerto: %s\n", datos[i]->puerto);
-			//				/*pthread_t hilosWorker[3];
-			//				 struct datosWorker datos;
-			//				 strcpy(datos.ip, "127.0.0.1");
-			//				 strcpy(datos.puerto, "5300");*/
-			//
-			//				//pthread_create(&(hilosWorker[0]), NULL, conectarAWorkerTransformacion, datos);
-			//				//pthread_join(hilosWorker[0], NULL);
-			//				//free(arrayMensajesTablaTransformacion);
-			//				//arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
-			//				//struct datosWorker *datos2 = malloc(sizeof(struct datosWorker) + 1);
-			//				//strcpy(datos2->ip, arrayMensajesTablaTransformacion[1]);
-			//				//strcpy(datos2->puerto, arrayMensajesTablaTransformacion[2]);
-			//				//pthread_create(&hiloWorker2, NULL, conectarAWorkerTransformacion, (void*) datos2);
-			//				free(arrayMensajesTablaTransformacion);
-			//			}
-			/*pthread_join(hilosWorker[0], NULL);
-			 pthread_join(hilosWorker[1], NULL);
-			 pthread_join(hilosWorker[2], NULL);*/
-
+//			pthread_create(&(hilosWorker[0]), NULL, conectarAWorkerTransformacion, datos);
+//			pthread_join(hilosWorker[0], NULL);
+//			free(arrayMensajesTablaTransformacion);
+//			arrayMensajesTablaTransformacion = deserializarMensaje(socketYama, cantColumnasTabla);
+//			struct datosWorker *datos2 = malloc(sizeof(struct datosWorker) + 1);
+//			strcpy(datos2->ip, arrayMensajesTablaTransformacion[1]);
+//			strcpy(datos2->puerto, arrayMensajesTablaTransformacion[2]);
+//			pthread_create(&hiloWorker2, NULL, conectarAWorkerTransformacion, (void*) datos2);
+//			free(arrayMensajesTablaTransformacion);
 		}
 
-		//pruebas(socketYama, archivoRequerido);
-
-		// conectarse a workers y hacer transformacion
+		if (headerId == TIPO_MSJ_TABLA_REDUCCION_LOCAL) {
+			recibirTablaReduccLocalYEnviarAWorker(socketYama, headerId);
+		}
 	} else {
 		puts("me banneó el hdp!!!!!");
 	}
@@ -376,11 +361,46 @@ int main(int argc, char *argv[]) {
 	return EXIT_SUCCESS;
 }
 
+void* conectarAWorkerReduccLocal(void *arg) {
+	int i, j;
+	struct filaReduccLocal *datos = (struct filaReduccLocal*) arg;
+	int cantTemporalesTransformacion = sizeof(datos->temporalesTransformacion) / LARGO_TEMPORAL;
+
+	//int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
+	int socketWorker = conectarA("127.0.0.1", "5300");
+
+	int cantStringsASerializar = 1 + cantTemporalesTransformacion + 1;
+	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
+
+	j = 0;
+	char* cantTemporalesTransformacionString = intToArrayZerosLeft(cantTemporalesTransformacion, 4);
+	arrayMensajes[j] = malloc(string_length(cantTemporalesTransformacionString) + 1);
+	strcpy(arrayMensajes[j], cantTemporalesTransformacionString);
+	j++;
+	for (i = 0; i < cantTemporalesTransformacion; i++) {
+		arrayMensajes[j] = malloc(string_length(datos->temporalesTransformacion[i]) + 1);
+		strcpy(arrayMensajes[j], datos->temporalesTransformacion[i]);
+		j++;
+	}
+	arrayMensajes[j] = malloc(string_length(datos->temporalReduccLocal) + 1);
+	strcpy(arrayMensajes[j], datos->temporalReduccLocal);
+
+	//TIPO_MSJ_DATA_TRANSFORMACION_WORKER: 4 MENSAJES
+	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER, arrayMensajes, cantStringsASerializar);
+	for (j = 0; j < cantStringsASerializar; j++) {
+		free(arrayMensajes[j]);
+	}
+	free(arrayMensajes);
+	//printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
+	enviarMensaje(socketWorker, mensajeSerializado);
+
+}
+
 void* conectarAWorkerTransformacion(void *arg) {
 	FILE *fp;
 	int i, j;
 
-	//pasa el archivo a string para enviarlo al worker
+//pasa el archivo a string para enviarlo al worker
 	char *archivo = "transformador.py";
 	char *pathArchivo = string_from_format("../../scripts/%s", archivo);
 	fp = fopen(pathArchivo, "r"); // read mode
@@ -394,13 +414,11 @@ void* conectarAWorkerTransformacion(void *arg) {
 	fclose(fp);
 
 	struct filaTransformacion *datos = (struct filaTransformacion*) arg;
-	//sleep(200*datos->nodo);
-	//printf("conexión a Worker ip %s - puerto %s - nodo %d - bloque %d - temporal %s\n", datos->ip, string_itoa(datos->puerto), datos->nodo, datos->bloque, datos->temporal);
-	//int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
+
+//int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
 	int socketWorker = conectarA("127.0.0.1", "5300");
+
 	sleep(2 * datos->nodo);
-	//char* message = string_from_format("Bloques %s - Bytes %s - Temporal %s", string_itoa(datos->bloque), string_itoa(datos->bytes), datos->temporal);
-	//printf("mensaje: %s\n", message);
 	int cantStringsASerializar = 4;	//código de transformación, bloque, bytes y temporal
 	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 	j = 0;
@@ -429,6 +447,8 @@ void* conectarAWorkerTransformacion(void *arg) {
 	int32_t headerId = deserializarHeader(socketWorker);
 	if (headerId == TIPO_MSJ_TRANSFORMACION_OK) {
 		printf("Nodo %d finalizó correctamente\n", datos->nodo);
+		//TODO: actualizar las variables compartidas, poner semáforos
+
 	}
 
 }
