@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
 	//************TEST setBloque getBoque*******************
 	char c[1048576]="hola como estas";
 	char c2[1048576]="bien gracias";
-	char* c3;
+	char* datosLeidos;
 
 	setBloque(0,"");
 	setBloque(1,"");
@@ -174,17 +174,16 @@ int main(int argc, char *argv[]) {
 	setBloque(9,"rata");
 	setBloque(1,c);
 	setBloque(0,c2);
-	c3=getBloque(10);
-	c3=getBloque(0);
-	c3=getBloque(1);
-	c3=getBloque(2);
-	c3=getBloque(3);
-	c3=getBloque(4);
+	datosLeidos=getBloque(10);
+	datosLeidos=getBloque(0);
+	datosLeidos=getBloque(1);
+	datosLeidos=getBloque(2);
+	datosLeidos=getBloque(3);
+	datosLeidos=getBloque(4);
 	//free(c3);
 
 	//******************************************************
 
-	fclose(archivo);//esto solo para que no quede abierto por el momento
 	//3°)Me conecto al FS y espero solicitudes
 	int socketFS;
 	if ((socketFS = conexionAFileSystem()) < 0) {
@@ -194,7 +193,16 @@ int main(int argc, char *argv[]) {
 	send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 
 	pruebas2(socketFS, datosConfigDataNode);
-	getchar();
+	//getchar();
 
+	//*********Test espera bloque de FS devuelve string de 1048576 bytes******//
+	char* buffer = malloc(sizeof(int));
+	recv(socketFS,buffer,sizeof(int),MSG_WAITALL);
+	int bloque=atoi(buffer);
+	datosLeidos=getBloque(bloque);
+	send(socketFS,&datosLeidos,1048576,MSG_WAITALL);
+	//************************************************************************//
+
+	fclose(archivo);//esto solo para que no quede abierto por el momento
 	return 0;
 }
