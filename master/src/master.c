@@ -381,7 +381,7 @@ void* conectarAWorkerTransformacion(void *arg) {
 	int i, j;
 
 	//pasa el archivo a string para enviarlo al worker
-	char *archivo = "transformador.sh";
+	char *archivo = "transformador.py";
 	char *pathArchivo = string_from_format("../../scripts/%s", archivo);
 	fp = fopen(pathArchivo, "r"); // read mode
 	fseek(fp, 0, SEEK_END);
