@@ -111,5 +111,7 @@ tablaDeNodos * tablaNodosGlobal;
 t_log * logFs;
 t_config * configFs;
 t_bitarray* bitMap ;
-
+t_list * listaDeNodosAnteriores;
+t_config * persistirNodos;
+t_config * persistirArchivo;
 #endif /* SRC_FILESYSTEM_H_ */

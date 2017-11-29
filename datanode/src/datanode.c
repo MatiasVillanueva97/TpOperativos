@@ -7,7 +7,6 @@
  */
 
 #include "../../utils/includes.h"
-#include <sys/stat.h>
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -59,7 +58,7 @@ void setBloque(int idBloque,char* datos){
 //leer los datos del bloque
 char* getBloque(int idBloque){
 	if (idBloque >= tamanoArchivo){
-		printf("El bloque %i no existe en este nodo\n",idBloque);
+		//printf("El bloque %i no existe en este nodo\n",idBloque);
 		return 0;
 	}
 	char *buffer = malloc(1048576);
@@ -67,8 +66,8 @@ char* getBloque(int idBloque){
 	fseek(archivo, posicion, SEEK_SET);
 	fread(buffer,1048576,1,archivo);
 	log_info(logDataNode, "bytes leidos en el bloque %i\n",idBloque);
-	printf("bytes leidos en el bloque %i\n",idBloque);
-	printf("%s\n",buffer);
+	//printf("bytes leidos en el bloque %i\n",idBloque);
+	//printf("%s\n",buffer);
 	return buffer;
 }
 int cantidadBloquesAMandar(char * PATH) {
@@ -154,55 +153,80 @@ int main(int argc, char *argv[]) {
 	//2°)Abro el archivo data.bin
 	archivo = fopen(datosConfigDataNode[4],"rb+");
 
-	//tamaño de archivo data.bin
-	int fd=fileno(archivo);
-	struct stat buff;
-	fstat(fd,&buff);
-	tamanoArchivo = buff.st_size/1048576;
+		//tamaño de archivo data.bin
+		int fd=fileno(archivo);
+		struct stat buff;
+		fstat(fd,&buff);
+		tamanoArchivo = buff.st_size/1048576;
 
-	//************TEST setBloque getBoque*******************
-	char c[1048576]="hola como estas";
-	char c2[1048576]="bien gracias";
-	char* datosLeidos;
-
-	setBloque(0,"");
-	setBloque(1,"");
-	setBloque(2,"");
-	setBloque(3,"");
-	setBloque(4,"");
-	setBloque(3,"caca");
-	setBloque(9,"rata");
-	setBloque(1,c);
-	setBloque(0,c2);
-	datosLeidos=getBloque(10);
-	datosLeidos=getBloque(0);
-	datosLeidos=getBloque(1);
-	datosLeidos=getBloque(2);
-	datosLeidos=getBloque(3);
-	datosLeidos=getBloque(4);
-	//free(c3);
-
-	//******************************************************
-
-	//3°)Me conecto al FS y espero solicitudes
-	int socketFS;
+//	fclose(archivo);//esto solo para que no quede abierto por el momento
+//	//3°)Me conecto al FS y espero solicitudes
+	int socketFS ;//= conectarA("127.0.0.1","5000");
 	if ((socketFS = conexionAFileSystem()) < 0) {
 		preparadoEnviarFs = 0;
 	}
+
 	int modulo = datanode;
 	send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
-
+	printf("paso 1 \n");
 	pruebas2(socketFS, datosConfigDataNode);
-	//getchar();
+	printf("paso pruebas \n");
+		int j =1;
+	while(1){
+		//pasan bloques y los guardo
+			int32_t header = deserializarHeader(socketFS);
+			if(header == TIPO_MSJ_ARCHIVO){
+			int cantMensajes=protocoloCantidadMensajes[header];
+			char ** arrayMensajesRecibidos = deserializarMensaje(socketFS,cantMensajes);
+			setBloque(atoi(arrayMensajesRecibidos[1]),arrayMensajesRecibidos[0]);
+			printf("setie bloque \n");
+			printf("numero de bloque %s\n", arrayMensajesRecibidos[1]);
+			printf("tipo archivo %s\n",arrayMensajesRecibidos[2]);
+			printf("recibi mensaje %d \n",j);
+			j++;
+			}
 
-	//*********Test espera bloque de FS devuelve string de 1048576 bytes******//
-	char* buffer = malloc(sizeof(int));
-	recv(socketFS,buffer,sizeof(int),MSG_WAITALL);
-	int bloque=atoi(buffer);
-	datosLeidos=getBloque(bloque);
-	send(socketFS,&datosLeidos,1048576,MSG_WAITALL);
-	//************************************************************************//
+			if(header == TIPO_MSJ_PEDIR_BLOQUES){
 
-	fclose(archivo);//esto solo para que no quede abierto por el momento
+//piden bloques y los mando
+			int cantMensajes=protocoloCantidadMensajes[header];
+			char ** arrayMensajesRecibidos = deserializarMensaje(socketFS,cantMensajes);
+			printf("bloque %d\n",atoi(arrayMensajesRecibidos[0]));
+			//getchar();
+			char * buffer = getBloque(atoi(arrayMensajesRecibidos[0]));
+
+			printf("%s \n",buffer);
+			getchar();
+			//printf("%s\n",buffer);
+
+			printf("paso get bloque\n");
+
+
+
+//SEND
+			int cantStrings1 = 1;
+				char **arrayMensajesSerializarEnviar = malloc(sizeof(char*) * cantStrings1);
+				if (!arrayMensajesSerializarEnviar)
+					perror("error de malloc 1");
+
+				int i = 0;
+
+				arrayMensajesSerializarEnviar[i] = malloc(string_length(buffer) + 1);
+				if (!arrayMensajesSerializarEnviar[i])
+					perror("error de malloc 1");
+				strcpy(arrayMensajesSerializarEnviar[i], buffer);
+				i++;
+
+				char *mensajeSerializado = serializarMensaje(TIPO_MSJ_BLOQUE_DESDE_DATANODE, arrayMensajesSerializarEnviar, cantStrings1);
+					int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);
+					printf("bytes enviados: %d\n", bytesEnviados);
+
+			//SEND
+
+
+
+			}
+	}
+
 	return 0;
 }

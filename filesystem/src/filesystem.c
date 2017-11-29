@@ -1,15 +1,20 @@
 #include "filesystem.h"
 
-int buscarPosicionLibre(t_bitarray * bitmap, int cantBloque) {
-	int i;
-	for (i = 0; i < cantBloque; i++) {
-		if (!bitarray_test_bit(bitmap, i)) {
-			//	log_info(logFs,"Se encontro la posicion %d en el bitmap libre.",i);
-			return i;
+bool buscarEnListaAnterior(char * nombre){
+	bool buscarEnLISTA(char * nombreDentroDeLista) {
+			return strcmp(nombreDentroDeLista, nombre) == 0;
 		}
-	}
-	return -1;
-	log_info(logFs, "No hay posicion libre");
+		return list_any_satisfy(listaDeNodosAnteriores,(void*)buscarEnLISTA);
+}
+int cantidadBloquesAMandar(char * PATH) {
+	FILE* archivo = fopen(PATH, "r+");
+	int tamanoArchivo = 1;
+	int cantidadBloques = 0;
+	fseek(archivo, 0, SEEK_END);
+	tamanoArchivo = ftell(archivo);
+	cantidadBloques = ceil((float) tamanoArchivo / 1048576);
+	return cantidadBloques;
+
 }
 
 int cantidadDeBloquesLibresEnBitmap(t_bitarray * bitmap, int cantBloques) {
@@ -26,6 +31,38 @@ int cantidadDeBloquesLibresEnBitmap(t_bitarray * bitmap, int cantBloques) {
 	}
 	return i;
 }
+
+int sumatoriaDeBloquesLibres() {
+	int suma = 0;
+	void sumar(tablaBitmapXNodos * elemento) {
+		int a = cantidadDeBloquesLibresEnBitmap(elemento->bitarray, elemento->cantidadBloques);
+		suma = suma + a;
+	}
+	list_iterate(listaDeBitMap, (void*) sumar);
+	return suma;
+}
+int sumatoriaDeBloquesTotal() {
+	int suma = 0;
+	void sumar(tablaBitmapXNodos * elemento) {
+		int a = elemento->cantidadBloques;
+		suma = suma + a;
+	}
+	list_iterate(listaDeBitMap, (void*) sumar);
+	return suma;
+}
+
+int buscarPosicionLibre(t_bitarray * bitmap, int cantBloque) {
+	int i;
+	for (i = 0; i < cantBloque; i++) {
+		if (!bitarray_test_bit(bitmap, i)) {
+			//	log_info(logFs,"Se encontro la posicion %d en el bitmap libre.",i);
+			return i;
+		}
+	}
+	return -1;
+	log_info(logFs, "No hay posicion libre");
+}
+
 
 tablaBitmapXNodos * obtenerNodoConMayorPosicionLibre() {
 
@@ -130,17 +167,33 @@ void crearBitmapDeNodosConectados(char * NodoConectado, int cantBloques) {
 
 }
 
-void registrarNodo(char * nombre, int bloques, int socket, char * IP, char * puerto) {
+void registrarNodo(int socketData ) {
+		int32_t header = deserializarHeader(socketData);
 
-	crearBitmapDeNodosConectados(nombre, bloques);
-	tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(nombre);
+		int cantMensajes=protocoloCantidadMensajes[header];
+		char ** arrayMensajesRecibidos = deserializarMensaje(socketData,cantMensajes);
+
+	char *nombre = arrayMensajesRecibidos[0];
+	int cantBloques=atoi(arrayMensajesRecibidos[1]);
+	crearBitmapDeNodosConectados(nombre,cantBloques);
+	tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(arrayMensajesRecibidos[0]);
 	ContenidoXNodo * nodo = malloc(sizeof(ContenidoXNodo));
-	nodo->nodo = nombre;
-	nodo->ip = IP;
-	nodo->libre = cantidadDeBloquesLibresEnBitmap(nodoConBitmap->bitarray, bloques);
-	nodo->puerto = puerto;
-	nodo->socket = socket;
-	nodo->total = bloques;
+	nodo->nodo = arrayMensajesRecibidos[0];
+	nodo->ip = arrayMensajesRecibidos[2];
+	nodo->libre = cantidadDeBloquesLibresEnBitmap(nodoConBitmap->bitarray, atoi(arrayMensajesRecibidos[1]));
+	nodo->puerto = arrayMensajesRecibidos[3];
+	nodo->socket = socketData;
+	nodo->total = atoi(arrayMensajesRecibidos[1]);
+
+	printf("%s\n",nodo->nodo);
+	printf("%s\n",nodo->ip);
+	printf("%d\n",nodo->libre);
+	printf("%s\n",nodo->puerto);
+	printf("%d\n",nodo->socket);
+	printf("%d\n",nodo->total);
+	/*if{
+
+	}*/
 
 	list_add(tablaNodos, nodo);
 
@@ -157,16 +210,61 @@ char * conseguirNombreDePath(char * PATH) {
 	return nombre;
 }
 
-int cantidadBloquesAMandar(char * PATH) {
-	FILE* archivo = fopen(PATH, "r+");
-	int tamanoArchivo = 1;
-	int cantidadBloques = 0;
-	fseek(archivo, 0, SEEK_END);
-	tamanoArchivo = ftell(archivo);
-	cantidadBloques = ceil((float) tamanoArchivo / 1048576);
-	return cantidadBloques;
+void persistirArchivos(char * nombre ){
 
-}
+								tablaArchivo * elemento = buscarArchivoPorNombre(nombre);
+								char * path = string_duplicate("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/metadata/archivos/");
+								string_append(&path,string_itoa(elemento->directorioPadre));
+								string_append(&path,"/");
+								string_append(&path,elemento->nombre);
+								FILE * archivo = fopen(path,"a+");
+								persistirArchivo = config_create(path);
+								int j = 0;
+								int i = 0;
+								void persistirBloquesDeArchivo(ContenidoBloque * bloquesArchivo){
+									if((j==1) && (i==j)){
+										i = 0;
+									}
+									if(j>1){
+										j=0;
+									}
+									if((j==1) && (i>2)){
+									j =0 ;
+									}
+
+									char * bloque_copia =string_new();
+									char * bloque_bytes = string_new();
+									string_append(&bloque_copia,"BLOQUE");
+									string_append(&bloque_copia,string_itoa(i));
+									string_append(&bloque_copia,"COPIA");
+									string_append(&bloque_copia,string_itoa(j));
+									string_append(&bloque_bytes,"BLOQUE");
+									string_append(&bloque_bytes,string_itoa(i));
+									string_append(&bloque_bytes,"BYTES");
+									char * array =string_duplicate("[");
+									string_append(&array,bloquesArchivo->nodo);
+									string_append(&array,",");
+									string_append(&array,string_itoa(bloquesArchivo->bloque));
+									string_append(&array,"]");
+								//	printf("%s\n",array);
+								//	printf("%s\n",bloque_copia);
+								//	printf("%s\n",bloque_bytes);
+
+									config_set_value(persistirArchivo,bloque_copia,array);
+									j++;
+									config_set_value(persistirArchivo,bloque_bytes,string_itoa(bloquesArchivo->bytes));
+									i++;
+								}
+								list_iterate(elemento->bloqueCopias,(void*)persistirBloquesDeArchivo);
+								config_set_value(persistirArchivo,"NOMBRE",elemento->nombre);
+								config_set_value(persistirArchivo,"TAMANIO",string_itoa(elemento->tamanio));
+								config_set_value(persistirArchivo,"DIRECTORIO_PADRE",string_itoa(elemento->directorioPadre));
+								config_set_value(persistirArchivo,"TIPO",string_itoa(elemento->tipo));
+								config_save(persistirArchivo);
+							}
+
+
+
 
 void partirArchivoBinario(char* PATH) {
 	FILE* archivo = fopen(PATH, "r+");
@@ -175,32 +273,236 @@ void partirArchivoBinario(char* PATH) {
 	struct stat buff;
 	fstat(fd, &buff);
 	tamano = buff.st_size;
+	char * nombre = conseguirNombreDePath(PATH);
+	tablaArchivo * nuevoArchivo = malloc(sizeof(tablaArchivo));
+	nuevoArchivo->bloqueCopias = list_create();
+	nuevoArchivo->nombre = nombre;
+	nuevoArchivo->tamanio = tamano;
+	nuevoArchivo->directorioPadre = 1;
+	nuevoArchivo->tipo = 0;
 
 	void * archivoABytes = malloc(buff.st_size);
 	void * contenidoAEnviar = malloc(1048576);
-	int i = 50;
+	int i = 0;
+
+	if(sumatoriaDeBloquesLibres()>=(cantidadBloquesAMandar(PATH))*2){
+
 	while (tamano >= 0) {
-		char * puta = string_new();
-		string_append(&puta, "/home/utnso/Escritorio/archivonuevo");
-		string_append(&puta, string_itoa(i));
-		FILE*archivo2 = fopen(puta, "a+");
+		ContenidoBloque * contenido = malloc(sizeof(ContenidoBloque));
 
 		if (tamano > 0 && tamano < 1048576) {
+
 			fread(contenidoAEnviar, tamano, 1, archivo);
-			fwrite(contenidoAEnviar, tamano, 1, archivo2); //aca haria el send?
+			printf("%d\n",tamano);
+			tablaBitmapXNodos * nodo2 = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodoBuscado3 = buscarNodoPorNombreS(nodo2->nodo);
+			int posicion1 = buscarPosicionLibre(nodo2->bitarray, nodo2->cantidadBloques);
+			bitarray_set_bit(nodo2->bitarray, posicion1);
+			printf("Guarde original en %s\n", nodo2->nodo);
+			printf("\n");
+
+			ContenidoBloque * contenido3 = malloc(sizeof(ContenidoBloque));
+			contenido3->bytes = tamano;
+			contenido3->bloque = posicion1;
+			contenido3->nodo = nodo2->nodo;
+			list_add(nuevoArchivo->bloqueCopias, contenido3);
+
+
+			//SEND
+			int cantStrings=3;
+			int NumeroDeBloqueDondeGuardar = posicion1;
+			char * NumeroDeBloqueDondeGuardarString = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar,4);
+			int tipoDeArchivo = 0;
+			char * tipoDeArchivoString = intToArrayZerosLeft(tipoDeArchivo,4);
+			char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
+				if (!arrayMensajesSerializar)
+					perror("error de malloc 1");
+
+				int i = 0;
+				arrayMensajesSerializar[i] = malloc(string_length(contenidoAEnviar) + 1);
+					if (!arrayMensajesSerializar[i])
+						perror("error de malloc 1");
+					strcpy(arrayMensajesSerializar[i], contenidoAEnviar);
+					i++;
+					arrayMensajesSerializar[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString) + 1);
+						if (!arrayMensajesSerializar[i])
+							perror("error de malloc 1");
+						strcpy(arrayMensajesSerializar[i], NumeroDeBloqueDondeGuardarString);
+						i++;
+						arrayMensajesSerializar[i] = malloc(string_length(tipoDeArchivoString) + 1);
+							if (!arrayMensajesSerializar[i])
+								perror("error de malloc 1");
+							strcpy(arrayMensajesSerializar[i], tipoDeArchivoString);
+							i++;
+					char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
+						//printf("%s\n",mensajeSerializado);
+						int bytesEnviados = enviarMensaje(nodoBuscado3->socket, mensajeSerializado);
+						printf("bytes enviados: %d\n", bytesEnviados);
+			//SEND
+
+
+			tablaBitmapXNodos * nodo3 = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodobuscado4 = buscarNodoPorNombreS(nodo3->nodo);
+			int posicion2 = buscarPosicionLibre(nodo3->bitarray, nodo3->cantidadBloques);
+			bitarray_set_bit(nodo3->bitarray, posicion2);
+			printf("Guarde copia en %s\n", nodo3->nodo);
+			printf("\n");
+			ContenidoBloque * contenido4 = malloc(sizeof(ContenidoBloque));
+			contenido4->bytes = tamano;
+			contenido4->bloque = posicion2;
+			contenido4->nodo = nodo3->nodo;
+			list_add(nuevoArchivo->bloqueCopias, contenido4);
+
+
+			//SEND - Copia
+						int cantStrings1=3;
+						int NumeroDeBloqueDondeGuardar1 = posicion2;
+						char * NumeroDeBloqueDondeGuardarString1 = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar1,4);
+						int tipoDeArchivo1 = 1;
+						char * tipoDeArchivoString1 = intToArrayZerosLeft(tipoDeArchivo1,4);
+						char **arrayMensajesSerializar1 = malloc(sizeof(char*) * cantStrings1);
+							if (!arrayMensajesSerializar1)
+								perror("error de malloc 1");
+
+							i = 0;
+							arrayMensajesSerializar1[i] = malloc(string_length(contenidoAEnviar) + 1);
+								if (!arrayMensajesSerializar1[i])
+									perror("error de malloc 1");
+								strcpy(arrayMensajesSerializar1[i], contenidoAEnviar);
+								i++;
+								arrayMensajesSerializar1[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString1) + 1);
+									if (!arrayMensajesSerializar1[i])
+										perror("error de malloc 1");
+									strcpy(arrayMensajesSerializar1[i], NumeroDeBloqueDondeGuardarString1);
+									i++;
+									arrayMensajesSerializar1[i] = malloc(string_length(tipoDeArchivoString1) + 1);
+										if (!arrayMensajesSerializar1[i])
+											perror("error de malloc 1");
+										strcpy(arrayMensajesSerializar1[i], tipoDeArchivoString1);
+										i++;
+								char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar1, cantStrings1);
+									//printf("%s\n",mensajeSerializado);
+									int bytesEnviados1 = enviarMensaje(nodobuscado4->socket, mensajeSerializado1);
+									printf("bytes enviados: %d\n", bytesEnviados1);
+									//SEND - Copia
+
 			break;
 		} else {
 			fread(contenidoAEnviar, 1048576, 1, archivo);
-			fwrite(contenidoAEnviar, 1048576, 1, archivo2);
+
+			tablaBitmapXNodos * nodo = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodoBuscado=buscarNodoPorNombreS(nodo->nodo);
+			int posicion0 = buscarPosicionLibre(nodo->bitarray, nodo->cantidadBloques);
+			bitarray_set_bit(nodo->bitarray, posicion0);
+			printf("Guarde original en %s\n", nodo->nodo);
+			printf("\n");
+
+			contenido->bytes = 1048576;
+			contenido->bloque = posicion0;
+			contenido->nodo = nodo->nodo;
+			list_add(nuevoArchivo->bloqueCopias, contenido);
+
+			log_info(logFs, "Archivo - bloque %d ", contenido->bloque);
+			log_info(logFs, "Archivo  - nodo %s", contenido->nodo);
+
+
+
+			//SEND
+			int cantStrings=3;
+			int NumeroDeBloqueDondeGuardar = posicion0;
+			char * NumeroDeBloqueDondeGuardarString = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar,4);
+			int tipoDeArchivo = 1;
+			char * tipoDeArchivoString = intToArrayZerosLeft(tipoDeArchivo,4);
+			char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
+				if (!arrayMensajesSerializar)
+					perror("error de malloc 1");
+
+				int i = 0;
+				arrayMensajesSerializar[i] = malloc(string_length(contenidoAEnviar) + 1);
+					if (!arrayMensajesSerializar[i])
+						perror("error de malloc 1");
+					strcpy(arrayMensajesSerializar[i], contenidoAEnviar);
+					i++;
+					arrayMensajesSerializar[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString) + 1);
+						if (!arrayMensajesSerializar[i])
+							perror("error de malloc 1");
+						strcpy(arrayMensajesSerializar[i], NumeroDeBloqueDondeGuardarString);
+						i++;
+						arrayMensajesSerializar[i] = malloc(string_length(tipoDeArchivoString) + 1);
+							if (!arrayMensajesSerializar[i])
+								perror("error de malloc 1");
+							strcpy(arrayMensajesSerializar[i], tipoDeArchivoString);
+							i++;
+					char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
+						//printf("%s\n",mensajeSerializado);
+						int bytesEnviados = enviarMensaje(nodoBuscado->socket, mensajeSerializado);
+						printf("bytes enviados: %d\n", bytesEnviados);
+			//SEND
+
+
+			tablaBitmapXNodos * nodo1 = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodoBuscado2 =buscarNodoPorNombreS(nodo1->nodo);
+			int posicion7 = buscarPosicionLibre(nodo1->bitarray, nodo1->cantidadBloques);
+			bitarray_set_bit(nodo1->bitarray, posicion7);
+			printf("Guarde copia en %s\n", nodo1->nodo);
+			printf("\n");
+
+			ContenidoBloque * contenido2 = malloc(sizeof(ContenidoBloque));
+			contenido2->bytes = 1048576;
+			contenido2->bloque = posicion7;
+			contenido2->nodo = nodo1->nodo;
+			list_add(nuevoArchivo->bloqueCopias, contenido2);
+
+
+			//SEND - Copia
+			int cantStrings1=3;
+			int NumeroDeBloqueDondeGuardar1 = posicion7;
+			char * NumeroDeBloqueDondeGuardarString1 = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar1,4);
+			int tipoDeArchivo1 = 1;
+			char * tipoDeArchivoString1 = intToArrayZerosLeft(tipoDeArchivo1,4);
+			char **arrayMensajesSerializar1 = malloc(sizeof(char*) * cantStrings1);
+				if (!arrayMensajesSerializar1)
+					perror("error de malloc 1");
+
+				i = 0;
+				arrayMensajesSerializar1[i] = malloc(string_length(contenidoAEnviar) + 1);
+					if (!arrayMensajesSerializar1[i])
+						perror("error de malloc 1");
+					strcpy(arrayMensajesSerializar1[i], contenidoAEnviar);
+					i++;
+					arrayMensajesSerializar1[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString1) + 1);
+						if (!arrayMensajesSerializar1[i])
+							perror("error de malloc 1");
+						strcpy(arrayMensajesSerializar1[i], NumeroDeBloqueDondeGuardarString1);
+						i++;
+						arrayMensajesSerializar1[i] = malloc(string_length(tipoDeArchivoString1) + 1);
+							if (!arrayMensajesSerializar1[i])
+								perror("error de malloc 1");
+							strcpy(arrayMensajesSerializar1[i], tipoDeArchivoString1);
+							i++;
+					char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar1, cantStrings1);
+						//printf("%s\n",mensajeSerializado);
+						int bytesEnviados1 = enviarMensaje(nodoBuscado2->socket, mensajeSerializado1);
+						printf("bytes enviados: %d\n", bytesEnviados1);
+						//SEND - Copia
+
+
 			tamano -= 1048576;
 		}
 		i++;
 	}
-
+	list_add(tablaArchivos, nuevoArchivo);
+	persistirArchivos(nombre);
 	free(contenidoAEnviar);
 	free(archivoABytes);
 	fclose(archivo);
+}else {
+	printf("No hay espacio suficiente para partir el archivo %s \n",nombre);
 }
+
+}
+
+
 
 void partirArchivoDeTexto(char * PATH) {
 
@@ -261,25 +563,19 @@ void partirArchivoDeTexto(char * PATH) {
 	int posicionActual = 0;
 
 	void partir(int * posicion) {
-
-		char * puta = string_new();
-		string_append(&puta, "/home/utnso/Escritorio/archivonuevo");
-		string_append(&puta, string_itoa(posicionActual));
-
-		FILE*archivo2 = fopen(puta, "a+");
-
 		nuevoArchivo->tamanio = tamano;
 		nuevoArchivo->nombre = nombre;
 		nuevoArchivo->directorioPadre = 1;
 		nuevoArchivo->tipo = 1;
-		ContenidoBloque * contenido = malloc(sizeof(ContenidoBloque));
 		log_info(logFs, "Archivo %s", nuevoArchivo->nombre);
+		ContenidoBloque * contenido = malloc(sizeof(ContenidoBloque));
 
 		if (posicionActual == 0) {
 			contenidoAEnviar = malloc(*posicion);
 			fread(contenidoAEnviar, *posicion, 1, archivo);
 
 			tablaBitmapXNodos * nodo = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodoBuscado=buscarNodoPorNombreS(nodo->nodo);
 			int posicion0 = buscarPosicionLibre(nodo->bitarray, nodo->cantidadBloques);
 			bitarray_set_bit(nodo->bitarray, posicion0);
 			printf("Guarde original en %s\n", nodo->nodo);
@@ -293,9 +589,41 @@ void partirArchivoDeTexto(char * PATH) {
 			log_info(logFs, "Archivo - bloque %d ", contenido->bloque);
 			log_info(logFs, "Archivo  - nodo %s", contenido->nodo);
 
-			fwrite(contenidoAEnviar, *posicion, 1, archivo2); //aca haria el send
+
+			//SEND
+			int cantStrings=3;
+			int NumeroDeBloqueDondeGuardar = posicion0;
+			char * NumeroDeBloqueDondeGuardarString = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar,4);
+			int tipoDeArchivo = 1;
+			char * tipoDeArchivoString = intToArrayZerosLeft(tipoDeArchivo,4);
+			char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
+				if (!arrayMensajesSerializar)
+					perror("error de malloc 1");
+
+				int i = 0;
+				arrayMensajesSerializar[i] = malloc(string_length(contenidoAEnviar) + 1);
+					if (!arrayMensajesSerializar[i])
+						perror("error de malloc 1");
+					strcpy(arrayMensajesSerializar[i], contenidoAEnviar);
+					i++;
+					arrayMensajesSerializar[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString) + 1);
+						if (!arrayMensajesSerializar[i])
+							perror("error de malloc 1");
+						strcpy(arrayMensajesSerializar[i], NumeroDeBloqueDondeGuardarString);
+						i++;
+						arrayMensajesSerializar[i] = malloc(string_length(tipoDeArchivoString) + 1);
+							if (!arrayMensajesSerializar[i])
+								perror("error de malloc 1");
+							strcpy(arrayMensajesSerializar[i], tipoDeArchivoString);
+							i++;
+					char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
+						//printf("%s\n",mensajeSerializado);
+						int bytesEnviados = enviarMensaje(nodoBuscado->socket, mensajeSerializado);
+						printf("bytes enviados: %d\n", bytesEnviados);
+			//SEND
 
 			tablaBitmapXNodos * nodo1 = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodoBuscado2 =buscarNodoPorNombreS(nodo1->nodo);
 			int posicion7 = buscarPosicionLibre(nodo1->bitarray, nodo1->cantidadBloques);
 			bitarray_set_bit(nodo1->bitarray, posicion7);
 			printf("Guarde copia en %s\n", nodo1->nodo);
@@ -307,10 +635,40 @@ void partirArchivoDeTexto(char * PATH) {
 			contenido2->nodo = nodo1->nodo;
 			list_add(nuevoArchivo->bloqueCopias, contenido2);
 
-			//segundo send para la copia
+			//SEND - Copia
+			int cantStrings1=3;
+			int NumeroDeBloqueDondeGuardar1 = posicion7;
+			char * NumeroDeBloqueDondeGuardarString1 = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar1,4);
+			int tipoDeArchivo1 = 1;
+			char * tipoDeArchivoString1 = intToArrayZerosLeft(tipoDeArchivo1,4);
+			char **arrayMensajesSerializar1 = malloc(sizeof(char*) * cantStrings1);
+				if (!arrayMensajesSerializar1)
+					perror("error de malloc 1");
 
-			log_info(logFs, "Archivo - bloque %d ", contenido->bloque);
-			log_info(logFs, "Archivo  - nodo %s", contenido->nodo);
+				i = 0;
+				arrayMensajesSerializar1[i] = malloc(string_length(contenidoAEnviar) + 1);
+					if (!arrayMensajesSerializar1[i])
+						perror("error de malloc 1");
+					strcpy(arrayMensajesSerializar1[i], contenidoAEnviar);
+					i++;
+					arrayMensajesSerializar1[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString1) + 1);
+						if (!arrayMensajesSerializar1[i])
+							perror("error de malloc 1");
+						strcpy(arrayMensajesSerializar1[i], NumeroDeBloqueDondeGuardarString1);
+						i++;
+						arrayMensajesSerializar1[i] = malloc(string_length(tipoDeArchivoString1) + 1);
+							if (!arrayMensajesSerializar1[i])
+								perror("error de malloc 1");
+							strcpy(arrayMensajesSerializar1[i], tipoDeArchivoString1);
+							i++;
+					char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar1, cantStrings1);
+						//printf("%s\n",mensajeSerializado);
+						int bytesEnviados1 = enviarMensaje(nodoBuscado2->socket, mensajeSerializado1);
+						printf("bytes enviados: %d\n", bytesEnviados1);
+						//SEND - Copia
+
+			log_info(logFs, "Archivo - bloque %d ", contenido2->bloque);
+			log_info(logFs, "Archivo  - nodo %s", contenido2->nodo);
 
 		} else {
 
@@ -319,6 +677,7 @@ void partirArchivoDeTexto(char * PATH) {
 			fread(contenidoAEnviar, (*posicion) - posicionAnterior, 1, archivo);
 
 			tablaBitmapXNodos * nodo2 = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodoBuscado3 = buscarNodoPorNombreS(nodo2->nodo);
 			int posicion1 = buscarPosicionLibre(nodo2->bitarray, nodo2->cantidadBloques);
 			bitarray_set_bit(nodo2->bitarray, posicion1);
 			printf("Guarde original en %s\n", nodo2->nodo);
@@ -330,12 +689,48 @@ void partirArchivoDeTexto(char * PATH) {
 			contenido3->nodo = nodo2->nodo;
 			list_add(nuevoArchivo->bloqueCopias, contenido3);
 
-			log_info(logFs, "Archivo - bloque %d ", contenido->bloque);
-			log_info(logFs, "Archivo  - nodo %s", contenido->nodo);
 
-			fwrite(contenidoAEnviar, (*posicion) - posicionAnterior, 1, archivo2);
+			//SEND
+			int cantStrings=3;
+			int NumeroDeBloqueDondeGuardar = posicion1;
+			char * NumeroDeBloqueDondeGuardarString = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar,4);
+			int tipoDeArchivo = 1;
+			char * tipoDeArchivoString = intToArrayZerosLeft(tipoDeArchivo,4);
+			char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
+				if (!arrayMensajesSerializar)
+					perror("error de malloc 1");
+
+				int i = 0;
+				arrayMensajesSerializar[i] = malloc(string_length(contenidoAEnviar) + 1);
+					if (!arrayMensajesSerializar[i])
+						perror("error de malloc 1");
+					strcpy(arrayMensajesSerializar[i], contenidoAEnviar);
+					i++;
+					arrayMensajesSerializar[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString) + 1);
+						if (!arrayMensajesSerializar[i])
+							perror("error de malloc 1");
+						strcpy(arrayMensajesSerializar[i], NumeroDeBloqueDondeGuardarString);
+						i++;
+						arrayMensajesSerializar[i] = malloc(string_length(tipoDeArchivoString) + 1);
+							if (!arrayMensajesSerializar[i])
+								perror("error de malloc 1");
+							strcpy(arrayMensajesSerializar[i], tipoDeArchivoString);
+							i++;
+					char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
+						//printf("%s\n",mensajeSerializado);
+						int bytesEnviados = enviarMensaje(nodoBuscado3->socket, mensajeSerializado);
+						printf("bytes enviados: %d\n", bytesEnviados);
+			//SEND
+
+
+			log_info(logFs, "Archivo - bloque %d ", contenido3->bloque);
+			log_info(logFs, "Archivo  - nodo %s", contenido3->nodo);
+
+
+
 
 			tablaBitmapXNodos * nodo3 = obtenerNodoConMayorPosicionLibre();
+			ContenidoXNodo * nodobuscado4 = buscarNodoPorNombreS(nodo3->nodo);
 			int posicion2 = buscarPosicionLibre(nodo3->bitarray, nodo3->cantidadBloques);
 			bitarray_set_bit(nodo3->bitarray, posicion2);
 			printf("Guarde copia en %s\n", nodo3->nodo);
@@ -346,19 +741,58 @@ void partirArchivoDeTexto(char * PATH) {
 			contenido4->nodo = nodo3->nodo;
 			list_add(nuevoArchivo->bloqueCopias, contenido4);
 
-			log_info(logFs, "Archivo - bloque %d ", contenido->bloque);
-			log_info(logFs, "Archivo  - nodo %s", contenido->nodo);
 
-			//aca el otro send? gg
+			//SEND - Copia
+			int cantStrings1=3;
+			int NumeroDeBloqueDondeGuardar1 = posicion2;
+			char * NumeroDeBloqueDondeGuardarString1 = intToArrayZerosLeft(NumeroDeBloqueDondeGuardar1,4);
+			int tipoDeArchivo1 = 1;
+			char * tipoDeArchivoString1 = intToArrayZerosLeft(tipoDeArchivo1,4);
+			char **arrayMensajesSerializar1 = malloc(sizeof(char*) * cantStrings1);
+				if (!arrayMensajesSerializar1)
+					perror("error de malloc 1");
+
+				i = 0;
+				arrayMensajesSerializar1[i] = malloc(string_length(contenidoAEnviar) + 1);
+					if (!arrayMensajesSerializar1[i])
+						perror("error de malloc 1");
+					strcpy(arrayMensajesSerializar1[i], contenidoAEnviar);
+					i++;
+					arrayMensajesSerializar1[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString1) + 1);
+						if (!arrayMensajesSerializar1[i])
+							perror("error de malloc 1");
+						strcpy(arrayMensajesSerializar1[i], NumeroDeBloqueDondeGuardarString1);
+						i++;
+						arrayMensajesSerializar1[i] = malloc(string_length(tipoDeArchivoString1) + 1);
+							if (!arrayMensajesSerializar1[i])
+								perror("error de malloc 1");
+							strcpy(arrayMensajesSerializar1[i], tipoDeArchivoString1);
+							i++;
+					char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar1, cantStrings1);
+						//printf("%s\n",mensajeSerializado);
+						int bytesEnviados1 = enviarMensaje(nodobuscado4->socket, mensajeSerializado1);
+						printf("bytes enviados: %d\n", bytesEnviados1);
+						//SEND - Copia
+
+			log_info(logFs, "Archivo - bloque %d ", contenido4->bloque);
+			log_info(logFs, "Archivo  - nodo %s", contenido4->nodo);
+
 
 		}
 		posicionActual++;
-		fclose(archivo2);
 	}
+	if(sumatoriaDeBloquesLibres()>=(cantidadBloquesAMandar(PATH))*2){
+
 	list_iterate(posiciones, (void*) partir);
 	list_add(tablaArchivos, nuevoArchivo);
+	persistirArchivos(nombre);
 	fclose(archivo);
 	free(contenidoAEnviar);
+	}
+	else {
+		char * holi = conseguirNombreDePath(PATH);
+		printf("No hay espacio para partir el archivo %s \n",holi);
+	}
 }
 
 void almacenarArchivo(char * PATH, int TipoArchivo) {
@@ -371,6 +805,55 @@ void almacenarArchivo(char * PATH, int TipoArchivo) {
 }
 
 void leerArchivo(char * PATH) {
+	char * nombre = conseguirNombreDePath(PATH);
+	tablaArchivo * archivoABuscar = buscarArchivoPorNombre(nombre);
+	char ** arrayDeOriginalesYcopias[100];
+	int j = 0;
+		void buscar(ContenidoBloque * elemento ){
+
+	ContenidoXNodo * nodoEncontrado = buscarNodoPorNombreS(elemento->nodo);
+
+	//mando el bloque que quiero leer
+	int cantStrings=1;
+	int numeroDeBLoqueQueQuiero = elemento->bloque;
+	printf(" numeroDeBLoqueQueQuiero  %d del nodo %s \n",numeroDeBLoqueQueQuiero,elemento->nodo);
+	char * NumeroDeBloqueDondeGuardarString = intToArrayZerosLeft(numeroDeBLoqueQueQuiero,4);
+	char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
+	if (!arrayMensajesSerializar)
+	perror("error de malloc 1");
+
+	int i = 0;
+	arrayMensajesSerializar[i] = malloc(string_length(NumeroDeBloqueDondeGuardarString) + 1);
+	if (!arrayMensajesSerializar[i])
+	perror("error de malloc 1");
+	strcpy(arrayMensajesSerializar[i], NumeroDeBloqueDondeGuardarString);
+		i++;
+		char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PEDIR_BLOQUES, arrayMensajesSerializar, cantStrings);
+		//printf("%s\n",mensajeSerializado);
+		int bytesEnviados = enviarMensaje(nodoEncontrado->socket, mensajeSerializado);
+		printf("bytes enviados: %d\n", bytesEnviados);
+		////mando el bloque que quiero leer
+
+		//recibo el buffer
+
+		int32_t headerRecibo = deserializarHeader(nodoEncontrado->socket);
+		int cantMensajesRecibidos =protocoloCantidadMensajes[headerRecibo];
+		char ** arrayMensajesRecibidos = deserializarMensaje(nodoEncontrado->socket,cantMensajesRecibidos);
+		//recibo el buffer
+		printf("%s",arrayMensajesRecibidos[0]);
+	}
+		list_iterate(archivoABuscar->bloqueCopias,(void*)buscar);
+		void printearArrayOriginal(){
+			int i = 0;
+			int b = countSplit(arrayDeOriginalesYcopias);
+			int c = (cantidadBloquesAMandar(PATH)*2);
+				for(i;i<c;i++){
+					printf("%s\n",arrayDeOriginalesYcopias[i]);
+					//getchar();
+				}
+
+		}
+		//printearArrayOriginal();
 	puts("leo archivo yamafs");
 }
 
@@ -391,7 +874,7 @@ void enviarInfoBloques(int socketCliente) {
 	char *cantBloquesFileString = intToArrayZerosLeft(cantBloquesFiles, 4);
 	int cantMensajesPorPedazoArchivo = 6;
 	int cantStrings = 1 + cantMensajesPorPedazoArchivo * cantBloquesFiles;
-	int i, j, k;
+	int i;
 	char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
 
 	i = 0;
@@ -400,7 +883,7 @@ void enviarInfoBloques(int socketCliente) {
 		perror("error de malloc 1");
 	strcpy(arrayMensajesSerializar[i], cantBloquesFileString);
 	i++;
-	void * impresion(ContenidoBloque * hola) {
+	void impresion(ContenidoBloque * hola) {
 
 		char *nodo=hola->nodo;
 		//printf("%s\n", nodo);
@@ -446,7 +929,7 @@ void enviarInfoNodos(int socketCliente) {
 	printf("cantBloquesFileString: %s\n", cantidadNodosString);
 	int cantMensajePorNodo = 3;
 	int cantStrings = 1 + cantMensajePorNodo * cantidadNodos;
-	int i, j, k;
+	int i;
 	char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
 
 	i = 0;
@@ -456,7 +939,7 @@ void enviarInfoNodos(int socketCliente) {
 	strcpy(arrayMensajesSerializar[i], cantidadNodosString);
 	printf("arrayMensajesSerializar[0]: %s\n", arrayMensajesSerializar[0]);
 	i++;
-	void * impresion(ContenidoXNodo * elemento) {
+	void impresion(ContenidoXNodo * elemento) {
 
 		char * nodo = elemento->nodo;
 		char * ip = elemento->ip;
@@ -489,17 +972,66 @@ void enviarInfoNodos(int socketCliente) {
 	puts("presionar ENTER");
 	getchar();
 }
-void recibirInfoDatanode(int socketData){
-	int32_t header = deserializarHeader(socketData);
 
-	int cantMensajes=protocoloCantidadMensajes[header];
-	char ** arrayMensajesRecibidos = deserializarMensaje(socketData,cantMensajes);
-	printf("%s\n",arrayMensajesRecibidos[0]);
-	printf("%s\n",arrayMensajesRecibidos[1]);
-	printf("%s\n",arrayMensajesRecibidos[2]);
-	printf("%s\n",arrayMensajesRecibidos[3]);
+
+void persistirNodosFuncion(){
+		char * nombre = string_duplicate("[");
+		FILE * archivo = fopen ("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/metadata/nodos.bin","w+");
+	fputs("TAMANO_TOTAL",archivo);
+	fputs("=",archivo);
+	fputs(string_itoa(sumatoriaDeBloquesTotal()),archivo);
+	fputc('\n',archivo);
+	fputs("TAMANO_LIBRE",archivo);
+	fputs("=",archivo);
+	fputs(string_itoa(sumatoriaDeBloquesLibres()),archivo);
+	fputc('\n',archivo);
+
+	void persistir(ContenidoXNodo * elemento){
+		string_append(&nombre,elemento->nodo);
+		string_append(&nombre,",");
+		char * nombreLibre =string_duplicate(elemento->nodo);
+		string_append(&nombreLibre,"Libre");
+		char * nombreTotal =string_duplicate(elemento->nodo);
+		string_append(&nombreTotal,"Total");
+		tablaBitmapXNodos * NodoEncontrado	= buscarNodoPorNombreB(elemento->nodo);
+
+	fputs(nombreTotal,archivo);
+	fputs("=",archivo);
+	fputs(string_itoa(elemento->total),archivo);
+	fputc('\n',archivo);
+	fputs(nombreLibre,archivo);
+	fputs("=",archivo);
+	fputs(string_itoa(cantidadDeBloquesLibresEnBitmap(NodoEncontrado->bitarray,NodoEncontrado->cantidadBloques)),archivo);
+	fputc('\n',archivo);
+
+
+	}
+	list_iterate(tablaNodos,(void*)persistir);
+	string_append(&nombre,"]");
+	fputs("NODOS",archivo);
+	fputs("=",archivo);
+	fputs(nombre,archivo);
+	fputc('\n',archivo);
+
+	fclose(archivo);
 
 }
+
+
+int countSplit(char ** array){
+		int size;
+		for (size = 0; array[size] != NULL; size++);
+		return size;
+	}
+	void cargarListaDeNodosAnteriores(){
+		char ** arrayDeNodosAnteriores = config_get_array_value(persistirNodos,"NODOS");
+
+			int i = 0;
+					for(;i<countSplit(arrayDeNodosAnteriores);i++){
+						list_add(listaDeNodosAnteriores,arrayDeNodosAnteriores[i]);
+						printf("%s\n",arrayDeNodosAnteriores[i]);
+					}
+	}
 
 void soyServidor(char * puerto) {
 	void *get_in_addr(struct sockaddr *sa) {
@@ -512,7 +1044,7 @@ void soyServidor(char * puerto) {
 	int i;
 	int nuevoSocket;
 	int SocketYama;
-	//int SocketWorker;
+	int SocketWorker;
 	int quiensoy;
 	int fdmax;
 	struct sockaddr_storage remoteaddr;
@@ -527,7 +1059,7 @@ void soyServidor(char * puerto) {
 	escuchar(listener);
 
 	bool estable;
-	estable = true;
+	estable = config_get_string_value(configFs,"ESTADO");
 
 	while (1) {
 		SocketsDataNodes = master;
@@ -552,7 +1084,6 @@ void soyServidor(char * puerto) {
 						case yama: {
 							if (estable) {
 								SocketYama = nuevoSocket;
-								enviarInfoBloques(SocketYama);
 								enviarInfoNodos(SocketYama);
 								puts("conectado");
 							} else {
@@ -561,16 +1092,20 @@ void soyServidor(char * puerto) {
 						}
 							break;
 						case worker: {
-							//SocketWorker = nuevoSocket;
+							SocketWorker = nuevoSocket;
 							//atender a worker,supongo que almacenar el archivo
 						}
 							break;
 						case datanode: {
-							recibirInfoDatanode(nuevoSocket);
-							registrarNodo("Nodo1", 60, nuevoSocket, "192.168.1.1", "5000");
-							registrarNodo("Nodo2", 90, nuevoSocket, "192.168.1.1", "5000");
-							registrarNodo("Nodo3", 150, nuevoSocket, "192.168.1.1", "5000");
-							registrarNodo("Nodo4", 150, nuevoSocket, "192.168.1.1", "5000");
+							if(estable){
+
+							}
+							else {
+
+							}
+
+							registrarNodo(nuevoSocket);
+							persistirNodosFuncion();
 
 							estable = true;
 						}
@@ -580,13 +1115,36 @@ void soyServidor(char * puerto) {
 							fdmax = nuevoSocket;
 						}
 					}
-				} else {/* esto sirve para cuando ya estan conectados ,
+				} else {
+					if(i == SocketYama){
+						enviarInfoBloques(SocketYama);
+						puts("soy yama");
+					}
+					if(i == SocketWorker){
+						puts("soy worker");
+					}
+					int muere ;
+					recv(nuevoSocket, &muere, sizeof(int), MSG_WAITALL);
+					if(muere <=0){
+
+						//partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
+						//partirArchivoBinario("/home/utnso/Escritorio/FileSystem.h");
+						printf("se murio me toma bien xd \n");
+						//avisar socket muerto a yama
+					}
+					//Devuelve -1 en error
+					/* esto sirve para cuando ya estan conectados ,
 				 si te envian mensajes la funcion
 				 recibirmensaje era parte de mi serializacion
 				 void * stream;
 				 Mensaje mensaje = recibirMensaje(i, &stream);
 				 if (mensaje.accion <= 0) {
 				 if (mensaje.accion == 0) {*/
+					//partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
+
+
+//hacer eliminar algun dia		ContenidoXNodo * hola2 = list_remove_by_condition(tablaNodos,buscarNodoPorNombreS("NODO_1"));
+
 					printf("Se murio socket %d \n", i); ///hacer log
 					/*} else {
 					 perror("Hubo un error que no deberia pasar");
@@ -620,50 +1178,13 @@ void soyServidor(char * puerto) {
 		}
 	}
 }
-int sumatoriaDeBloquesLibres() {
-	int suma = 0;
-	void sumar(tablaBitmapXNodos * elemento) {
-		int a = cantidadDeBloquesLibresEnBitmap(elemento->bitarray, elemento->cantidadBloques);
-		suma = suma + a;
+
+	char *  devolverPathAbsoluto(char * pathYamaFS){
+		char * pathAbsoluto = string_new();
+		string_append(&pathAbsoluto,"/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/yamafs/");
+		string_append(&pathAbsoluto,pathYamaFS);
+		return pathAbsoluto;
 	}
-	list_iterate(listaDeBitMap, (void*) sumar);
-	return suma;
-}
-int sumatoriaDeBloquesTotal() {
-	int suma = 0;
-	void sumar(tablaBitmapXNodos * elemento) {
-		int a = elemento->cantidadBloques;
-		suma = suma + a;
-	}
-	list_iterate(listaDeBitMap, (void*) sumar);
-	return suma;
-}
-
-/*
- void enviarListaNodos(int socket){
- void* mensaje=malloc(sizeof(tablaGlobalNodos.nodo));
- int posicionActual=0;
- char* contenido=string_new();
- int i=0;
- for(;i<list_size(tablaGlobalNodos.nodo),i++){
- int tamanioNodo=string_length(list_get(tablaGlobalNodos.nodo,i));
- memcpy(mensaje,&tamanioNodo,sizeof(int));
- posicionActual+=sizeof(int);
- memcpy(mensaje+posicionActual,list_get(tablaGlobalNodos.nodo,i),tamanioNodo);
- posicionActual+=tamanioNodo;
- }
- int tamanioMsj=sacarTamanioMEnsaje();
- sendRemasterizado(socket, ES_FS, tamanioMsj, mensaje);
- }*/
-
-
-
-/////
-
-
-/////
-
-
 int main() {
 
 	char * PUERTO;
@@ -672,46 +1193,26 @@ int main() {
 	FILE * nodos = fopen("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/nodo.bin", "wb");
 	tablaNodos = list_create();
 	tablaArchivos = list_create();
-	/*tablaNodosGlobal=malloc(sizeof(tablaDeNodos));
-	 tablaNodosGlobal->nodo=list_create();
-	 tablaNodosGlobal->contenidoXNodo=list_create();*/
 	listaDeBitMap = list_create();
+	listaDeNodosAnteriores = list_create();
 
-	//pthread_t hiloConsola;
+	pthread_t hiloConsola;
 	configFs = config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/config/configFilesystem.txt");
+	persistirNodos =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/metadata/nodos.bin");
 	PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
-	//pthread_create(&hiloConsola,NULL,(void*)IniciarConsola,NULL);
-	registrarNodo("Nodo_1", 60, 2, "192.168.1.1", "5000");
-	registrarNodo("Nodo_2", 90, 3, "192.168.1.1", "5000");
-	registrarNodo("Nodo_3", 150, 4, "192.168.1.1", "5000");
-	registrarNodo("Nodo_4", 150, 5, "192.168.1.1", "5000");
-	partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
+	bool estado = config_get_string_value(configFs,"ESTADO");
+	if(estado==true){
+		printf("puto\n");
+	}
+	config_set_value(configFs,"ESTADO","false");
+	config_save(configFs);
+	pthread_create(&hiloConsola,NULL,(void*)IniciarConsola,NULL);
+
+	//list_add(listaDeNodosAnteriores,"nodito");
+	bool x = buscarEnListaAnterior("nodito");
 	soyServidor(PUERTO);
 	//pthread_join(hiloConsola, NULL);
-	//partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
 
-	tablaArchivo * archivo = buscarArchivoPorNombre("Nuevo.txt");
-
-	/*int i = 0;
-	 void * impresion(ContenidoBloque * hola) {
-	 char * nodo = string_new();
-	 char * bloque = string_new();
-	 char * bytes = string_new();
-
-	 string_append(&nodo, "nodoCopia");
-	 string_append(&nodo, string_itoa(i));
-	 string_append(&bloque, "bloqueCopia");
-	 string_append(&bloque, string_itoa(i));
-	 nodo = hola->nodo;
-	 bloque = intToArrayZerosLeft(hola->bloque, 4);
-	 bytes = intToArrayZerosLeft(hola->bytes, 8);
-	 i++;
-	 }
-	 list_iterate(archivo->bloqueCopias, (void*) impresion);
-	 */
-	/*tablaArchivo * archivo2 = buscarArchivoPorNombre("FileSystem.h");
-	 printf("%s\n",archivo2->nombre);
-	 printf("bytes : %d\n",archivo2->tamanio);*/
 
 	fclose(directorios);
 	fclose(nodos);
