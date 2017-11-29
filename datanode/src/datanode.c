@@ -7,6 +7,8 @@
  */
 
 #include "../../utils/includes.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
