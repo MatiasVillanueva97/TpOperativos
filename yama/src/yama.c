@@ -300,8 +300,10 @@ int main(int argc, char *argv[]) {
 	fd_set socketsLecturaMaster;    // master file descriptor list
 	fd_set socketsLecturaTemp;  // temp file descriptor list for select()
 	int maxFD;        // maximum file descriptor number
+	// clear the set ahead of time
+	FD_ZERO(&socketsLecturaMaster);
+	FD_ZERO(&socketsLecturaTemp);
 
-	// 1º) leer archivo de config.
 	if (!getDatosConfiguracion()) {
 		return EXIT_FAILURE;
 	}
@@ -316,14 +318,16 @@ int main(int argc, char *argv[]) {
 		int modulo = yama;
 		send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 	}
+	// add the socketFs to the master set
+	FD_SET(socketFS, &socketsLecturaMaster);
+	// keep track of the biggest file descriptor
+	maxFD = socketFS; // so far, it's this one
+
 	/* ************** inicialización como server ************ */
 	int listenningSocket;
 	if ((listenningSocket = inicializoComoServidor()) < 0) {
 		return EXIT_FAILURE;
 	}
-	// clear the set ahead of time
-	FD_ZERO(&socketsLecturaMaster);
-	FD_ZERO(&socketsLecturaTemp);
 	// add the listener to the master set
 	FD_SET(listenningSocket, &socketsLecturaMaster);
 	// keep track of the biggest file descriptor
