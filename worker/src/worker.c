@@ -15,10 +15,10 @@
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 enum keys {
-	IP_PROPIA, PUERTO_PROPIO
+	IP_PROPIA, PUERTO_PROPIO, RUTA_DATABIN
 };
-char* keysConfigWorker[] = { "IP_PROPIA", "PUERTO_PROPIO", NULL };
-char* datosConfigWorker[2];
+char* keysConfigWorker[] = { "IP_PROPIA", "PUERTO_PROPIO", "RUTA_DATABIN", NULL };
+char* datosConfigWorker[3];
 
 t_log* logWorker;
 
@@ -38,7 +38,8 @@ t_log* logWorker;
 
 char* guardar_script(char* codigo_script, char* nombre) {
 	char* path = malloc(string_length(nombre) + 15);
-	path = string_from_format("../tmp/script_%s", nombre);
+	//path = string_from_format("../tmp/script_%s", nombre);
+	path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
 		fputs(codigo_script, fp);
@@ -47,49 +48,53 @@ char* guardar_script(char* codigo_script, char* nombre) {
 	return path;
 }
 
-char* leer_bloque(int bloque, int cantBytes) {
 
+char* leer_bloque(int numeroBloque, int cantBytes) {
+	FILE* archivo;
+	archivo = fopen(datosConfigWorker[RUTA_DATABIN], "r");
+	int tamanioBloque = 1048576;
+	char *buffer[cantBytes];
+	int posicion = numeroBloque * tamanioBloque;
+	fseek(archivo, posicion, SEEK_SET);
+	fread(buffer,cantBytes,1,archivo);
+	printf("%i bytes leidos en el bloque %i\n",cantBytes,numeroBloque);
+	fclose(archivo);
+	return *buffer;
 }
 
 int system_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
 
 	char* comando = string_new();
-
-	string_append_with_format(&comando, "echo %s | ./%s | sort > ../tmp/%s", datos_origen, path_script_transformacion, archivo_temporal);
-
+	// ../tmp/
+	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
 	log_trace(logWorker, "El comando a ejecutar es %s", comando);
-
-	int resultado = system(comando);
-
+	//int resultado = system(comando);
 	int status;
-
+	system(comando);
 	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-
-	if (WIFEXITED(status)) {
-		log_trace(logWorker, "El exit status del comando fue %d\n", WEXITSTATUS(status));
-	} else {
-		log_trace(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
+	/*if (WIFEXITED(status)) {
+		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", WEXITSTATUS(status));
 	}
-
+	else {
+		//log_trace(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
+		log_trace(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
+	}*/
 	free(comando);
-
-	return resultado;
-
+	//return resultado;
+	return status;
 }
 
 int transformacion(char* path_script, int origen, int bytesOcupados, char* destino) {
-
-	char* bloque = leer_bloque(origen, bytesOcupados);
-
+	//char* bloque = leer_bloque(origen, bytesOcupados); //implementar despues con mmap
+	char* bloque = "WBAN,Date,Time,StationType,SkyCondition,SkyConditionFlag,Visibility,VisibilityFlag,WeatherType,WeatherTypeFlag,DryBulbFarenheit,DryBulbFarenheitFlag,DryBulbCelsius,DryBulbCelsiusFlag,WetBulbFarenheit,WetBulbFarenheitFlag,WetBulbCelsius,WetBulbCelsiusFlag,DewPointFarenheit,DewPointFarenheitFlag,DewPointCelsius,DewPointCelsiusFlag,RelativeHumidity,RelativeHumidityFlag,WindSpeed,WindSpeedFlag,WindDirection,WindDirectionFlag,ValueForWindCharacter,ValueForWindCharacterFlag,StationPressure,StationPressureFlag,PressureTendency,PressureTendencyFlag,PressureChange,PressureChangeFlag,SeaLevelPressure,SeaLevelPressureFlag,RecordType,RecordTypeFlag,HourlyPrecip,HourlyPrecipFlag,Altimeter,AltimeterFlag\
+03011,20130101,0000,0,OVC, , 5.00, , , ,M, ,M, ,M, ,M, ,M, ,M, ,M, , 5, ,120, , , ,M, , , , , ,M, ,AA, , , ,29.93, ";
 	if (bloque == NULL) {
 		log_error(logWorker, "No se pudo leer el bloque (numero %d) completo segun el tamanio especificado (%d bytes)", origen, bytesOcupados);
-		return -1;
+		//return -1;
 	}
-
 	FILE* temporal;
 	temporal = fopen(destino, "w");
 	fclose(temporal);
-
 	/*
 	 t_script archivo_temporal_bloque = reconstruir_archivo("../tmp/bloques_sin_transformar/", bloque, datos_transformacion.ocupado_del_bloque +1);
 
@@ -103,22 +108,15 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	 return -1;
 	 }
 	 */
-
 	int resultado = system_transformacion(path_script, bloque, destino);
-
 	//script_destroy(archivo_temporal_bloque);
-
 	free(bloque);
-
 	if (resultado < 0) { // segun man system retorna -1 si salio mal la ejecucion, y retorna cero si el comando es nulo (cosa que creo que no pasa).
 		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado. System devolvio %d", resultado);
 		return -1;
 	}
-
 	log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado. System devolvio %d", resultado);
-
 	return 0;
-
 }
 
 int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
@@ -135,16 +133,13 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	fr3 = fopen(path_f3, "w");
 
 	while (feof(fr1) == 0 && feof(fr2) == 0) {
-
 		if (f1)
 			//fscanf(fr1, "%d", &fst);
 			fgets(fst, 256, fr1);
 		if (f2)
 			//fscanf(fr2, "%d", &snd);
 			fgets(snd, 256, fr2);
-
 		//printf("%d - %d\n", fst, snd);
-
 		if (fst == snd) {
 			f1 = true;
 			f2 = true;
@@ -158,15 +153,11 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 			f1 = true;
 			//p[i] = fst;
 		}
-
 		//i++;
-
 	}
-
 	fclose(fr1);
 	fclose(fr2);
 	fclose(fr3);
-
 	//printf("\n\n\n");
 	/*
 	 for (int j = 0; j < i; j++) {
@@ -278,8 +269,9 @@ int main(int argc, char *argv[]) {
 				}
 				free(arrayMensajes);
 				char* path_script = guardar_script(transformadorString, temporalDestino);
-				//resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
-				sleep(2+bloque/10);
+				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
+				//sleep(2+bloque/10);
+				free(path_script);
 				free(transformadorString);
 				free(temporalDestino);
 				enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
