@@ -37,8 +37,8 @@ t_log* logWorker;
 #define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
 
 char* guardar_script(char* codigo_script, char* nombre) {
-	char *path = string_from_format("../tmp/script_%s", nombre);
-	//path = "../tmp/script_" + nombre;
+	char* path = malloc(string_length(nombre) + 15);
+	path = string_from_format("../tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
 		fputs(codigo_script, fp);
@@ -251,11 +251,11 @@ int main(int argc, char *argv[]) {
 
 			int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
 
-			/*
-			 transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
-			 reduc local (3): script, lista de temporales (origen), temporal(destino)
-			 reduc global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
-			 almac final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
+			/* *****Cantidad de mensajes segun etapa*****
+			 Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
+			 Reduc local (3): script, lista de temporales (origen), temporal(destino)
+			 Reduc global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
+			 Almac final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
 			 */
 
 			//char* comando = "echo hola pepe | ./script_transformacion.py > /tmp/resultado";
@@ -277,9 +277,11 @@ int main(int argc, char *argv[]) {
 					free(arrayMensajes[i]);
 				}
 				free(arrayMensajes);
-				//char* path_script = guardar_script(transformadorString, temporalDestino);
+				char* path_script = guardar_script(transformadorString, temporalDestino);
 				//resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
 				sleep(2+bloque/10);
+				free(transformadorString);
+				free(temporalDestino);
 				enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
 			}
 
