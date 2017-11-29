@@ -355,11 +355,10 @@ int main(int argc, char *argv[]) {
 										maxFD = socketCliente;
 									}
 									asignarNroMasterJob(getNuevoNroMaster(), getNuevoNroJob(), socketCliente);
-									strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_OK, 4));
+									enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
 								} else {
-									strcpy(mensajeHeaderSolo, intToArrayZerosLeft(TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO, 4));
+									enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
 								}
-								enviarMensaje(socketCliente, mensajeHeaderSolo);
 							}
 						}
 					} else {	//conexión preexistente

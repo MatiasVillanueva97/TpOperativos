@@ -277,8 +277,10 @@ int main(int argc, char *argv[]) {
 					free(arrayMensajes[i]);
 				}
 				free(arrayMensajes);
-				char* path_script = guardar_script(transformadorString, temporalDestino);
-				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
+				//char* path_script = guardar_script(transformadorString, temporalDestino);
+				//resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
+				sleep(2+bloque/10);
+				enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
 			}
 
 			if (headerId == (int32_t) "REDUCCION_LOCAL") {

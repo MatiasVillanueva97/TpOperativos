@@ -261,7 +261,6 @@ int main(int argc, char *argv[]) {
 		preparadoEnviarYama = 0;
 	}
 
-	/* ******************** SOLO PARA PRUEBAS ******************* */
 	//inicia comunicación con YAMA enviando el HANDSHAKE
 	headerId = handshakeYama(socketYama);
 	if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
@@ -399,7 +398,7 @@ void* conectarAWorkerTransformacion(void *arg) {
 	//printf("conexión a Worker ip %s - puerto %s - nodo %d - bloque %d - temporal %s\n", datos->ip, string_itoa(datos->puerto), datos->nodo, datos->bloque, datos->temporal);
 	//int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
 	int socketWorker = conectarA("127.0.0.1", "5300");
-
+	sleep(2 * datos->nodo);
 	//char* message = string_from_format("Bloques %s - Bytes %s - Temporal %s", string_itoa(datos->bloque), string_itoa(datos->bytes), datos->temporal);
 	//printf("mensaje: %s\n", message);
 	int cantStringsASerializar = 4;	//código de transformación, bloque, bytes y temporal
@@ -423,9 +422,13 @@ void* conectarAWorkerTransformacion(void *arg) {
 		free(arrayMensajes[j]);
 	}
 	free(arrayMensajes);
-	printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
+	//printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
 	enviarMensaje(socketWorker, mensajeSerializado);
 
-	return EXIT_SUCCESS;
+	//respuesta con la tabla de transformaciones
+	int32_t headerId = deserializarHeader(socketWorker);
+	if (headerId == TIPO_MSJ_TRANSFORMACION_OK) {
+		printf("Nodo %d finalizó correctamente\n", datos->nodo);
+	}
 
 }
