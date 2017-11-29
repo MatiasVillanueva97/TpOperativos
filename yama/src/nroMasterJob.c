@@ -11,13 +11,14 @@ typedef struct {
 	uint16_t nroMaster;
 	uint16_t nroJob;
 	uint16_t nodoReduccGlobal;
+	uint16_t cantBloquesArchivo;
 } nroMasterJob;
 
 //vector con los número de master y job asignados a cada master que se conecta
 //está indexada por FileDescriptor
 //se actualiza cuando el select recibe una conexión nueva y crea el FD
 //o cuando se desconecta el master y el select da de baja el FD
-nroMasterJob listaNrosMasterJob[100];
+nroMasterJob listaNrosMasterJob[CANT_MAX_FD];
 
 nroMasterJob getNroMasterJobByFD(int fileDescriptor) {
 	return listaNrosMasterJob[fileDescriptor];

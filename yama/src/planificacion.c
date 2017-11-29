@@ -30,6 +30,16 @@
  return 0;
  }
  */
+typedef struct {
+	//int fd;
+	int parteArchivo;
+	int nodoUsado;
+	int bloqueUsado;
+	int nodoSuplente;
+	int bloqueSuplente;
+	int bytes;
+} nodosUsadobloqueArchivo;
+nodosUsadobloqueArchivo *bloquesArchivoXFD[CANT_MAX_FD];
 
 char algoritmoPlanificacion[10];
 
@@ -90,7 +100,7 @@ int nodoConMayorCarga(int cantNodos, datosPropiosNodo *nodosParaPlanificar) {
 	return indexNodoMayorCarga;
 }
 
-void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacionesNodos, int cantPartesArchivo, int cantNodosArchivo, datosPropiosNodo *nodosParaPlanificar) {
+void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacionesNodos, int cantPartesArchivo, int cantNodosArchivo, datosPropiosNodo *nodosParaPlanificar) {
 //	printf("cantPartesArchivo recibido: %d\n", cantPartesArchivo);
 //	printf("cantNodosArchivo recibido: %d\n", cantNodosArchivo);
 
@@ -126,6 +136,8 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 	int clockMaestro = 0, clockNoExisteParteArchivo = -1,
 			clockNodoSinDisponibilidad = -1;
 
+	nodosUsadobloqueArchivo nodosAsociadosFD[cantPartesArchivo];
+
 	while (parteArchivo < cantPartesArchivo) {
 		datosPropiosNodo nodoActual = nodosParaPlanificar[clockMaestro];
 //		printf("clockMaestro: %d\n", clockMaestro);
@@ -136,11 +148,22 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 		if (nodoConDisponibilidad(nodoActual) && existeParteArchivoEnNodo(parteArchivo, nodoActual.numero, nodosPorPedazoArchivo)) {
 			//asigno parteArchivo al nodo y bloque
 			asignacionesNodos[parteArchivo].nroNodo = nodoActual.numero;
+
+			//nodosAsociadosFD[] se va a usar para agarrar el nodo de la copia en la replanificación
+			nodosAsociadosFD[parteArchivo].parteArchivo = parteArchivo;
+			nodosAsociadosFD[parteArchivo].nodoUsado = nodoActual.numero;
 			//me fijo si es el nodo de la copia 1 o 2, para cargarle el bloque dentro del nodo
-			if (nodoActual.numero == nodosPorPedazoArchivo[parteArchivo].nodoCopia1)
+			if (nodoActual.numero == nodosPorPedazoArchivo[parteArchivo].nodoCopia1) {
 				asignacionesNodos[parteArchivo].bloque = nodosPorPedazoArchivo[parteArchivo].bloqueCopia1;
-			else
+				nodosAsociadosFD[parteArchivo].nodoSuplente = nodosPorPedazoArchivo[parteArchivo].nodoCopia2;
+				nodosAsociadosFD[parteArchivo].bloqueSuplente = nodosPorPedazoArchivo[parteArchivo].bloqueCopia2;
+			} else {
 				asignacionesNodos[parteArchivo].bloque = nodosPorPedazoArchivo[parteArchivo].bloqueCopia2;
+				nodosAsociadosFD[parteArchivo].nodoSuplente = nodosPorPedazoArchivo[parteArchivo].nodoCopia1;
+				nodosAsociadosFD[parteArchivo].bloqueSuplente = nodosPorPedazoArchivo[parteArchivo].bloqueCopia1;
+			}
+			nodosAsociadosFD[parteArchivo].bloqueUsado = asignacionesNodos[parteArchivo].bloque;
+			nodosAsociadosFD[parteArchivo].bytes = nodosPorPedazoArchivo[parteArchivo].bytesBloque;
 			asignacionesNodos[parteArchivo].bytesOcupados = nodosPorPedazoArchivo[parteArchivo].bytesBloque;
 
 			nodoActual.carga++;
@@ -190,7 +213,14 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 //		printf("\n-------- termina la vuelta -----------\n");
 	}
 
-	//TODO: actualizar la carga en cada nodo usado de la listaGlobalNodos[]
+	//guarda los datos del nodo usado y el suplente asociados a un FD para usar como índice
+	//esto está pensado para la replanificación, para que use el nodo suplente
+	bloquesArchivoXFD[fileDescriptor] = nodosAsociadosFD;
+	for (i = 0; i < cantPartesArchivo; i++) {
+		printf("bytes %d, nodoUsado  %d, bloqueUsado  %d, nodoSuplente %d, bloqueSuplente  %d\n", bloquesArchivoXFD[fileDescriptor][i].bytes, bloquesArchivoXFD[fileDescriptor][i].nodoUsado, bloquesArchivoXFD[fileDescriptor][i].bloqueUsado, bloquesArchivoXFD[fileDescriptor][i].nodoSuplente, bloquesArchivoXFD[fileDescriptor][i].bloqueSuplente);
+	}
+
+	//actualiza la carga en cada nodo usado de la listaGlobalNodos[]
 	for (i = 0; i < cantNodosArchivo; i++) {
 		actualizarCargaGlobalNodo(nodosParaPlanificar[i], nodosParaPlanificar[i].carga);
 	}

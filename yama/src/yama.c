@@ -11,6 +11,8 @@
 // Se conecta a FileSystem. Única instancia.
 // Solo hay un YAMA corriendo al mismo tiempo.
 // ================================================================ //
+#define CANT_MAX_FD	50
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -319,9 +321,9 @@ int main(int argc, char *argv[]) {
 		send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 	}
 	// add the socketFs to the master set
-	FD_SET(socketFS, &socketsLecturaMaster);
+	//FD_SET(socketFS, &socketsLecturaMaster);
 	// keep track of the biggest file descriptor
-	maxFD = socketFS; // so far, it's this one
+	//maxFD = socketFS; // so far, it's this one
 
 	/* ************** inicialización como server ************ */
 	int listenningSocket;
@@ -429,11 +431,55 @@ int main(int argc, char *argv[]) {
 						case TIPO_MSJ_TRANSFORMACION_ERROR:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
+							nroBloqueRecibido = atoi(arrayMensajes[1]);
+							free(arrayMensajes[0]);
+							free(arrayMensajes[1]);
 							free(arrayMensajes);
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
 							}
-							//TODO: replanificar
+							//replanificar: envía el nodo y bloque de la copia del bloque
+							//de archivo que no se pudo transformar
+							int cantBloquesArchivo = listaNrosMasterJob[socketConectado].cantBloquesArchivo;
+							nodosUsadobloqueArchivo nodoSuplente;
+							int nodoSuplenteEncontrado = 0;
+							for (i = 0; i < cantBloquesArchivo; i++) {
+								if (nroNodoRecibido == bloquesArchivoXFD[socketConectado][i].nodoUsado && nroBloqueRecibido == bloquesArchivoXFD[socketConectado][i].bloqueUsado) {
+									//tomar el nodo suplente para enviarlo
+									nodoSuplente = bloquesArchivoXFD[socketConectado][i];
+									nodoSuplenteEncontrado = 1;
+								}
+							}
+							if (!nodoSuplenteEncontrado) {
+								//no se pudo encontrar un bloque alternativo, se aborta el job
+								enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+								cerrarCliente(socketConectado);
+								FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+							} else {
+								//se genera la nueva línea en la tabla de estados
+								struct filaTablaEstados fila;
+								fila.job = masterJobActual.nroJob;
+								fila.master = masterJobActual.nroMaster;
+								fila.nodo = nodoSuplente.nodoSuplente;
+								fila.bloque = nodoSuplente.bloqueSuplente;
+								fila.etapa = TRANSFORMACION;
+								char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
+								strcpy(fila.temporal, temporal);
+								fila.estado = EN_PROCESO;
+								fila.siguiente = NULL;
+								if (!agregarElemTablaEstados(fila))
+									perror("Error al agregar elementos a la tabla de estados");
+
+								//se envía al master la orden de transformación en el nodo donde está la copia
+								nodoParaAsignar dataReplanificacion[1];
+								dataReplanificacion[0].nroNodo = nodoSuplente.nodoSuplente;
+								dataReplanificacion[0].bloque = nodoSuplente.bloqueSuplente;
+								dataReplanificacion[0].bytesOcupados = nodoSuplente.bytes;
+								strcpy(dataReplanificacion[0].temporal, temporal);
+								char *mensajeSerializado = serializarMensajeTransformacion(dataReplanificacion, 1);
+								printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
+								enviarMensaje(socketConectado, mensajeSerializado);
+							}
 							break;
 						case TIPO_MSJ_REDUCC_LOCAL_OK:
 							;
@@ -630,7 +676,7 @@ int main(int argc, char *argv[]) {
 									//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
 									//indexado por partes del archivo
 									nodoParaAsignar asignacionesNodos[cantPartesArchivo];
-									planificar(bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
+									planificar(socketConectado, bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
 									for (i = 0; i < cantNodosArchivo; i++) {
 										printf("nro %d - carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
 									}
