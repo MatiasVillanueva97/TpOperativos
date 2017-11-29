@@ -54,7 +54,7 @@ const int protocoloCantidadMensajes[TIPO_MSJ_DATANODE + 1] = {
 		1,
 		1,
 		2,
-		1,
+		2,
 		1,
 		1,
 		1,
