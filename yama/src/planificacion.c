@@ -31,8 +31,7 @@
  }
  */
 
-//sale del archivo config?????????????
-char algoritmoPlanificacion = 'W';	//C para clock; W para w-clock
+char algoritmoPlanificacion[10];
 
 int cargaMaxima, disponibBase, nodoReduccGlobal;
 
@@ -60,11 +59,19 @@ int nodoConDisponibilidad(datosPropiosNodo nodo) {
  * devuelve el valor de disponibilidad (A)
  */
 int calcularDisponibilidadNodo(datosPropiosNodo nodosParaPlanificar) {
-	if (algoritmoPlanificacion == 'C') {
+	if (strcmp(algoritmoPlanificacion, "CLOCK") == 0) {
 		return disponibBase;
 	} else {
 		return (disponibBase + (cargaMaxima - nodosParaPlanificar.carga));
 	}
+}
+
+int getCargaGlobalNodo(datosPropiosNodo nodo) {
+	return listaGlobalNodos[nodo.numero].carga;
+}
+
+actualizarCargaGlobalNodo(datosPropiosNodo nodo, int carga) {
+	listaGlobalNodos[nodo.numero].carga = carga;
 }
 
 /*
@@ -96,18 +103,12 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 //	}
 //	printf("\n");
 
-	//disponibBase = 1;	//sale del archivo config?????????????
-	printf("disponibBase: %d\n", disponibBase);
-	//pongo la carga inicial de cada nodo
-	nodosParaPlanificar[0].carga = 1;
-	nodosParaPlanificar[1].carga = 1;
-	nodosParaPlanificar[2].carga = 0;
-	nodosParaPlanificar[3].carga = 10;
-	int indexNodoMaxCarga = nodoConMayorCarga(cantNodosArchivo, nodosParaPlanificar);
-	cargaMaxima = nodosParaPlanificar[indexNodoMaxCarga].carga;
 	for (i = 0; i < cantNodosArchivo; i++) {
+		nodosParaPlanificar[i].carga = getCargaGlobalNodo(nodosParaPlanificar[i]);
 		nodosParaPlanificar[i].disponibilidad = calcularDisponibilidadNodo(nodosParaPlanificar[i]);
 	}
+	int indexNodoMaxCarga = nodoConMayorCarga(cantNodosArchivo, nodosParaPlanificar);
+	cargaMaxima = nodosParaPlanificar[indexNodoMaxCarga].carga;
 
 	//ordeno los nodos de mayor a menor disponibilidad
 	datosPropiosNodo temp;
@@ -187,6 +188,11 @@ void planificar(bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacio
 
 //		getchar();
 //		printf("\n-------- termina la vuelta -----------\n");
+	}
+
+	//TODO: actualizar la carga en cada nodo usado de la listaGlobalNodos[]
+	for (i = 0; i < cantNodosArchivo; i++) {
+		actualizarCargaGlobalNodo(nodosParaPlanificar[i], nodosParaPlanificar[i].carga);
 	}
 
 	//ordeno los nodos de menor a mayor por carga

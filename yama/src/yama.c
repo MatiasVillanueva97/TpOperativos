@@ -24,7 +24,6 @@
 #include "../../utils/archivoConfig.h"
 #include "../../utils/comunicacion.h"
 
-
 typedef struct {
 	int nroNodo;
 	int bloque;
@@ -49,7 +48,6 @@ typedef struct {
 	char nombre[LARGO_NOMBRE_NODO];
 } datosPropiosNodo;
 datosPropiosNodo listaGlobalNodos[50];
-
 
 #include "../../utils/protocolo.c"
 #include "tablaEstados.h"
@@ -308,7 +306,8 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 	//para la planificación
-	disponibBase = atoi(datosConfigYama[4]);
+	disponibBase = atoi(datosConfigYama[DISPONIBILIDAD_BASE]);
+	strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
 	/* ************** conexión como cliente al FS *************** */
 	int socketFS;
 	if ((socketFS = conexionAFileSystem()) < 0) {
@@ -335,6 +334,11 @@ int main(int argc, char *argv[]) {
 			cantPartesArchivo, cantNodosArchivo;
 	int32_t headerId;
 	nroMasterJob masterJobActual;
+	//pongo la carga de cada nodo en 0 al iniciar
+	int largoListaGlobalNodos = sizeof(listaGlobalNodos) / sizeof(datosPropiosNodo);
+	for (i = 0; i < largoListaGlobalNodos; i++) {
+		listaGlobalNodos[i].carga = 0;
+	}
 	for (;;) {
 		socketsLecturaTemp = socketsLecturaMaster;
 		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
