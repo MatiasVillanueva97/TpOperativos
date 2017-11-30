@@ -72,7 +72,7 @@ const int protocoloCantidadMensajes[TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER + 1] = 
 		1,
 		1,
 		4,
-		1 };
+		2 };
 
 const char* protocoloMensajesPredefinidos[TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER + 1] = {
 		"EN_DESUSO",

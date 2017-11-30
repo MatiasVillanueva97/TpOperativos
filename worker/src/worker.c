@@ -48,7 +48,6 @@ char* guardar_script(char* codigo_script, char* nombre) {
 	return path;
 }
 
-
 char* leer_bloque(int numeroBloque, int cantBytes) {
 	FILE* archivo;
 	archivo = fopen(datosConfigWorker[RUTA_DATABIN], "r");
@@ -56,10 +55,32 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 	char *buffer[cantBytes];
 	int posicion = numeroBloque * tamanioBloque;
 	fseek(archivo, posicion, SEEK_SET);
-	fread(buffer,cantBytes,1,archivo);
-	printf("%i bytes leidos en el bloque %i\n",cantBytes,numeroBloque);
+	fread(buffer, cantBytes, 1, archivo);
+	printf("%i bytes leidos en el bloque %i\n", cantBytes, numeroBloque);
 	fclose(archivo);
 	return *buffer;
+}
+
+int ejecutar_system(char* path_script, char* datos_origen, char* archivo_temporal) {
+
+	char* comando = string_new();
+	// ../tmp/
+	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script, datos_origen, path_script, archivo_temporal);
+	log_trace(logWorker, "El comando a ejecutar es %s", comando);
+	//int resultado = system(comando);
+	int status;
+	system(comando);
+	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
+	/*if (WIFEXITED(status)) {
+	 log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", WEXITSTATUS(status));
+	 }
+	 else {
+	 //log_trace(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
+	 log_trace(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
+	 }*/
+	free(comando);
+	//return resultado;
+	return status;
 }
 
 int system_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
@@ -72,16 +93,19 @@ int system_transformacion(char* path_script_transformacion, char* datos_origen, 
 	int status;
 	system(comando);
 	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-	/*if (WIFEXITED(status)) {
-		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", WEXITSTATUS(status));
-	}
-	else {
+	if (WIFEXITED(&status)) {
+		int exit_status = WEXITSTATUS(&status);
+		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
+		return 0;
+	} else {
 		//log_trace(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
-		log_trace(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
-	}*/
+		//log_trace(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
+		log_trace(logWorker, "System fallo\n");
+		return -1;
+	}
 	free(comando);
 	//return resultado;
-	return status;
+	//return status;
 }
 
 int transformacion(char* path_script, int origen, int bytesOcupados, char* destino) {
@@ -89,8 +113,8 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	char* bloque = "WBAN,Date,Time,StationType,SkyCondition,SkyConditionFlag,Visibility,VisibilityFlag,WeatherType,WeatherTypeFlag,DryBulbFarenheit,DryBulbFarenheitFlag,DryBulbCelsius,DryBulbCelsiusFlag,WetBulbFarenheit,WetBulbFarenheitFlag,WetBulbCelsius,WetBulbCelsiusFlag,DewPointFarenheit,DewPointFarenheitFlag,DewPointCelsius,DewPointCelsiusFlag,RelativeHumidity,RelativeHumidityFlag,WindSpeed,WindSpeedFlag,WindDirection,WindDirectionFlag,ValueForWindCharacter,ValueForWindCharacterFlag,StationPressure,StationPressureFlag,PressureTendency,PressureTendencyFlag,PressureChange,PressureChangeFlag,SeaLevelPressure,SeaLevelPressureFlag,RecordType,RecordTypeFlag,HourlyPrecip,HourlyPrecipFlag,Altimeter,AltimeterFlag\
 03011,20130101,0000,0,OVC, , 5.00, , , ,M, ,M, ,M, ,M, ,M, ,M, ,M, , 5, ,120, , , ,M, , , , , ,M, ,AA, , , ,29.93, ";
 	if (bloque == NULL) {
-		log_error(logWorker, "No se pudo leer el bloque (numero %d) completo segun el tamanio especificado (%d bytes)", origen, bytesOcupados);
-		//return -1;
+		log_error(logWorker, "No se pudo leer el bloque (numero %d) completo segun el tamaño especificado (%d bytes)", origen, bytesOcupados);
+		return -1;
 	}
 	FILE* temporal;
 	temporal = fopen(destino, "w");
@@ -111,60 +135,117 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	int resultado = system_transformacion(path_script, bloque, destino);
 	//script_destroy(archivo_temporal_bloque);
 	free(bloque);
-	if (resultado < 0) { // segun man system retorna -1 si salio mal la ejecucion, y retorna cero si el comando es nulo (cosa que creo que no pasa).
-		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado. System devolvio %d", resultado);
-		return -1;
+	if (resultado < 0) {
+		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
+	} else {
+		log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado.");
 	}
-	log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado. System devolvio %d", resultado);
-	return 0;
+	return resultado;
 }
 
 int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	FILE *fr1, *fr2, *fr3;
-	//char* fst, snd;
-	char fst[256];
-	char snd[256];
-	//int p[256];
-	int i = 0, n = 0;
+	char* fst = string_new();
+	char* snd = string_new();
 	bool f1 = true, f2 = true;
 
 	fr1 = fopen(path_f1, "r");
 	fr2 = fopen(path_f2, "r");
 	fr3 = fopen(path_f3, "w");
 
-	while (feof(fr1) == 0 && feof(fr2) == 0) {
+	while (!feof(fr1) && !feof(fr2)) {
 		if (f1)
-			//fscanf(fr1, "%d", &fst);
-			fgets(fst, 256, fr1);
+			fgets(fst, 1000, fr1);
 		if (f2)
-			//fscanf(fr2, "%d", &snd);
-			fgets(snd, 256, fr2);
-		//printf("%d - %d\n", fst, snd);
+			fgets(snd, 1000, fr2);
 		if (fst == snd) {
 			f1 = true;
 			f2 = true;
-			//fwrite allala
+			fwrite (fst,1,string_length(fst),fr3);
+			fwrite (snd,1,string_length(snd),fr3);
 		} else if (fst > snd) {
-			//p[i] = snd;
 			f1 = false;
 			f2 = true;
+			fwrite (snd,1,string_length(snd),fr3);
 		} else {
 			f2 = false;
 			f1 = true;
-			//p[i] = fst;
+			fwrite (fst,1,string_length(fst),fr3);
 		}
-		//i++;
 	}
+	fwrite ("\n",1,1,fr3);
+	while (!feof(fr1)) {
+		fgets(fst, 1000, fr1);
+		fwrite (fst,1,string_length(fst),fr3);
+	}
+	while (!feof(fr2)) {
+		fgets(snd, 1000, fr2);
+		fwrite (snd,1,string_length(snd),fr3);
+	}
+	free(fst);
+	free(snd);
 	fclose(fr1);
 	fclose(fr2);
 	fclose(fr3);
-	//printf("\n\n\n");
-	/*
-	 for (int j = 0; j < i; j++) {
-	 printf("%d\n", p[j]);
-	 }
-	 */
 	return 0;
+}
+
+int aparear_archivos(FILE *fich/*, FILE **aux*/) {
+	FILE *aux[2];
+	char ultima[128], linea[2][128], anterior[2][128];
+	int entrada;
+	int tramos = 0;
+
+	// Lee la primera línea de cada fichero auxiliar:
+	fgets(linea[0], 128, aux[0]);
+	fgets(linea[1], 128, aux[1]);
+	// Valores iniciales;
+	strcpy(ultima, "");
+	strcpy(anterior[0], "");
+	strcpy(anterior[1], "");
+	// Bucle, mientras no se acabe ninguno de los ficheros auxiliares (quedan tramos por mezclar):
+	while (!feof(aux[0]) && !feof(aux[1])) {
+		// Selecciona la línea que se añadirá:
+		if (strcmp(linea[0], linea[1]) <= 0)
+			entrada = 0;
+		else
+			entrada = 1;
+		// Almacena el valor como el último añadido:
+		strcpy(anterior[entrada], linea[entrada]);
+		// Añade la línea al fichero:
+		fputs(linea[entrada], fich);
+		// Lee la siguiente línea del fichero auxiliar:
+		fgets(linea[entrada], 128, aux[entrada]);
+		// Verificar fin de tramo, si es así copiar el resto del otro tramo:
+		if (strcmp(anterior[entrada], linea[entrada]) > 0) {
+			if (!entrada)
+				entrada = 1;
+			else
+				entrada = 0;
+			tramos++;
+			// Copia lo que queda del tramo actual al fichero de salida:
+			do {
+				strcpy(anterior[entrada], linea[entrada]);
+				fputs(linea[entrada], fich);
+				fgets(linea[entrada], 128, aux[entrada]);
+			} while (!feof(aux[entrada]) && strcmp(anterior[entrada], linea[entrada]) <= 0);
+		}
+	}
+
+	// Añadir tramos que queden sin mezclar:
+	if (!feof(aux[0]))
+		tramos++;
+	while (!feof(aux[0])) {
+		fputs(linea[0], fich);
+		fgets(linea[0], 128, aux[0]);
+	}
+	if (!feof(aux[1]))
+		tramos++;
+	while (!feof(aux[1])) {
+		fputs(linea[1], fich);
+		fgets(linea[1], 128, aux[1]);
+	}
+	return (tramos == 1);
 }
 
 int main(int argc, char *argv[]) {
@@ -244,9 +325,9 @@ int main(int argc, char *argv[]) {
 
 			/* *****Cantidad de mensajes segun etapa*****
 			 Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
-			 Reduc local (3): script, lista de temporales (origen), temporal(destino)
-			 Reduc global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
-			 Almac final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
+			 Reduccion local (3): script, lista de temporales (origen), temporal(destino)
+			 Reduccion global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
+			 Almacenam final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
 			 */
 
 			//char* comando = "echo hola pepe | ./script_transformacion.py > /tmp/resultado";
@@ -277,7 +358,7 @@ int main(int argc, char *argv[]) {
 				enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
 			}
 
-			if (headerId == (int32_t) "REDUCCION_LOCAL") {
+			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
 				//aparear archivos
 				//ejecutar reductor
 				//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
