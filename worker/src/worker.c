@@ -134,7 +134,7 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	 */
 	int resultado = system_transformacion(path_script, bloque, destino);
 	//script_destroy(archivo_temporal_bloque);
-	free(bloque);
+	//free(bloque);
 	if (resultado < 0) {
 		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
 	} else {

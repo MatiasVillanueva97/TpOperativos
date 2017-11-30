@@ -99,8 +99,6 @@ void recibirTablaTransformaciones(struct filaTransformacion *datosTransformacion
 	}
 	free(arrayTablaTransformacion);
 	puts("tabla de transformación recibida con éxito\n---------------------------------------\n\n");
-	puts("presionar ENTER");
-	getchar();
 }
 
 /*
@@ -274,7 +272,7 @@ int main(int argc, char *argv[]) {
 	t_log* logMASTER;
 	logMASTER = log_create("logMASTER.log", "MASTER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	uint32_t preparadoEnviarYama = 1;
-	int32_t headerId, headerIdPrincipal;
+	int32_t headerIdYama;
 
 	log_info(logMASTER, "Iniciando proceso MASTER");
 	printf("\n*** Proceso Master ***\n");
@@ -292,7 +290,7 @@ int main(int argc, char *argv[]) {
 	char *nameArchivoConfig = "configMaster.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigMaster, datosConfigMaster)) { //leerArchivoConfig devuelve 1 si hay error
 		printf("Hubo un error al leer el archivo de configuración");
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 // 2º) conectarse a YAMA y aguardar instrucciones
@@ -305,33 +303,37 @@ int main(int argc, char *argv[]) {
 	}
 
 	//inicia comunicación con YAMA enviando el HANDSHAKE
-	headerId = handshakeYama(socketYama);
-	if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
+	headerIdYama = handshakeYama(socketYama);
+	if (headerIdYama == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		//envía a yama el archivo con el que quiere trabajar
 		enviarArchivoYama(socketYama, archivoRequerido);
 		fcntl(socketYama, F_SETFL, O_NONBLOCK);
-		for (;;) {
-			puts("pasó");
+
+		for (j = 0;; j++) {
+			printf("pasó %d vez\n", j);
 			sleep(2);
-			headerIdPrincipal = deserializarHeader(socketYama);
-			if (headerIdPrincipal == TIPO_MSJ_TABLA_TRANSFORMACION) { //recibe la tabla de transformaciones
-				int cantBloquesArchivo = getCantBloquesArchivo(socketYama, protocoloCantidadMensajes[headerId]);
+			headerIdYama = deserializarHeader(socketYama);
+			printf("headerIdPrincipal: %d - %d - %s\n", headerIdYama, protocoloCantidadMensajes[headerIdYama], protocoloMensajesPredefinidos[headerIdYama]);
+			if (headerIdYama == TIPO_MSJ_TABLA_TRANSFORMACION) { //recibe la tabla de transformaciones
+				int cantBloquesArchivo = getCantBloquesArchivo(socketYama, protocoloCantidadMensajes[headerIdYama]);
 				pthread_t hilosWorker[cantBloquesArchivo];
 				struct datosWorker datos[cantBloquesArchivo];
 				struct filaTransformacion datosTransformacion[cantBloquesArchivo];
-
+				puts("pasóooossso");
 				recibirTablaTransformaciones(datosTransformacion, socketYama, cantBloquesArchivo);
-				puts("tabla de transformación recibida con éxito\n---------------------------------------\n\n");
 				for (i = 0; i < cantBloquesArchivo; i++) {
+					printf("se creó el hilo %d\n", i);
 					// por cada tarea se crea un hilo para conectarse al worker q corresponda, se le pasa la fila de la tabla recibida
 					pthread_create(&(hilosWorker[i]), NULL, conectarAWorkerTransformacion, &datosTransformacion[i]);
 				}
+
 				for (i = 0; i < cantBloquesArchivo; i++) {
 					//genera el join de cada hilo creado
 					//TODO: está bien hecho así??????????
 					//TODO: no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
 					pthread_join(hilosWorker[i], NULL);
 				}
+				puts("pasóoooo");
 //			pthread_create(&(hilosWorker[0]), NULL, conectarAWorkerTransformacion, datos);
 //			pthread_join(hilosWorker[0], NULL);
 //			free(arrayMensajesTablaTransformacion);
@@ -343,8 +345,8 @@ int main(int argc, char *argv[]) {
 //			free(arrayMensajesTablaTransformacion);
 			}
 
-			if (headerIdPrincipal == TIPO_MSJ_TABLA_REDUCCION_LOCAL) {
-				recibirTablaReduccLocalYEnviarAWorker(socketYama, headerId);
+			if (headerIdYama == TIPO_MSJ_TABLA_REDUCCION_LOCAL) {
+				recibirTablaReduccLocalYEnviarAWorker(socketYama, headerIdYama);
 			}
 
 			//luego de fijarse el header recibido del yama y hacer lo que deba
@@ -457,10 +459,10 @@ void* conectarAWorkerReduccLocal(void *arg) {
 //printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
 	enviarMensaje(socketWorker, mensajeSerializado);
 
-	int32_t headerId = deserializarHeader(socketWorker);
+	int32_t headerIdWorker = deserializarHeader(socketWorker);
 	pthread_mutex_lock(&mutex);
 	nroNodoFinalizado = datos->nodo;
-	headerIdFinalizado = headerId;
+	headerIdFinalizado = headerIdWorker;
 	//pthread_mutex_unlock(&mutex);
 }
 
@@ -483,8 +485,8 @@ void* conectarAWorkerTransformacion(void *arg) {
 
 	struct filaTransformacion *datos = (struct filaTransformacion*) arg;
 
-//int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
-	int socketWorker = conectarA("127.0.0.1", "5300");
+	int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
+	//int socketWorker = conectarA("127.0.0.1", "5300");
 
 	sleep(2 * datos->nodo);
 	int cantStringsASerializar = 4;	//código de transformación, bloque, bytes y temporal
@@ -512,11 +514,12 @@ void* conectarAWorkerTransformacion(void *arg) {
 	enviarMensaje(socketWorker, mensajeSerializado);
 
 //respuesta con la tabla de transformaciones
-	int32_t headerId = deserializarHeader(socketWorker);
+	int32_t headerIdWorker = deserializarHeader(socketWorker);
+	printf("headerIdWorker: %d\n", headerIdWorker);
 	pthread_mutex_lock(&mutex);
 	nroNodoFinalizado = datos->nodo;
 	nroBloqueFinalizado = datos->bloque;
-	headerIdFinalizado = headerId;
+	headerIdFinalizado = headerIdWorker;
 	//pthread_mutex_unlock(&mutex);
 
 }
