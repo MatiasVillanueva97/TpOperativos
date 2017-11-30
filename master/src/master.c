@@ -362,17 +362,36 @@ int main(int argc, char *argv[]) {
 }
 
 void* conectarAWorkerReduccLocal(void *arg) {
+	FILE *fp;
 	int i, j;
 	struct filaReduccLocal *datos = (struct filaReduccLocal*) arg;
 	int cantTemporalesTransformacion = sizeof(datos->temporalesTransformacion) / LARGO_TEMPORAL;
 
+	//pasa el archivo a string para enviarlo al worker
+	char *archivo = "reductor.py";
+	char *pathArchivo = string_from_format("../../scripts/%s", archivo);
+	fp = fopen(pathArchivo, "r"); // read mode
+	fseek(fp, 0, SEEK_END);
+	long length = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	char *reductorString = malloc(length);
+	if (reductorString) {
+		fread(reductorString, 1, length, fp);
+	}
+	fclose(fp);
+
 	//int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
 	int socketWorker = conectarA("127.0.0.1", "5300");
 
-	int cantStringsASerializar = 1 + cantTemporalesTransformacion + 1;
+	//reductor.py|cantidad de temporales transformacion | temp tranf 1 | .... | temp transf N | temp reduccLocal
+	int cantStringsASerializar = 1 + 1 + cantTemporalesTransformacion + 1;
 	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 
 	j = 0;
+	arrayMensajes[j] = malloc(string_length(reductorString) + 1);
+	strcpy(arrayMensajes[j], reductorString);
+	free(reductorString);
+	j++;
 	char* cantTemporalesTransformacionString = intToArrayZerosLeft(cantTemporalesTransformacion, 4);
 	arrayMensajes[j] = malloc(string_length(cantTemporalesTransformacionString) + 1);
 	strcpy(arrayMensajes[j], cantTemporalesTransformacionString);
@@ -385,7 +404,7 @@ void* conectarAWorkerReduccLocal(void *arg) {
 	arrayMensajes[j] = malloc(string_length(datos->temporalReduccLocal) + 1);
 	strcpy(arrayMensajes[j], datos->temporalReduccLocal);
 
-	//TIPO_MSJ_DATA_TRANSFORMACION_WORKER: 4 MENSAJES
+	//TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER: 1 MENSAJE
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER, arrayMensajes, cantStringsASerializar);
 	for (j = 0; j < cantStringsASerializar; j++) {
 		free(arrayMensajes[j]);
@@ -400,7 +419,7 @@ void* conectarAWorkerTransformacion(void *arg) {
 	FILE *fp;
 	int i, j;
 
-//pasa el archivo a string para enviarlo al worker
+	//pasa el archivo a string para enviarlo al worker
 	char *archivo = "transformador.py";
 	char *pathArchivo = string_from_format("../../scripts/%s", archivo);
 	fp = fopen(pathArchivo, "r"); // read mode
