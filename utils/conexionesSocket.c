@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <commons/string.h>
+#include <fcntl.h>	//socket no bloqueantes
 
 #define MAX_CONEXIONES 10
 enum modulo{
