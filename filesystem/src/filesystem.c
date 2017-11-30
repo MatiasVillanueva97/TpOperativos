@@ -952,8 +952,6 @@ void enviarInfoNodos(int socketCliente) {
 	printf("mensaje serializado: %s\n", mensajeSerializado);
 	int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);
 	printf("bytes enviados: %d\n", bytesEnviados);
-	puts("presionar ENTER");
-	getchar();
 }
 
 void persistirNodosFuncion() {
@@ -1041,8 +1039,7 @@ void soyServidor(char * puerto) {
 	escuchar(listener);
 
 	bool estable;
-	estable = config_get_string_value(configFs, "ESTADO");
-
+	estable = true;
 	while (1) {
 		SocketsDataNodes = master;
 		if (select(fdmax + 1, &SocketsDataNodes, NULL, NULL, NULL) == -1) {
@@ -1066,7 +1063,8 @@ void soyServidor(char * puerto) {
 						case yama: {
 							if (estable) {
 								SocketYama = nuevoSocket;
-								enviarInfoNodos(SocketYama);
+								enviarHeaderSolo(SocketYama,TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
+								//enviarInfoNodos(SocketYama);
 								puts("conectado");
 							} else {
 								puts("todavia no es estado estable");
@@ -1109,6 +1107,7 @@ void soyServidor(char * puerto) {
 					} else {
 						if (i == SocketYama) {
 							enviarInfoBloques(SocketYama, headerId);
+							enviarInfoNodos(SocketYama);
 							puts("soy yama");
 						}
 						if (i == SocketWorker) {
