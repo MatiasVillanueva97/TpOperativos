@@ -602,7 +602,7 @@ void partirArchivoDeTexto(char * PATH) {
 			strcpy(arrayMensajesSerializar[i], tipoDeArchivoString);
 			i++;
 			char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
-			//printf("%s\n",mensajeSerializado);
+			printf("nodoBuscado->socket adentro de partir: %d\n", nodoBuscado->socket);
 			int bytesEnviados = enviarMensaje(nodoBuscado->socket, mensajeSerializado);
 			printf("bytes enviados: %d\n", bytesEnviados);
 			//SEND
@@ -647,7 +647,7 @@ void partirArchivoDeTexto(char * PATH) {
 			strcpy(arrayMensajesSerializar1[i], tipoDeArchivoString1);
 			i++;
 			char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar1, cantStrings1);
-			//printf("%s\n",mensajeSerializado);
+			printf("nodoBuscado2->socket adentro de partir: %d\n", nodoBuscado2->socket);
 			int bytesEnviados1 = enviarMensaje(nodoBuscado2->socket, mensajeSerializado1);
 			printf("bytes enviados: %d\n", bytesEnviados1);
 			//SEND - Copia
@@ -702,6 +702,7 @@ void partirArchivoDeTexto(char * PATH) {
 			i++;
 			char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
 			//printf("%s\n",mensajeSerializado);
+			printf("nodoBuscado3->socket adentro de partir: %d\n", nodoBuscado3->socket);
 			int bytesEnviados = enviarMensaje(nodoBuscado3->socket, mensajeSerializado);
 			printf("bytes enviados: %d\n", bytesEnviados);
 			//SEND
@@ -749,6 +750,7 @@ void partirArchivoDeTexto(char * PATH) {
 			i++;
 			char *mensajeSerializado1 = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar1, cantStrings1);
 			//printf("%s\n",mensajeSerializado);
+			printf("nodobuscado4->socket adentro de partir: %d\n", nodobuscado4->socket);
 			int bytesEnviados1 = enviarMensaje(nodobuscado4->socket, mensajeSerializado1);
 			printf("bytes enviados: %d\n", bytesEnviados1);
 			//SEND - Copia
@@ -807,6 +809,8 @@ void leerArchivo(char * PATH) {
 		i++;
 		char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PEDIR_BLOQUES, arrayMensajesSerializar, cantStrings);
 		//printf("%s\n",mensajeSerializado);
+		printf("nodoEncontrado->socket adentro de partir: %d\n", nodoEncontrado->socket);
+		//lock
 		int bytesEnviados = enviarMensaje(nodoEncontrado->socket, mensajeSerializado);
 		printf("bytes enviados: %d\n", bytesEnviados);
 		////mando el bloque que quiero leer
@@ -814,17 +818,21 @@ void leerArchivo(char * PATH) {
 		//recibo el buffer
 
 		int32_t headerRecibo = deserializarHeader(nodoEncontrado->socket);
+		printf("header adentro de leerARchivo(): %d\n", headerRecibo);
 		int cantMensajesRecibidos = protocoloCantidadMensajes[headerRecibo];
 		char ** arrayMensajesRecibidos = deserializarMensaje(nodoEncontrado->socket, cantMensajesRecibidos);
+		//unlock
 		//recibo el buffer
-		printf("%s", arrayMensajesRecibidos[0]);
+		//printf("buffer: %s\n", arrayMensajesRecibidos[0]);
 	}
+	pthread_mutex_lock(&mutex1);
 	list_iterate(archivoABuscar->bloqueCopias, (void*) buscar);
+	pthread_mutex_unlock(&mutex1);
 	void printearArrayOriginal() {
-		int i = 0;
+		int i;
 		int b = countSplit(arrayDeOriginalesYcopias);
 		int c = (cantidadBloquesAMandar(PATH) * 2);
-		for (i; i < c; i++) {
+		for (i = 0; i < c; i++) {
 			printf("%s\n", arrayDeOriginalesYcopias[i]);
 			//getchar();
 		}
@@ -834,8 +842,8 @@ void leerArchivo(char * PATH) {
 	puts("leo archivo yamafs");
 }
 
-void enviarInfoBloques(int socketCliente) {
-	int32_t headerId = deserializarHeader(socketCliente);
+void enviarInfoBloques(int socketCliente, int headerId) {
+//	int32_t headerId = deserializarHeader(socketCliente);
 	printf("id: %d\n", headerId);
 	printf("mensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
@@ -1079,7 +1087,7 @@ void soyServidor(char * puerto) {
 
 							registrarNodo(nuevoSocket);
 							persistirNodosFuncion();
-
+							//FD_CLR(nuevoSocket, &master);
 							estable = true;
 						}
 							break;
@@ -1089,22 +1097,38 @@ void soyServidor(char * puerto) {
 						}
 					}
 				} else {
-					if (i == SocketYama) {
-						enviarInfoBloques(SocketYama);
-						puts("soy yama");
+					//lock
+					pthread_mutex_lock(&mutex1);
+					int32_t headerId = deserializarHeader(i);
+					printf("headerId: %d\n", headerId);
+					pthread_mutex_unlock(&mutex1);
+					if (headerId <= 0) { //error o desconexión de un cliente
+						printf("cerró el socket :%d\n", i);
+						cerrarCliente(i); // bye!
+						FD_CLR(i, &master); // remove from master set
+					} else {
+						if (i == SocketYama) {
+							enviarInfoBloques(SocketYama, headerId);
+							puts("soy yama");
+						}
+						if (i == SocketWorker) {
+							puts("soy worker");
+						}
 					}
-					if (i == SocketWorker) {
-						puts("soy worker");
-					}
-					int muere;
-					recv(nuevoSocket, &muere, sizeof(int), MSG_WAITALL);
-					if (muere <= 0) {
+					//unlock
 
-						//partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
-						//partirArchivoBinario("/home/utnso/Escritorio/FileSystem.h");
-						printf("se murio me toma bien xd \n");
-						//avisar socket muerto a yama
-					}
+//					int muere;
+//					recv(i, &muere, sizeof(int), MSG_WAITALL);
+//					printf("muere: %d\n", muere);
+					//Devuelve -1 en error
+//					if (muere <= 0) {
+//						//partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
+//						//partirArchivoBinario("/home/utnso/Escritorio/FileSystem.h");
+//						printf("Se murio socket %d \n", i); ///hacer log
+//						close(i); //se cierra el socket conectado,si se comenta esto
+//						//el socket no cierra de este lado por ende podria seguir recibiendo mensajes
+//						FD_CLR(i, &master);
+//					}
 					//Devuelve -1 en error
 					/* esto sirve para cuando ya estan conectados ,
 					 si te envian mensajes la funcion
@@ -1114,15 +1138,11 @@ void soyServidor(char * puerto) {
 					 if (mensaje.accion <= 0) {
 					 if (mensaje.accion == 0) {*/
 					//partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
-
 //hacer eliminar algun dia		ContenidoXNodo * hola2 = list_remove_by_condition(tablaNodos,buscarNodoPorNombreS("NODO_1"));
-					printf("Se murio socket %d \n", i); ///hacer log
 					/*} else {
 					 perror("Hubo un error que no deberia pasar");
 					 }*/
-					close(i); //se cierra el socket conectado,si se comenta esto
-					//el socket no cierra de este lado por ende podria seguir recibiendo mensajes
-					FD_CLR(i, &master);
+
 					/*} else {
 					 if (i == SocketYama) {
 					 //cosas que haga yama
@@ -1157,7 +1177,7 @@ char * devolverPathAbsoluto(char * pathYamaFS) {
 	return pathAbsoluto;
 }
 int main() {
-
+	pthread_mutex_init(&mutex1, NULL);
 	char * PUERTO;
 	logFs = log_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/FileSystem.log", "FileSystem", 0, 0);
 	FILE * directorios = fopen("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/directorios.dat", "w+");
@@ -1172,9 +1192,6 @@ int main() {
 	persistirNodos = config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/metadata/nodos.bin");
 	PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
 	bool estado = config_get_string_value(configFs, "ESTADO");
-	if (estado == true) {
-		printf("puto\n");
-	}
 	config_set_value(configFs, "ESTADO", "false");
 	config_save(configFs);
 	pthread_create(&hiloConsola, NULL, (void*) IniciarConsola, NULL);
