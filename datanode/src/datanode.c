@@ -7,6 +7,11 @@
  */
 
 #include "../../utils/includes.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <string.h>
 
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -26,10 +31,13 @@ char* keysConfigDataNode[] = {
 		"NOMBRE_NODO",
 		NULL };
 
+//FILE* archivo;
 char* datosConfigDataNode[6];
-FILE* archivo;
 int tamanoArchivo;
 t_log* logDataNode;
+void *mapArchivo;
+struct stat buff;
+int fd;
 
 int conexionAFileSystem() {
 	log_info(logDataNode, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigDataNode[FS_IP], datosConfigDataNode[FS_PUERTO]);
@@ -45,28 +53,39 @@ int conexionAFileSystem() {
 // Escribe sobre el data.bin
 // Puede haber varios DataNode corriendo al mismo tiempo.
 // ================================================================ //
-void setBloque(int idBloque, char* datos) {
-	if (idBloque < tamanoArchivo) {
+void setBloque(int idBloque,char* datos){
+	if (idBloque < tamanoArchivo){
+		int bytesEscritos = sizeof(char*)*strlen(datos)+1;
 		int posicion = idBloque * 1048576;
-		fseek(archivo, posicion, SEEK_SET);
-		fwrite(datos, 1048576, 1, archivo);
-		log_info(logDataNode, "bytes guardados en el bloque %i\n", idBloque);
-	} else {
-		printf("El bloque %i no existe en este nodo\n", idBloque);
+		mapArchivo = mmap(0,buff.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, posicion);
+		if(mapArchivo == MAP_FAILED){
+			perror("mmap");
+			close(fd);
+			exit(1);
+		}
+		strncpy(mapArchivo,datos,bytesEscritos);
+		munmap(mapArchivo, buff.st_size);
+	}else{
+		printf("El bloque %i no existe en este nodo\n",idBloque);
 	}
 }
 //leer los datos del bloque
-char* getBloque(int idBloque) {
-	if (idBloque >= tamanoArchivo) {
-		//printf("El bloque %i no existe en este nodo\n",idBloque);
+char* getBloque(int idBloque){
+	if (idBloque >= tamanoArchivo){
+		printf("El bloque %i no existe en este nodo\n",idBloque);
 		return 0;
 	}
 	char *buffer = malloc(1048576);
 	int posicion = idBloque * 1048576;
-	fseek(archivo, posicion, SEEK_SET);
-	fread(buffer, 1048576, 1, archivo);
-	log_info(logDataNode, "bytes leidos en el bloque %i\n", idBloque);
-	//printf("bytes leidos en el bloque %i\n",idBloque);
+	mapArchivo = mmap(0,1048576, PROT_READ, MAP_SHARED, fd, posicion);
+	if(mapArchivo == MAP_FAILED){
+		perror("mmap");
+		close(fd);
+		exit(1);
+	}
+	strncpy(buffer, mapArchivo,1048576);
+	log_info(logDataNode, "bytes leidos en el bloque %i\n",idBloque);
+	printf("bytes leidos en el bloque %i\n",idBloque);
 	//printf("%s\n",buffer);
 	return buffer;
 }
@@ -151,15 +170,27 @@ int main(int argc, char *argv[]) {
 	}
 
 	//2°)Abro el archivo data.bin
-	archivo = fopen(datosConfigDataNode[4], "rb+");
-
+	//archivo = fopen(datosConfigDataNode[4], "rb+");
+/*
 	//tamaño de archivo data.bin
 	int fd = fileno(archivo);
 	struct stat buff;
 	fstat(fd, &buff);
 	tamanoArchivo = buff.st_size / 1048576;
+*/
+	fd = open(datosConfigDataNode[4], O_RDWR);
+	if(fd == -1){
+		perror("open");
+		exit(1);
+	}
+	if(fstat(fd,&buff) < 0){
+		perror("fstat");
+		close(fd);
+		exit(1);
+	}
+	//tamaño de archivo data.bin
+	tamanoArchivo = buff.st_size/1048576;
 
-//	fclose(archivo);//esto solo para que no quede abierto por el momento
 //	//3°)Me conecto al FS y espero solicitudes
 	int socketFS; //= conectarA("127.0.0.1","5000");
 	if ((socketFS = conexionAFileSystem()) < 0) {
@@ -198,7 +229,7 @@ int main(int argc, char *argv[]) {
 			printf("bloque %d\n", atoi(arrayMensajesRecibidos[0]));
 			//getchar();
 			char * buffer = getBloque(atoi(arrayMensajesRecibidos[0]));
-
+			munmap(mapArchivo,1048576);
 			//printf("%s \n",buffer);
 			//getchar();
 			//printf("%s\n",buffer);
@@ -242,6 +273,6 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 	}
-
+	close(fd);
 	return 0;
 }
