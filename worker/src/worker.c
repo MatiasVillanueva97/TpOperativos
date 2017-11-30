@@ -87,7 +87,7 @@ int system_transformacion(char* path_script_transformacion, char* datos_origen, 
 
 	char* comando = string_new();
 	// ../tmp/
-	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
+	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
 	log_trace(logWorker, "El comando a ejecutar es %s", comando);
 	//int resultado = system(comando);
 	int status;
@@ -248,6 +248,11 @@ int aparear_archivos(FILE *fich/*, FILE **aux*/) {
 	return (tramos == 1);
 }
 
+int reduccion_local(char* path_script, int origen, int bytesOcupados, char* destino) {
+	int resultado;
+	return resultado;
+}
+
 int main(int argc, char *argv[]) {
 	//tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
 	int i, j, k, h;
@@ -343,25 +348,51 @@ int main(int argc, char *argv[]) {
 				int bytesOcupados = atoi(arrayMensajes[2]);
 				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
 				strcpy(temporalDestino, arrayMensajes[3]);
-				printf("datos recibidos: transformador %s\nsocket %d - bloque %d - bytes %d - temporal %s\n", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
+				printf("Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s\n", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
 
 				for (i = 0; i < cantidadMensajes; i++) {
 					free(arrayMensajes[i]);
 				}
 				free(arrayMensajes);
+
 				char* path_script = guardar_script(transformadorString, temporalDestino);
 				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
-				//sleep(2+bloque/10);
+
 				free(path_script);
 				free(transformadorString);
 				free(temporalDestino);
-				enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
+				if (resultado == 0) {
+					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
+				}
+				else {
+					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
+				}
 			}
 
 			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
+				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
+				char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+				/*
+				char *transformadorString = malloc(string_length(arrayMensajes[0]) + 1);
+				strcpy(transformadorString, arrayMensajes[0]);
+				int bloque = atoi(arrayMensajes[1]);
+				int bytesOcupados = atoi(arrayMensajes[2]);
+				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
+				strcpy(temporalDestino, arrayMensajes[3]);
+				printf("Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s\n", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
+				*/
+
+
 				//aparear archivos
 				//ejecutar reductor
 				//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
+
+
+				for (i = 0; i < cantidadMensajes; i++) {
+					free(arrayMensajes[i]);
+				}
+				free(arrayMensajes);
+
 
 			}
 
