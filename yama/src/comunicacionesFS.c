@@ -44,6 +44,22 @@ bloqueArchivo* recibirMetadataArchivoFS(int socketFS, int cantPartesArchivo) {
 		j++;
 		bloques[i].bytesBloque = atoi(arrayMensajes[j]);
 		j++;
+//		char **nodo2 = string_split(arrayMensajes[j], "_");
+//		bloques[i].nodoCopia2 = atoi(nodo2[1]);
+//		j++;
+//		bloques[i].bloqueCopia2 = atoi(arrayMensajes[j]);
+//		j++;
+//		bloques[i].bytesBloque = atoi(arrayMensajes[j]);
+//		j++;
+	}
+	for (i = 0; i < cantPartesArchivo; i++) {
+//		char **nodo1 = string_split(arrayMensajes[j], "_");
+//		bloques[i].nodoCopia1 = atoi(nodo1[1]);
+//		j++;
+//		bloques[i].bloqueCopia1 = atoi(arrayMensajes[j]);
+//		j++;
+//		bloques[i].bytesBloque = atoi(arrayMensajes[j]);
+//		j++;
 		char **nodo2 = string_split(arrayMensajes[j], "_");
 		bloques[i].nodoCopia2 = atoi(nodo2[1]);
 		j++;
