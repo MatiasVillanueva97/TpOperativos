@@ -12,6 +12,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+pthread_mutex_t mutex1;
+
 //Prototipados
 
 void ayuda(char ** comandoConsola);
@@ -113,6 +115,7 @@ void ayuda(char ** comandoConsola) {
 void format(char ** comandoConsola) {
 	if (!strcmp(comandoConsola[0], "format")) {
 		puts("formatearea algo");
+		partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
 	}
 }
 
@@ -273,7 +276,8 @@ void ls(char ** comandoConsola) {
 	char buf[1024];
 	if (!strcmp(comandoConsola[0], "ls")) {
 		if (comandoConsola[1] == NULL) {
-			system("ls");
+			//system("ls");
+			leerArchivo("/home/utnso/Escritorio/Nuevo.txt");
 		} else {
 			snprintf(buf, sizeof(buf), "ls '%s'", comandoConsola[1]);
 			system(buf);

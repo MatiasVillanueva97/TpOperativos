@@ -294,8 +294,9 @@ char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalAlmFinal)
 
 int main(int argc, char *argv[]) {
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	int preparadoEnviarFs = 1, h, i, j, k;
+	int h, i, j, k;
 	char mensajeHeaderSolo[4];
+	int32_t headerId;
 	log_info(logYAMA, "Iniciando proceso YAMA");
 	printf("\n*** Proceso Yama ***\n");
 	//para el select
@@ -313,12 +314,20 @@ int main(int argc, char *argv[]) {
 	disponibBase = atoi(datosConfigYama[DISPONIBILIDAD_BASE]);
 	strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
 	/* ************** conexión como cliente al FS *************** */
-	int socketFS;
+	int socketFS, preparadoFs = 0;
 	if ((socketFS = conexionAFileSystem()) < 0) {
-		preparadoEnviarFs = 0;
-	} else {
-		int modulo = yama;
+		//preparadoEnviarFs = 0;
+		puts("Abortar ejecución");
+		return EXIT_FAILURE;
+	}
+	int modulo = yama;
+	while (preparadoFs == 0) {
 		send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
+		headerId = deserializarHeader(socketFS);
+		if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK)
+			preparadoFs = 1;
+		else
+			puts("Sigo esperando que el Filesystem esté estable");
 	}
 	// add the socketFs to the master set
 	//FD_SET(socketFS, &socketsLecturaMaster);
@@ -338,7 +347,6 @@ int main(int argc, char *argv[]) {
 	int socketCliente, socketConectado, cantStrings, bytesRecibidos = 0,
 			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido,
 			cantPartesArchivo, cantNodosArchivo;
-	int32_t headerId;
 	nroMasterJob masterJobActual;
 	//pongo la carga de cada nodo en 0 al iniciar
 	int largoListaGlobalNodos = sizeof(listaGlobalNodos) / sizeof(datosPropiosNodo);
@@ -639,91 +647,88 @@ int main(int argc, char *argv[]) {
 							strcpy(archivo, arrayMensajes[0]);
 							free(arrayMensajes);
 							//pide la metadata del archivo al FS
-							if (preparadoEnviarFs) {
-								if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
+							if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
 
-									/* ************* solicitud de info del archivo al FS *************** */
-									//recibir las partes del archivo
-									int32_t headerId = deserializarHeader(socketFS);
-									if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
-										perror("El FS no mandó los bloques");
-									}
-									printf("headerId recibido: %d\n", headerId);
-									cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
-
-									bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
-									for (i = 0; i < cantPartesArchivo; i++) {
-										printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
-									}
-
-									/* ********************* */
-									//recibir la info de los nodos donde están esos archivos
-									headerId = deserializarHeader(socketFS);
-									if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
-										printf("El FS no mandó los nodos\n");
-									}
-									cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
-									//guardar los nodos en la listaGlobal
-									datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
-									recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
-									for (k = 0; k < cantNodosArchivo; k++) {
-										printf("listaGlobalNodos %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
-										printf("nodosParaPlanificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
-									}
-									/* ***************************************************************** */
-
-									/* ************* inicio planificación *************** */
-									//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
-									//indexado por partes del archivo
-									nodoParaAsignar asignacionesNodos[cantPartesArchivo];
-									planificar(socketConectado, bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
-									for (i = 0; i < cantNodosArchivo; i++) {
-										printf("nro %d - carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
-									}
-									//guardo el nodo donde se va a hacer la reducción global de ese master y job
-									asignarNodoReduccGlobal((uint16_t) nodosParaPlanificar[0].numero, socketConectado);
-									/* ************* fin planificación *************** */
-
-									/* ************** agregado en tabla de estados *************** */
-									//guarda la info de los bloques del archivo en la tabla de estados
-									struct filaTablaEstados fila;
-									for (i = 0; i < cantPartesArchivo; i++) {
-										//printf("parte de archivo %d asignado a: nodo %d - bloque %d\n", i, asignacionesNodos[i][0], asignacionesNodos[i][1]);
-										//genera una fila en la tabla de estados
-										fila.job = masterJobActual.nroJob;
-										fila.master = masterJobActual.nroMaster;
-										fila.nodo = asignacionesNodos[i].nroNodo;
-										fila.bloque = asignacionesNodos[i].bloque;
-										fila.etapa = TRANSFORMACION;
-										char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
-										strcpy(fila.temporal, temporal);
-										fila.estado = EN_PROCESO;
-										fila.siguiente = NULL;
-										if (!agregarElemTablaEstados(fila))
-											perror("Error al agregar elementos a la tabla de estados");
-
-										//guarda el archivo temporal en el vector que se va a usar
-										//en la tabla de transformación para el master
-										strcpy(asignacionesNodos[i].temporal, temporal);
-									}
-									//puts("\nlista de elementos asignados a transformación");
-									//mostrarTablaEstados();
-									/* ************** fin agregado en tabla de estados *************** */
-
-									/* ****** envío de nodos para la transformación ******************* */
-									//envía al master la lista de nodos donde trabajar cada bloque
-									char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
-									printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
-									enviarMensaje(socketConectado, mensajeSerializado);
-									/* **************************************************************** */
-									puts("\nlista de elementos luego de enviar la tabla de transformación");
-									mostrarTablaEstados();
-								} else {
-									perror("No se pudo pedir el archivo al FS");
+								/* ************* solicitud de info del archivo al FS *************** */
+								//recibir las partes del archivo
+								int32_t headerId = deserializarHeader(socketFS);
+								if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
+									perror("El FS no mandó los bloques");
 								}
+								printf("headerId recibido: %d\n", headerId);
+								cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
+
+								bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
+								for (i = 0; i < cantPartesArchivo; i++) {
+									printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
+								}
+
+								/* ********************* */
+								//recibir la info de los nodos donde están esos archivos
+								headerId = deserializarHeader(socketFS);
+								if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
+									printf("El FS no mandó los nodos\n");
+								}
+								cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
+								//guardar los nodos en la listaGlobal
+								datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
+								recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
+								for (k = 0; k < cantNodosArchivo; k++) {
+									printf("listaGlobalNodos %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
+									printf("nodosParaPlanificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
+								}
+								/* ***************************************************************** */
+
+								/* ************* inicio planificación *************** */
+								//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
+								//indexado por partes del archivo
+								nodoParaAsignar asignacionesNodos[cantPartesArchivo];
+								planificar(socketConectado, bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
+								for (i = 0; i < cantNodosArchivo; i++) {
+									printf("nro %d - carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
+								}
+								//guardo el nodo donde se va a hacer la reducción global de ese master y job
+								asignarNodoReduccGlobal((uint16_t) nodosParaPlanificar[0].numero, socketConectado);
+								/* ************* fin planificación *************** */
+
+								/* ************** agregado en tabla de estados *************** */
+								//guarda la info de los bloques del archivo en la tabla de estados
+								struct filaTablaEstados fila;
+								for (i = 0; i < cantPartesArchivo; i++) {
+									//printf("parte de archivo %d asignado a: nodo %d - bloque %d\n", i, asignacionesNodos[i][0], asignacionesNodos[i][1]);
+									//genera una fila en la tabla de estados
+									fila.job = masterJobActual.nroJob;
+									fila.master = masterJobActual.nroMaster;
+									fila.nodo = asignacionesNodos[i].nroNodo;
+									fila.bloque = asignacionesNodos[i].bloque;
+									fila.etapa = TRANSFORMACION;
+									char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
+									strcpy(fila.temporal, temporal);
+									fila.estado = EN_PROCESO;
+									fila.siguiente = NULL;
+									if (!agregarElemTablaEstados(fila))
+										perror("Error al agregar elementos a la tabla de estados");
+
+									//guarda el archivo temporal en el vector que se va a usar
+									//en la tabla de transformación para el master
+									strcpy(asignacionesNodos[i].temporal, temporal);
+								}
+								//puts("\nlista de elementos asignados a transformación");
+								//mostrarTablaEstados();
+								/* ************** fin agregado en tabla de estados *************** */
+
+								/* ****** envío de nodos para la transformación ******************* */
+								//envía al master la lista de nodos donde trabajar cada bloque
+								char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
+								printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
+								enviarMensaje(socketConectado, mensajeSerializado);
+								/* **************************************************************** */
+								puts("\nlista de elementos luego de enviar la tabla de transformación");
+								mostrarTablaEstados();
 							} else {
-								puts("No estoy conectado al FileSystem");
+								perror("No se pudo pedir el archivo al FS");
 							}
+
 							break;
 						default:
 							;
