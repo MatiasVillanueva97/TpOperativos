@@ -268,7 +268,7 @@ int getCantNodos(int socketYama, int cantMensajes) {
 	return cantNodos;
 }
 
-char *pathTransformador, *pathReductor, *archivoDestino;
+char pathTransformador[200], pathReductor[200], archivoDestino[200];
 int main(int argc, char *argv[]) {
 	int i, j, k, h;
 	t_log* logMASTER;
@@ -286,12 +286,12 @@ int main(int argc, char *argv[]) {
 	}
 //	char *pathTransformador = argv[1];
 //	char *pathReductor = argv[2];
-	pathTransformador = malloc(string_length(argv[1]));
+	//pathTransformador = malloc(string_length(argv[1]));
 	strcpy(pathTransformador, argv[1]);
-	pathReductor = malloc(string_length(argv[2]));
+	//pathReductor = malloc(string_length(argv[2]));
 	strcpy(pathReductor, argv[2]);
 	char *archivoRequerido = argv[3];
-	archivoDestino = malloc(string_length(argv[3]));
+	//archivoDestino = malloc(string_length(argv[3]));
 	strcpy(archivoDestino, argv[3]);
 //	char *archivoDestino = argv[4];
 
@@ -524,7 +524,7 @@ void* conectarAWorkerTransformacion(void *arg) {
 	pthread_mutex_lock(&mutexRecibirWorker[socketWorker]);
 	int32_t headerIdWorker = deserializarHeader(socketWorker);
 	pthread_mutex_unlock(&mutexRecibirWorker[socketWorker]);
-	printf("headerIdWorker: %d\n", headerIdWorker);
+	printf("worker con socket %d respondió: %s\n", socketWorker, protocoloMensajesPredefinidos[headerIdWorker]);
 	cerrarCliente(socketWorker);
 	pthread_mutex_lock(&mutexHilosMaster);
 	nroNodoFinalizado = datos->nodo;
