@@ -45,7 +45,8 @@ struct filaReduccLocal {
 	char temporalReduccLocal[LARGO_TEMPORAL];
 };
 
-pthread_mutex_t mutex;
+pthread_mutex_t mutexHilosMaster, mutexEnviosWorker[300],
+		mutexRecibirWorker[300];
 int nroNodoFinalizado, nroBloqueFinalizado;
 int32_t headerIdFinalizado = EN_DESUSO;
 
@@ -68,7 +69,7 @@ void enviarArchivoYama(int socketYama, char *archivoRequerido) {
 
 void recibirTablaTransformaciones(struct filaTransformacion *datosTransformacion, int socketYama, int cantBloquesArchivo) {
 	int bytesEnviados, i, j, k, h;
-	const int cantMensajesXBloqueArchivo = 6;
+	int cantMensajesXBloqueArchivo = 6;
 	int cantStrings = cantMensajesXBloqueArchivo * cantBloquesArchivo;
 	char **arrayTablaTransformacion = deserializarMensaje(socketYama, cantStrings);
 
@@ -267,12 +268,14 @@ int getCantNodos(int socketYama, int cantMensajes) {
 	return cantNodos;
 }
 
+char *pathTransformador, *pathReductor, *archivoDestino;
 int main(int argc, char *argv[]) {
 	int i, j, k, h;
 	t_log* logMASTER;
 	logMASTER = log_create("logMASTER.log", "MASTER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	uint32_t preparadoEnviarYama = 1;
 	int32_t headerIdYama;
+	pthread_mutex_init(&mutexHilosMaster, NULL);
 
 	log_info(logMASTER, "Iniciando proceso MASTER");
 	printf("\n*** Proceso Master ***\n");
@@ -281,10 +284,16 @@ int main(int argc, char *argv[]) {
 		puts("Error. Faltan parámetros en la ejecución del proceso.\n");
 		return EXIT_FAILURE;
 	}
-	char *transformador = argv[1];
-	char *reductor = argv[2];
+//	char *pathTransformador = argv[1];
+//	char *pathReductor = argv[2];
+	pathTransformador = malloc(string_length(argv[1]));
+	strcpy(pathTransformador, argv[1]);
+	pathReductor = malloc(string_length(argv[2]));
+	strcpy(pathReductor, argv[2]);
 	char *archivoRequerido = argv[3];
-	char *archivoDestino = argv[4];
+	archivoDestino = malloc(string_length(argv[3]));
+	strcpy(archivoDestino, argv[3]);
+//	char *archivoDestino = argv[4];
 
 // 1º) leer archivo de config.
 	char *nameArchivoConfig = "configMaster.txt";
@@ -319,7 +328,6 @@ int main(int argc, char *argv[]) {
 				pthread_t hilosWorker[cantBloquesArchivo];
 				struct datosWorker datos[cantBloquesArchivo];
 				struct filaTransformacion datosTransformacion[cantBloquesArchivo];
-				puts("pasóooossso");
 				recibirTablaTransformaciones(datosTransformacion, socketYama, cantBloquesArchivo);
 				for (i = 0; i < cantBloquesArchivo; i++) {
 					printf("se creó el hilo %d\n", i);
@@ -357,7 +365,7 @@ int main(int argc, char *argv[]) {
 				int nodo = nroNodoFinalizado;
 				int bloque = nroBloqueFinalizado;
 				headerIdFinalizado = 0;	//lo pone en 0 así en la próxima vuelta no hace nada si ningún hilo lo modificó
-				pthread_mutex_unlock(&mutex);//libera el mutex para que otro hilo modifiqué las variables compartidas
+				pthread_mutex_unlock(&mutexHilosMaster);//libera el mutex para que otro hilo modifiqué las variables compartidas
 				//enviar a yama el mensaje serializado
 			}
 			if (headerIdFinalizado == TIPO_MSJ_TRANSFORMACION_ERROR) {
@@ -365,21 +373,21 @@ int main(int argc, char *argv[]) {
 				int nodo = nroNodoFinalizado;
 				int bloque = nroBloqueFinalizado;
 				headerIdFinalizado = 0;	//lo pone en 0 así en la próxima vuelta no hace nada si ningún hilo lo modificó
-				pthread_mutex_unlock(&mutex);//libera el mutex para que otro hilo modifiqué las variables compartidas
+				pthread_mutex_unlock(&mutexHilosMaster);//libera el mutex para que otro hilo modifiqué las variables compartidas
 				//enviar a yama el mensaje serializado
 			}
 			if (headerIdFinalizado == TIPO_MSJ_REDUCC_LOCAL_OK) {
 				//enviar a YAMA fin ok
 				int nodo = nroNodoFinalizado;
 				headerIdFinalizado = 0;	//lo pone en 0 así en la próxima vuelta no hace nada si ningún hilo lo modificó
-				pthread_mutex_unlock(&mutex);//libera el mutex para que otro hilo modifiqué las variables compartidas
+				pthread_mutex_unlock(&mutexHilosMaster);//libera el mutex para que otro hilo modifiqué las variables compartidas
 				//enviar a yama el mensaje serializado
 			}
 			if (headerIdFinalizado == TIPO_MSJ_REDUCC_LOCAL_ERROR) {
 				//enviar a YAMA fin ok
 				int nodo = nroNodoFinalizado;
 				headerIdFinalizado = 0;	//lo pone en 0 así en la próxima vuelta no hace nada si ningún hilo lo modificó
-				pthread_mutex_unlock(&mutex);//libera el mutex para que otro hilo modifiqué las variables compartidas
+				pthread_mutex_unlock(&mutexHilosMaster);//libera el mutex para que otro hilo modifiqué las variables compartidas
 				//enviar a yama el mensaje serializado
 			}
 		}
@@ -414,8 +422,8 @@ void* conectarAWorkerReduccLocal(void *arg) {
 	int cantTemporalesTransformacion = sizeof(datos->temporalesTransformacion) / LARGO_TEMPORAL;
 
 //pasa el archivo a string para enviarlo al worker
-	char *archivo = "reductor.py";
-	char *pathArchivo = string_from_format("../../scripts/%s", archivo);
+	//char *archivo = "reductor.py";
+	char *pathArchivo = string_from_format("../..%s", pathReductor);
 	fp = fopen(pathArchivo, "r"); // read mode
 	fseek(fp, 0, SEEK_END);
 	long length = ftell(fp);
@@ -460,19 +468,17 @@ void* conectarAWorkerReduccLocal(void *arg) {
 	enviarMensaje(socketWorker, mensajeSerializado);
 
 	int32_t headerIdWorker = deserializarHeader(socketWorker);
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutexHilosMaster);
 	nroNodoFinalizado = datos->nodo;
 	headerIdFinalizado = headerIdWorker;
-	//pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutexHilosMaster);
 }
 
 void* conectarAWorkerTransformacion(void *arg) {
 	FILE *fp;
 	int i, j;
-
 //pasa el archivo a string para enviarlo al worker
-	char *archivo = "transformador.py";
-	char *pathArchivo = string_from_format("../../scripts/%s", archivo);
+	char *pathArchivo = string_from_format("../..%s", pathTransformador);
 	fp = fopen(pathArchivo, "r"); // read mode
 	fseek(fp, 0, SEEK_END);
 	long length = ftell(fp);
@@ -482,7 +488,6 @@ void* conectarAWorkerTransformacion(void *arg) {
 		fread(transformadorString, 1, length, fp);
 	}
 	fclose(fp);
-
 	struct filaTransformacion *datos = (struct filaTransformacion*) arg;
 
 	int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
@@ -511,15 +516,20 @@ void* conectarAWorkerTransformacion(void *arg) {
 	}
 	free(arrayMensajes);
 //printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
+	pthread_mutex_lock(&mutexEnviosWorker[socketWorker]);
 	enviarMensaje(socketWorker, mensajeSerializado);
+	pthread_mutex_unlock(&mutexEnviosWorker[socketWorker]);
 
-//respuesta con la tabla de transformaciones
+	//respuesta con la tabla de transformaciones
+	pthread_mutex_lock(&mutexRecibirWorker[socketWorker]);
 	int32_t headerIdWorker = deserializarHeader(socketWorker);
+	pthread_mutex_unlock(&mutexRecibirWorker[socketWorker]);
 	printf("headerIdWorker: %d\n", headerIdWorker);
-	pthread_mutex_lock(&mutex);
+	cerrarCliente(socketWorker);
+	pthread_mutex_lock(&mutexHilosMaster);
 	nroNodoFinalizado = datos->nodo;
 	nroBloqueFinalizado = datos->bloque;
 	headerIdFinalizado = headerIdWorker;
-	//pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutexHilosMaster);
 
 }

@@ -92,7 +92,10 @@ int32_t deserializarHeader(int socketCliente) {
  */
 char** deserializarMensaje(int socketCliente, int cantMensajes) {
 	int i, cantBytesRecibidos = 0;
-	char **arrayMensajes = malloc(cantMensajes * sizeof(char*));
+
+	char **arrayMensajes = malloc(sizeof(char*) * cantMensajes);
+	if (!arrayMensajes)
+		perror("error de malloc");
 	for (i = 0; i < cantMensajes; i++) {
 		char tamMensajeString[LARGO_STRING_TAM_MENSAJE + 1];
 		cantBytesRecibidos += recibirMensaje(tamMensajeString, socketCliente, LARGO_STRING_TAM_MENSAJE);
@@ -100,6 +103,8 @@ char** deserializarMensaje(int socketCliente, int cantMensajes) {
 		int tamMensaje = atoi(tamMensajeString);
 
 		arrayMensajes[i] = malloc(tamMensaje + 1);
+		if (!arrayMensajes[i])
+			perror("Error de malloc");
 		cantBytesRecibidos += recibirMensaje(arrayMensajes[i], socketCliente, tamMensaje);
 		arrayMensajes[i][tamMensaje] = '\0';
 	}
