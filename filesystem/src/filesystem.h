@@ -9,13 +9,11 @@
 #define SRC_FILESYSTEM_H_
 
 //bibliotecas
-#include "../../utils/consola.c"
 #include "../../utils/includes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <pthread.h>
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
@@ -29,12 +27,13 @@
 #include <math.h>
 #include <commons/collections/list.h>
 
+
 //File System
 
 //Tabla de Directorios
 typedef struct{
   int index;
-  char nombre[255];
+  char * nombre;
   int padre;
 }tablaDeDirectorios;
 
@@ -101,7 +100,6 @@ typedef struct  {
 
 //Variables
 
-tablaDeDirectorios tablaDirectorios[100];
 t_list * tablaArchivos;
 t_list * tablaNodos;
 t_list * tabaBitmapXNodo;
@@ -111,7 +109,14 @@ tablaDeNodos * tablaNodosGlobal;
 t_log * logFs;
 t_config * configFs;
 t_bitarray* bitMap ;
-t_list * listaDeNodosAnteriores;
+t_list * listaDeNodosDeEstadoAnterior;
+t_list * listaDeNodosDeFormateo;
+t_list * listaDirectorios;
+t_list * registroArchivos;
 t_config * persistirNodos;
 t_config * persistirArchivo;
+t_config *directorios;
+int formateado;
+int estadoAnterior;
+int	estadoEstable;
 #endif /* SRC_FILESYSTEM_H_ */

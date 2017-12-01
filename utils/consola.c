@@ -1,303 +1,338 @@
-/*
- * Consola2.c
- *
- *  Created on: 14/9/2017
- *      Author: utnso
- */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <commons/string.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <pthread.h>
+#include "../filesystem/src/filesystem.h"
 
-pthread_mutex_t mutex1;
+bool existeDirectorio(char* ruta);
+#define maxSize 256
 
-//Prototipados
+typedef struct {
+  int tipo;
+  char *nombre;     /* Nombre de la funcion */
+} command;
 
-void ayuda(char ** comandoConsola);
-void format(char ** comandoConsola);
-void rm(char ** comandoConsola);
-void rmDir(char ** comandoConsola);
-void rmBloq(char ** comandoConsola);
-void renombrar(char ** comandoConsola);
-void mv(char ** comandoConsola);
-void cat(char ** comandoConsola);
-void mk__dir(char ** comandoConsola);
-void cpfrom(char ** comandoConsola);
-void cpto(char ** comandoConsola);
-void cpblock(char ** comandoConsola);
-void md5(char ** comandoConsola);
-void ls(char ** comandoConsola);
-void info(char ** comandoConsola);
 
-//FUNCIONES
+command comandos[] = {
+ { 1,"format"},
+ { 2,"rm"},
+ { 3,"rename"},
+ { 4,"mv"},
+ { 5,"cat"},
+ { 6,"mkdir"},
+ { 7,"cpfrom"},
+ { 8,"cpto"},
+ { 9,"cpblock"},
+ { 10,"md5"},
+ { 11,"ls"},
+ { 12,"info"},
+ {13,"help"}
+};
 
-void * IniciarConsola() {
-	char * linea;
-	char * barraDeComando = string_from_format("%s>", getlogin());
-	puts("Iniciando Consola");
-	sleep(1);
-	puts("Consola lista");
-	while (1) {
-		linea = readline(barraDeComando);
-		if (linea)
-			add_history(linea);
-		if (!strncmp(linea, "exit", 4)) {
-			puts("Saliendo de consola...");
-			free(linea);
-			break;
-		}
-		if (!strncmp(linea, "\n", 1)) {
-			puts("");
-			free(linea);
-		}
-		char** comandoConsola = NULL; //Esta variable es para cortar el mensaje en 2.
-		comandoConsola = string_split(linea, " "); // separa la entrada en un char**
 
-		//POLIMORFISMO
-		format(comandoConsola);
-		ayuda(comandoConsola);
-		rm(comandoConsola);
-		rmDir(comandoConsola);
-		rmBloq(comandoConsola);
-		renombrar(comandoConsola);
-		mv(comandoConsola);
-		cat(comandoConsola);
-		mk__dir(comandoConsola);
-		cpfrom(comandoConsola);
-		cpto(comandoConsola);
-		cpblock(comandoConsola);
-		md5(comandoConsola);
-		ls(comandoConsola);
-		info(comandoConsola);
 
-		free(linea);
-		//liberar vector comandoConsola
-	}
+void analizarComando(char * linea){
+
+  int i;
+  int comandoNativo;
+  int limite = (sizeof(comandos)/sizeof(comandos[0]));
+  command comandoAux;
+
+  char ** comandoDesarmado = string_split(linea," ");
+  char * primerPos = comandoDesarmado[0];
+
+  for(i=0; i < limite; i++){
+    comandoAux = comandos[i];
+
+    if( strcmp(primerPos, comandoAux.nombre) == 0){
+      comandoNativo = comandoAux.tipo;
+      break;
+      }
+  }
+
+
+  switch(comandoNativo){
+
+      case 1:{
+
+        printf("Formateando FileSystem.\n");
+
+        if(estadoAnterior==0){
+        	uint cantidadNodosSistemas=list_size(tablaNodos);
+        	if(cantidadNodosSistemas>=2){
+        		config_set_value(configFs,"ESTADO_ESTABLE","1");
+        		config_save(configFs);
+        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
+        		printf("FileSystem Formateado\n");
+        	}else{
+        		printf("No hay suficientes DataNode para dejar el FS en un estado Estable\n");
+        	}
+        }else{
+
+        	if(true){//hayUnEstadoEstable()
+        		config_set_value(configFs,"ESTADO_ESTABLE","1");
+        		config_save(configFs);
+        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
+        	}else{
+        		printf("No hay al menos una copia de cada archivo. Estado no estable\n");
+        	}
+        }
+
+
+        break;
+      }
+
+      case 2:{
+        if(strcmp(comandoDesarmado[1], "-d")==0){
+        	int pudoBorrar = deleteDirectory(comandoDesarmado[2]);
+        	if(pudoBorrar == 0){
+        		printf("El directorio a borrar no existe.");
+        	}else if(pudoBorrar == -1){
+        		printf("El directorio a borrar tiene subdirectorios. No se puede borrar.");
+        	}else{
+        		char* comandoPConsola = string_new();
+        		string_append(&comandoPConsola, "rmdir ");
+        		string_append(&comandoPConsola, comandoDesarmado[2]);
+        		system(comandoPConsola);
+        		persistirDirectorio();
+        		printf("Directorio borrado exitosamente.");
+        		free(comandoPConsola);
+        	}
+        }else if(strcmp(comandoDesarmado[1], "-b")==0){
+        	//BORRO BLOQUE
+        }else if(comandoDesarmado[1]!=NULL){
+        	//BORRO ARCHIVO
+        }else{
+        	//log_error
+        }
+      }
+      break;
+
+
+      case 3:{
+    	  char * comandoNuevo = string_new();
+
+    	  char * nombreArchivoViejo = comandoDesarmado[1];
+    	  char * nombreArchivoNuevo = comandoDesarmado[2];
+
+    	  if(nombreArchivoViejo == NULL || nombreArchivoNuevo == NULL){
+    	  	  printf("Faltan parametros para ejecutar el comando rename");
+    	  } else {
+
+    		  renameDirectory(nombreArchivoViejo,nombreArchivoNuevo);
+
+    		  string_append(&comandoNuevo,"rename ");
+    		  string_append(&comandoNuevo,nombreArchivoViejo);
+    		  string_append(&comandoNuevo," ");
+    		  string_append(&comandoNuevo,nombreArchivoNuevo);
+
+    		  system(comandoNuevo);
+        	  printf("\n");
+
+    	  }
+
+    	  free(comandoNuevo);
+
+      }
+      break;
+
+      case 4:{
+    	  char * comandoNuevo = string_new();
+
+    	  char * pathOriginal = comandoDesarmado[1];
+    	  char * pathFinal = comandoDesarmado[2];
+
+    	  if(pathOriginal == NULL || pathFinal == NULL){
+    		  printf("Faltan parametros para ejecutar el comando mv");
+    	  } else {
+
+        	  moveDirectory(pathOriginal,pathFinal);
+
+        	  string_append(&comandoNuevo,"mv ");
+        	  string_append(&comandoNuevo,pathOriginal);
+        	  string_append(&comandoNuevo," ");
+        	  string_append(&comandoNuevo,pathFinal);
+
+        	  system(comandoNuevo);
+        	  printf("\n");
+
+    	  }
+
+    	  free(comandoNuevo);
+
+      }
+      break;
+
+      case 5:{
+        system(linea);
+        printf("\n");
+      }
+      break;
+
+      case 6:{
+    	  char* nuevoDirectorio = comandoDesarmado[1];
+    	  if(nuevoDirectorio != NULL){
+    		  if(!existeDirectorio(nuevoDirectorio)){
+    			  if(crearDirectorio(nuevoDirectorio) == 1){
+    				  system(linea);
+    			      printf("\n");
+    			  }else{
+    			  	  printf("No se pudo crear el directorio. Por favor vuelva a intentarlo");
+    	  		  }
+    		  }else{
+    			  printf("No se pudo crear el directorio. El directorio ya existe.");
+    		  }
+    	  }else{
+      		  printf("Asegurese de ingresar el nombre del directorio. Por favor vuelva a intentarlo");
+      	  }
+      }
+      break;
+
+      case 7:{
+    	   char * nombreArchivoViejo = comandoDesarmado[1];
+    	   char * nombreArchivoNuevo = comandoDesarmado[2];
+    	   char * flag = comandoDesarmado[3];
+    	   if(nombreArchivoViejo != NULL && nombreArchivoNuevo != NULL && flag != NULL){
+    		   //partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
+    		  almacenarArchivo(nombreArchivoViejo,nombreArchivoNuevo,flag);
+    		   printf("El archivo ha sido copiado exitosamente.");
+    	   }else{
+    		   printf("Faltan parametros para ejecutar el comando cpfrom\n");
+    	   }
+
+      }
+      break;
+
+      case 8:{
+        //
+        // Ver bien como hacer estos comandos despues
+        //
+        printf("Comando en arreglo! Todavia no se puede ejecutar! (8)\n");
+      }
+      break;
+
+      case 9:{
+        //
+        // Ver bien como hacer estos comandos despues
+        //
+        printf("Comando en arreglo! Todavia no se puede ejecutar! (9)\n");
+      }
+      break;
+
+      case 10:{
+        char * comandoNuevo = string_new();
+
+        char * nombreArchivoViejo = comandoDesarmado[1];
+
+        if(nombreArchivoViejo == NULL){
+        	printf("Faltan parametros para ejecutar el comando md5sum\n");
+        } else {
+        	string_append(&comandoNuevo,"md5sum ");
+        	string_append(&comandoNuevo,nombreArchivoViejo);
+        	system(comandoNuevo);
+        	printf("\n");
+        }
+
+    	free(comandoNuevo);
+
+      }
+      break;
+
+      case 11:{
+        system(linea);
+        printf("\n");
+      }
+      break;
+
+      case 12:{
+        char * comandoNuevo = string_new();
+        char * nombreArchivoViejo = string_new();
+
+        string_append(&nombreArchivoViejo, comandoDesarmado[1]);
+        if(nombreArchivoViejo == NULL){
+        	printf("Faltan parametros para ejecutar el comando info.\n");
+        } else {
+
+            string_append(&comandoNuevo,"ls -l -h ");
+            string_append(&comandoNuevo,nombreArchivoViejo);
+            system(comandoNuevo);
+            printf("\n");
+
+        }
+
+        free(comandoNuevo);
+        free(nombreArchivoViejo);
+
+      }
+      break;
+
+      case 13:{
+    	  printf("\n");
+    	  		printf("format // Formatea el FileSystem\n");
+    	  		printf("\n");
+    	  		printf("rm [path_archivo] // Elimina Archivo\n");
+    	  		printf("\n");
+    	  		printf("rmDir [path_directorio] // Elimina un directorio\n");
+    	  		printf("\n");
+    	  		printf("rmBloq [path_archivo] [nro_bloque] [nro_copia] // Elimina un bloque\n");
+    	  		printf("\n");
+    	  		printf("rename [path_original] [nombre_final] // Renombra un Archivo o Directorio\n");
+    	  		printf("\n");
+    	  		printf("mv [path_original] [path_final] //Mueve un Archivo o Directorio\n");
+    	  		printf("\n");
+    	  		printf("cat [path_archivo] //Muestra el contenido del archivo como texto plano\n");
+    	  		printf("\n");
+    	  		printf("mkdir [path_dir] //Crea un directorio. Si el directorio ya existe\n");
+    	  		printf("\n");
+    	  		printf("cpfrom [path_archivo_origen] [directorio_yamafs] //Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
+    	  		printf("\n");
+    	  		printf("cpto [path_archivo_yamafs] [directorio_filesystem] //Copiar un archivo local al yamafs\n");
+    	  		printf("\n");
+    	  		printf("cpblock [path_archivo] [nro_bloque] [id_nodo]  //Crea una copia de un bloque de un archivo en el nodo dado\n");
+    	  		printf("\n");
+    	  		printf("md5 [path_archivo_yamafs] //Solicitar el MD5 de un archivo en yamafs\n");
+    	  		printf("\n");
+    	  		printf("ls [path_directorio] //Lista los archivos de un directorio\n");
+    	  		printf("\n");
+    	  		printf("info [path_archivo] //Muestra toda la información del archivo\n");
+    	  		printf("\n");
+      }break;
+      default:
+    	  	printf("Comando no reconocido.\n");
+            break;
+
+    }
+
+  	liberarArrayComando(comandoDesarmado);
+
 }
-//USAR COMMONS string_split para despues
-void ayuda(char ** comandoConsola) {
-	if (!strcmp(comandoConsola[0], "help")) {
-		printf("\n");
-		printf("format // Formatea el FileSystem\n");
-		printf("\n");
-		printf("rm [path_archivo] // Elimina Archivo\n");
-		printf("\n");
-		printf("rmDir [path_directorio] // Elimina un directorio\n");
-		printf("\n");
-		printf("rmBloq [path_archivo] [nro_bloque] [nro_copia] // Elimina un bloque\n");
-		printf("\n");
-		printf("rename [path_original] [nombre_final] // Renombra un Archivo o Directorio\n");
-		printf("\n");
-		printf("mv [path_original] [path_final] //Mueve un Archivo o Directorio\n");
-		printf("\n");
-		printf("cat [path_archivo] //Muestra el contenido del archivo como texto plano\n");
-		printf("\n");
-		printf("mkdir [path_dir] //Crea un directorio. Si el directorio ya existe\n");
-		printf("\n");
-		printf("cpfrom [path_archivo_origen] [directorio_yamafs] //Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
-		printf("\n");
-		printf("cpto [path_archivo_yamafs] [directorio_filesystem] //Copiar un archivo local al yamafs\n");
-		printf("\n");
-		printf("cpblock [path_archivo] [nro_bloque] [id_nodo]  //Crea una copia de un bloque de un archivo en el nodo dado\n");
-		printf("\n");
-		printf("md5 [path_archivo_yamafs] //Solicitar el MD5 de un archivo en yamafs\n");
-		printf("\n");
-		printf("ls [path_directorio] //Lista los archivos de un directorio\n");
-		printf("\n");
-		printf("info [path_archivo] //Muestra toda la información del archivo\n");
-		printf("\n");
 
-	}
-}
-void format(char ** comandoConsola) {
-	if (!strcmp(comandoConsola[0], "format")) {
-		//char *archivoAFormatear = "/home/utnso/Escritorio/nombres.csv";
-		char *archivoAFormatear = "/home/utnso/Escritorio/Nuevo.txt";
-		printf("formateará %s\n", archivoAFormatear);
-		partirArchivoDeTexto(archivoAFormatear);
-		//partirArchivoDeTexto("/home/utnso/Escritorio/nombres.csv");
-		//partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
-	}
-}
+void IniciarConsola(){
 
-void rm(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "rm")) {
-		if (comandoConsola[1] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			snprintf(buf, sizeof(buf), "rm '%s'", comandoConsola[1]);
-			system(buf);
-		}
-	}
-}
-void rmDir(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "rmDir")) {
-		if (comandoConsola[1] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			snprintf(buf, sizeof(buf), "rm -r '%s'", comandoConsola[1]);
-			system(buf);
-		}
-	}
+  char * linea;
+  char * barraDeComando = string_from_format("%s>", getlogin());
 
-}
-void rmBloq(char ** comandoConsola) {
-	if (!strcmp(comandoConsola[0], "rmBloq")) {
-		if ((comandoConsola[1] == NULL) || comandoConsola[2] == NULL || comandoConsola[3] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			puts("rumuevo algo");
-			puts("ruta");
-			puts(comandoConsola[1]);
-			puts("bloque");
-			puts(comandoConsola[2]);
-			puts("id");
-			puts(comandoConsola[3]);
-		}
-	}
+  	  puts("Iniciando Consola");
+  	sleep(1);
+  	puts("Consola lista");
 
-}
-void renombrar(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "rename")) {
-		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			snprintf(buf, sizeof(buf), "mv '%s' '%s'", comandoConsola[1], comandoConsola[2]);
-			system(buf);
-		}
-	}
-}
+  while(1) {
+    linea = (char *) readline(barraDeComando);
 
-void mv(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "mv")) {
-		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			puts(comandoConsola[1]);
+    if(linea)
+    	add_history(linea);
 
-			puts(comandoConsola[2]);
-			snprintf(buf, sizeof(buf), "mv '%s' '%s'", comandoConsola[1], comandoConsola[2]);
-			system(buf);
-		}
-	}
-}
-void cat(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "cat")) {
-		if (comandoConsola[1] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			snprintf(buf, sizeof(buf), "cat '%s'", comandoConsola[1]);
-			system(buf);
-		}
-	}
-}
-void mk__dir(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "mkdir")) {
-		if (comandoConsola[1] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			snprintf(buf, sizeof(buf), "mkdir '%s'", comandoConsola[1]);
-			system(buf);
-		}
-	}
-}
-void cpfrom(char ** comandoConsola) {
+    if(!strncmp(linea, "exit", 4)) {
+       free(linea);
+       free(barraDeComando);
+       break;
+    } else {
+        analizarComando(linea);
+    }
 
-	if (!strcmp(comandoConsola[0], "cpfrom")) {
-		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			puts(" Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.");
-			puts("Path archivo origen");
-			puts(comandoConsola[1]);
-			puts("directorio filesystem");
-			puts(comandoConsola[2]);
-		}
-	}
-}
+  }
 
-void cpto(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "cpto")) {
-
-		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			snprintf(buf, sizeof(buf), "cp '%s''%s'", comandoConsola[1], comandoConsola[2]);
-			system(buf);
-		}
-	}
-}
-void cpblock(char ** comandoConsola) {
-	if (!strcmp(comandoConsola[0], "cpblock")) {
-		if (comandoConsola[1] == NULL || comandoConsola[2] == NULL || comandoConsola[3] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-
-		} else {
-			puts("creo copias de bloques");
-			puts("Path archivo");
-			puts(comandoConsola[1]);
-			puts("nro de bloque");
-			puts(comandoConsola[2]);
-			puts("id nodo");
-			puts(comandoConsola[3]);
-
-		}
-	}
-}
-void md5(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "md5")) {
-		if (comandoConsola[1] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-			snprintf(buf, sizeof(buf), "md5sum '%s'", comandoConsola[1]);
-			system(buf);
-		}
-	}
-}
-void ls(char ** comandoConsola) {
-	char buf[1024];
-	if (!strcmp(comandoConsola[0], "ls")) {
-		if (comandoConsola[1] == NULL) {
-			//system("ls");
-			leerArchivo("/home/utnso/Escritorio/Nuevo.txt");
-		} else {
-			snprintf(buf, sizeof(buf), "ls '%s'", comandoConsola[1]);
-			system(buf);
-		}
-	}
-}
-void info(char ** comandoConsola) {
-	if (!strcmp(comandoConsola[0], "info")) {
-		if (comandoConsola[1] == NULL) {
-			puts("Faltan parametros");
-			puts("escriba help si necesita ayuda");
-		} else {
-
-			puts("informo cosas de archivos");
-			puts("path del archivo");
-			puts(comandoConsola[1]);
-		}
-	}
 }
