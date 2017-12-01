@@ -114,8 +114,12 @@ void ayuda(char ** comandoConsola) {
 }
 void format(char ** comandoConsola) {
 	if (!strcmp(comandoConsola[0], "format")) {
-		puts("formatearea algo");
-		partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
+		//char *archivoAFormatear = "/home/utnso/Escritorio/nombres.csv";
+		char *archivoAFormatear = "/home/utnso/Escritorio/Nuevo.txt";
+		printf("formateará %s\n", archivoAFormatear);
+		partirArchivoDeTexto(archivoAFormatear);
+		//partirArchivoDeTexto("/home/utnso/Escritorio/nombres.csv");
+		//partirArchivoDeTexto("/home/utnso/Escritorio/Nuevo.txt");
 	}
 }
 

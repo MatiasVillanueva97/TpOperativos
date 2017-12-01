@@ -825,9 +825,9 @@ void leerArchivo(char * PATH) {
 		//recibo el buffer
 		//printf("buffer: %s\n", arrayMensajesRecibidos[0]);
 	}
-	pthread_mutex_lock(&mutex1);
+	//pthread_mutex_lock(&mutex1);
 	list_iterate(archivoABuscar->bloqueCopias, (void*) buscar);
-	pthread_mutex_unlock(&mutex1);
+	//pthread_mutex_unlock(&mutex1);
 	void printearArrayOriginal() {
 		int i;
 		int b = countSplit(arrayDeOriginalesYcopias);
@@ -1085,7 +1085,7 @@ void soyServidor(char * puerto) {
 
 							registrarNodo(nuevoSocket);
 							persistirNodosFuncion();
-							//FD_CLR(nuevoSocket, &master);
+							FD_CLR(nuevoSocket, &master);
 							estable = true;
 						}
 							break;
@@ -1096,10 +1096,10 @@ void soyServidor(char * puerto) {
 					}
 				} else {
 					//lock
-					pthread_mutex_lock(&mutex1);
+					//pthread_mutex_lock(&mutex1);
 					int32_t headerId = deserializarHeader(i);
 					printf("headerId: %d\n", headerId);
-					pthread_mutex_unlock(&mutex1);
+				//	pthread_mutex_unlock(&mutex1);
 					if (headerId <= 0) { //error o desconexión de un cliente
 						printf("cerró el socket :%d\n", i);
 						cerrarCliente(i); // bye!
