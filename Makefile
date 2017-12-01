@@ -13,45 +13,50 @@ YAMA=yama
 WORKER=worker
 DATANODE=datanode
 
-default: all
+default: error
 
-all: filesystem worker datanode yama master
-.PHONY: filesystem master yama worker datanode
+.PHONY: filesystem master yama worker datanode error
 
 filesystem:
-	mkdir -p $(FILESYSTEM)/$(BIN_PATH)
-	$(COMPILER) $(FILESYSTEM)/$(SRC_PATH)/$(FILESYSTEM).c -o $(FILESYSTEM)/$(BIN_PATH)/$(FILESYSTEM) $(COMMONS) $(THREAD) $(READLINE) $(MATH)
-
-master:
-	mkdir -p $(MASTER)/$(BIN_PATH)
-	$(COMPILER) $(MASTER)/$(SRC_PATH)/$(MASTER).c -o $(MASTER)/$(BIN_PATH)/$(MASTER) $(COMMONS) $(THREAD) $(READLINE)
-
-yama:
-	mkdir -p $(YAMA)/$(BIN_PATH)
-	$(COMPILER) $(YAMA)/$(SRC_PATH)/$(YAMA).c -o $(YAMA)/$(BIN_PATH)/$(YAMA) $(COMMONS) $(THREAD) $(READLINE)
-
-worker:
-	mkdir -p $(WORKER)/$(BIN_PATH)
-	$(COMPILER) $(WORKER)/$(SRC_PATH)/$(WORKER).c -o $(WORKER)/$(BIN_PATH)/$(WORKER) $(COMMONS) $(THREAD) $(READLINE)
-	$(COMPILER) $(WORKER)/$(SRC_PATH)/$(WORKER)2.c -o $(WORKER)/$(BIN_PATH)/$(WORKER)2 $(COMMONS) $(THREAD) $(READLINE)
-	$(COMPILER) $(WORKER)/$(SRC_PATH)/$(WORKER)3.c -o $(WORKER)/$(BIN_PATH)/$(WORKER)3 $(COMMONS) $(THREAD) $(READLINE)
+	@echo "Limpiando FILESYSTEM..."
+	rm -rf $(FILESYSTEM)/$(BIN_PATH) && rm -rf $(FILESYSTEM)/*.log
+	@echo "Compilando FILESYSTEM..."
+	mkdir -p $(FILESYSTEM)/$(BIN_PATH) && $(COMPILER) $(FILESYSTEM)/$(SRC_PATH)/$(FILESYSTEM).c -o $(FILESYSTEM)/$(BIN_PATH)/$(FILESYSTEM) $(COMMONS) $(THREAD) $(READLINE) $(MATH)
+	@echo "Ejecutando FILESYSTEM..."
+	cd $(FILESYSTEM)/$(BIN_PATH) && ./$(FILESYSTEM)
 
 datanode:
-	mkdir -p $(DATANODE)/$(BIN_PATH)
-	$(COMPILER) $(DATANODE)/$(SRC_PATH)/$(DATANODE).c -o $(DATANODE)/$(BIN_PATH)/$(DATANODE) $(COMMONS) $(THREAD) $(READLINE)
-
-clean:
-	rm -rf $(FILESYSTEM)/$(BIN_PATH) && rm -rf $(FILESYSTEM)/*.log
-	rm -rf $(MASTER)/$(BIN_PATH) && rm -rf $(MASTER)/*.log
-	rm -rf $(YAMA)/$(BIN_PATH) && rm -rf $(YAMA)/*.log
-	rm -rf $(WORKER)/$(BIN_PATH) && rm -rf $(WORKER)/*.log
+	@echo "Limpiando DATANODE..."
 	rm -rf $(DATANODE)/$(BIN_PATH) && rm -rf $(DATANODE)/*.log
+	@echo "Compilando DATANODE..."
+	mkdir -p $(DATANODE)/$(BIN_PATH) && $(COMPILER) $(DATANODE)/$(SRC_PATH)/$(DATANODE).c -o $(DATANODE)/$(BIN_PATH)/$(DATANODE) $(COMMONS) $(THREAD) $(READLINE)
+	@echo "Ejecutando DATANODE..."
+	cd $(DATANODE)/$(BIN_PATH) && ./$(DATANODE)
 
-run:
-	terminator --working-directory="$(DIR)" --title "FileSystem" --command="cd filesystem/bin/; ./filesystem; bash" --geometry=640x400+0+0 &
-	sleep 1
-	terminator --working-directory="$(DIR)" --title "Worker" --command="cd worker/bin/; ./worker; bash" --geometry=640x400-0+0 &
-	sleep 1
-	terminator --working-directory="$(DIR)" --title "YAMA" --command="cd yama/bin/; ./yama; bash" --geometry=640x400+0-0 &
-	sleep 1
-	terminator --working-directory="$(DIR)" --title "Master" --command="cd master/bin/; ./master ../../scripts/transformador.sh ../../scripts/reductor.rb yamafs:/datos.csv yamafs:/analisis/resultado.json; bash" --geometry=640x400-0-0 &
+yama:
+	@echo "Limpiando YAMA..."
+	rm -rf $(YAMA)/$(BIN_PATH) && rm -rf $(YAMA)/*.log
+	@echo "Compilando YAMA..."
+	mkdir -p $(YAMA)/$(BIN_PATH) && $(COMPILER) $(YAMA)/$(SRC_PATH)/$(YAMA).c -o $(YAMA)/$(BIN_PATH)/$(YAMA) $(COMMONS) $(THREAD) $(READLINE)
+	@echo "Ejecutando YAMA..."
+	cd $(YAMA)/$(BIN_PATH) && ./$(YAMA)
+      
+worker: 
+	@echo "Limpiando WORKER..."
+	rm -rf $(WORKER)/$(BIN_PATH) && rm -rf $(WORKER)/*.log
+	@echo "Compilando WORKER..."
+	mkdir -p $(WORKER)/$(BIN_PATH) && $(COMPILER) $(WORKER)/$(SRC_PATH)/$(WORKER).c -o $(WORKER)/$(BIN_PATH)/$(WORKER) $(COMMONS) $(THREAD) $(READLINE)
+	@echo "Ejecutando WORKER..."	
+	cd $(WORKER)/$(BIN_PATH) && ./$(WORKER) 
+
+master:
+	@echo "Limpiando MASTER..." 
+	rm -rf $(MASTER)/$(BIN_PATH) && rm -rf $(MASTER)/*.log
+	mkdir -p $(MASTER)/$(BIN_PATH)
+	@echo "Compilando MASTER..."
+	$(COMPILER) $(MASTER)/$(SRC_PATH)/$(MASTER).c -o $(MASTER)/$(BIN_PATH)/$(MASTER) $(COMMONS) $(THREAD) $(READLINE)
+	@echo "Ejecutando MASTER..."
+	cd $(MASTER)/$(BIN_PATH) && ./$(MASTER) ../../scripts/transformador.sh ../../scripts/reductor.rb yamafs:/datos.csv yamafs:/analisis/resultado.json
+
+error: 
+	@echo "[ERROR] Pasar como argumento el proceso: make filesystem/datanode/yama/worker/master"

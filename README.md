@@ -12,7 +12,7 @@ Agustín de la Dedicación | 1472161 | Agusdld@gmail.com |
 Hernán Domingo | 1306315 | hernan.domingo.22@gmail.com |
 Guillermo Fernández | 1163206 | gafernandez2525@gmail.com |
 Nahuel Oyhanarte | 1545668 | noyhanarte@gmail.com |
-Matias Villanueva | 1559837 | matias.nahuel.villanueva@hotmail.com |
+Matias Villanueva | 1559837 | matias.nahuel.villanueva@hotmail.com |
 
 
 ## Requisitos
@@ -21,27 +21,20 @@ Matias Villanueva | 1559837 | matias.nahuel.villanueva@hotmail.com |
 2. Tener instaladas la commons library ([link](https://github.com/sisoputnfrba/so-commons-library))
 3. Tener instaladas la pthreads library
 4. Tener instaladas la readline library (sudo apt-get install libreadline6-dev)
-5. Tener instalado Ruby si se corre algún script (Transformador o Reductor) de tipo `.rb` (sudo apt-get install ruby)
+5. Tener instalado Ruby o Python si se corre algún script (Transformador o Reductor) de tipo `.rb o `.py`
+  
 
 ## Instrucciones
 
 1. Clonar este repositorio: `git clone https://github.com/sisoputnfrba/tp-2017-2c-Mi-Grupo-1234`
 2. Entrar al directorio: `cd tp-2017-2c-Mi-Grupo-1234`
-3. Compilar usando el Makefile provisto: `make`
-4. Ejecutar todos los procesos juntos: `make run`
+2. Instalar dependencias ejecutando `chmod +x install.sh && ./install.sh` 
+3. Ejecutar `export LC_ALL=C`
+4. Compilar y ejecutar el $PROCESO deseado (filesystem/datanode/yama/worker/master): `make $PROCESO`
 
 > Ojo! Si lo corrés varias veces seguidas falla porq las conexiones quedan abiertas, para resolverlo guardá los cambios y ejecutá lo siguiente :)
 
 `sudo sysctl -w net.ipv4.tcp_tw_recycle=1 && sudo sysctl -w net.ipv4.tcp_tw_reuse=1 && sudo reboot`
-
-
-> Opc.: Para ejecutar cada proceso por separado
-* FileSystem: `cd filesystem/bin && ./filesystem`
-* DataNode: `cd datanode/bin && ./datanode` (TO DO)
-* Worker: `cd worker/bin && ./worker` (TO DO)
-* YAMA: `cd yama/bin && ./yama`
-* Master: `cd master/bin && ./master`
-
 
 > Para trabajar en Eclipse, importá el proyecto haciendo: File -> New -> Makefile Project with existing code -> Destildar "C++"" -> Browse a la carpeta raíz del TP -> Seleccionar "Linux GCC"
 
