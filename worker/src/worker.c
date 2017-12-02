@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <sys/mman.h>
+#include <fcntl.h>
 
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
@@ -52,6 +54,23 @@ char* guardar_script(char* codigo_script, char* nombre) {
 	return path;
 }
 
+/*char* getBloque(int idBloque){
+	int fd;
+	int tamanioBloque = 1048576;
+	char *buffer = malloc(tamanioBloque);
+	int posicion = idBloque * tamanioBloque;
+	mapArchivo = mmap(0,tamanioBloque, PROT_READ, MAP_SHARED, fd, posicion);
+	if(mapArchivo == MAP_FAILED){
+		perror("mmap");
+		close(fd);
+		exit(1);
+	}
+	strncpy(buffer, mapArchivo,tamanioBloque);
+	printf("bytes leidos en el bloque %i\n",idBloque);
+	//printf("%s\n",buffer);
+	return buffer;
+}*/
+
 char* leer_bloque(int numeroBloque, int cantBytes) {
 	FILE* archivo;
 	archivo = fopen(datosConfigWorker[RUTA_DATABIN], "r");
@@ -82,8 +101,8 @@ int ejecutar_system(char* comando) {
 	int status;
 	system(comando);
 	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-	if (WIFEXITED(&status)) {
-		int exit_status = WEXITSTATUS(&status);
+	if (WIFEXITED(status)) {
+		int exit_status = WEXITSTATUS(status);
 		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
 		return 0;
 	} else {
