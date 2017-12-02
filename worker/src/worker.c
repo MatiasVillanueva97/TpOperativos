@@ -145,8 +145,13 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 
 int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	FILE *fr1, *fr2, *fr3;
+
 	char* fst = string_new();
 	char* snd = string_new();
+	char* thrd = string_new();
+	char* frth = string_new();
+
+	int comparacion;
 	bool f1 = true, f2 = true;
 
 	fr1 = fopen(path_f1, "r");
@@ -154,16 +159,23 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	fr3 = fopen(path_f3, "w");
 
 	while (!feof(fr1) && !feof(fr2)) {
-		if (f1)
+		if (f1) {
 			fgets(fst, 1000, fr1);
-		if (f2)
+			thrd = string_duplicate(fst);
+			string_to_lower(thrd);
+		}
+		if (f2) {
 			fgets(snd, 1000, fr2);
-		if (fst == snd) {
+			frth = string_duplicate(snd);
+			string_to_lower(frth);
+		}
+		comparacion = strcmp(thrd,frth);
+		if (comparacion == 0) {
 			f1 = true;
 			f2 = true;
 			fwrite (fst,1,string_length(fst),fr3);
 			fwrite (snd,1,string_length(snd),fr3);
-		} else if (fst > snd) {
+		} else if (comparacion > 0) {
 			f1 = false;
 			f2 = true;
 			fwrite (snd,1,string_length(snd),fr3);
@@ -173,7 +185,6 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 			fwrite (fst,1,string_length(fst),fr3);
 		}
 	}
-	fwrite ("\n",1,1,fr3);
 	while (!feof(fr1)) {
 		fgets(fst, 1000, fr1);
 		fwrite (fst,1,string_length(fst),fr3);
@@ -184,68 +195,12 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	}
 	free(fst);
 	free(snd);
+	free(thrd);
+	free(frth);
 	fclose(fr1);
 	fclose(fr2);
 	fclose(fr3);
 	return 0;
-}
-
-int aparear_archivos(FILE *fich/*, FILE **aux*/) {
-	FILE *aux[2];
-	char ultima[128], linea[2][128], anterior[2][128];
-	int entrada;
-	int tramos = 0;
-
-	// Lee la primera línea de cada fichero auxiliar:
-	fgets(linea[0], 128, aux[0]);
-	fgets(linea[1], 128, aux[1]);
-	// Valores iniciales;
-	strcpy(ultima, "");
-	strcpy(anterior[0], "");
-	strcpy(anterior[1], "");
-	// Bucle, mientras no se acabe ninguno de los ficheros auxiliares (quedan tramos por mezclar):
-	while (!feof(aux[0]) && !feof(aux[1])) {
-		// Selecciona la línea que se añadirá:
-		if (strcmp(linea[0], linea[1]) <= 0)
-			entrada = 0;
-		else
-			entrada = 1;
-		// Almacena el valor como el último añadido:
-		strcpy(anterior[entrada], linea[entrada]);
-		// Añade la línea al fichero:
-		fputs(linea[entrada], fich);
-		// Lee la siguiente línea del fichero auxiliar:
-		fgets(linea[entrada], 128, aux[entrada]);
-		// Verificar fin de tramo, si es así copiar el resto del otro tramo:
-		if (strcmp(anterior[entrada], linea[entrada]) > 0) {
-			if (!entrada)
-				entrada = 1;
-			else
-				entrada = 0;
-			tramos++;
-			// Copia lo que queda del tramo actual al fichero de salida:
-			do {
-				strcpy(anterior[entrada], linea[entrada]);
-				fputs(linea[entrada], fich);
-				fgets(linea[entrada], 128, aux[entrada]);
-			} while (!feof(aux[entrada]) && strcmp(anterior[entrada], linea[entrada]) <= 0);
-		}
-	}
-
-	// Añadir tramos que queden sin mezclar:
-	if (!feof(aux[0]))
-		tramos++;
-	while (!feof(aux[0])) {
-		fputs(linea[0], fich);
-		fgets(linea[0], 128, aux[0]);
-	}
-	if (!feof(aux[1]))
-		tramos++;
-	while (!feof(aux[1])) {
-		fputs(linea[1], fich);
-		fgets(linea[1], 128, aux[1]);
-	}
-	return (tramos == 1);
 }
 
 int reduccion_local(char* path_script, int origen, int bytesOcupados, char* destino) {
