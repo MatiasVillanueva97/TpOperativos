@@ -98,6 +98,10 @@ void persistirArchivos(tablaArchivo  * elemento){
 	fputs("=",archivo);
 	fputs(string_itoa(elemento->tipo),archivo);
 	fputc('\n',archivo);
+	fputs("CANTIDAD_BLOQUES",archivo);
+	fputs("=",archivo);
+	fputs(string_itoa(elemento->cantBloques),archivo);
+	fputc('\n',archivo);
 	int i=0;
 	int j=0;
 	int k=0;
@@ -1339,9 +1343,10 @@ void partirArchivoDeTexto(char* PATH,char * PathDirectorio) {
 
 		printf("Se procede a almacenar el archivo %s en %s.\n", nuevoArchivo->nombre, PathDirectorio);
 
+	int cantBloquesArchivo = cantidadBloquesAMandar(PATH);
+	if(sumatoriaDeBloquesLibres()>=(cantBloquesArchivo)*2){
 
-	if(sumatoriaDeBloquesLibres()>=(cantidadBloquesAMandar(PATH))*2){
-
+		nuevoArchivo->cantBloques = cantBloquesArchivo;
 		t_list * posiciones = list_create();
 
 
@@ -1700,7 +1705,8 @@ void enviarInfoBloques(int socketCliente,int headerId) {
 	char * nombre = conseguirNombreDePath(archivo);
 	tablaArchivo * archivoRecibido = buscarArchivoPorNombre(nombre);
 
-	int cantBloquesFiles = cantidadBloquesAMandar(archivo);	//path completo yamafs:
+	//int cantBloquesFiles = cantidadBloquesAMandar(archivo);	//path completo yamafs:
+	int cantBloquesFiles = archivoRecibido->cantBloques;
 	char *cantBloquesFileString = intToArrayZerosLeft(cantBloquesFiles, 4);
 	int cantMensajesPorPedazoArchivo = 6;
 	int cantStrings = 1 + cantMensajesPorPedazoArchivo * cantBloquesFiles;

@@ -67,6 +67,7 @@ typedef struct{
 	uint32_t directorioPadre;
 	int tamanio;
 	int tipo;
+	int cantBloques;
 	t_list* bloqueCopias;
 }tablaArchivo;
 

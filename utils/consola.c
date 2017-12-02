@@ -15,7 +15,6 @@ typedef struct {
   char *nombre;     /* Nombre de la funcion */
 } command;
 
-
 command comandos[] = {
  { 1,"format"},
  { 2,"rm"},
@@ -31,7 +30,6 @@ command comandos[] = {
  { 12,"info"},
  {13,"help"}
 };
-
 
 
 void analizarComando(char * linea){
@@ -53,20 +51,19 @@ void analizarComando(char * linea){
       }
   }
 
-
   switch(comandoNativo){
 
       case 1:{
 
-        printf("Formateando FileSystem.\n");
+        printf("Formateando FileSystem...\n");
 
         if(estadoAnterior==0){
         	uint cantidadNodosSistemas=list_size(tablaNodos);
-        	if(cantidadNodosSistemas>=2){
+        	if(cantidadNodosSistemas>=1){
         		config_set_value(configFs,"ESTADO_ESTABLE","1");
         		config_save(configFs);
         		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
-        		printf("FileSystem Formateado\n");
+        		printf("FileSystem Formateado.\n");
         	}else{
         		printf("No hay suficientes DataNode para dejar el FS en un estado Estable\n");
         	}
@@ -80,7 +77,6 @@ void analizarComando(char * linea){
         		printf("No hay al menos una copia de cada archivo. Estado no estable\n");
         	}
         }
-
 
         break;
       }
@@ -111,7 +107,6 @@ void analizarComando(char * linea){
       }
       break;
 
-
       case 3:{
     	  char * comandoNuevo = string_new();
 
@@ -131,7 +126,6 @@ void analizarComando(char * linea){
 
     		  system(comandoNuevo);
         	  printf("\n");
-
     	  }
 
     	  free(comandoNuevo);
@@ -158,7 +152,6 @@ void analizarComando(char * linea){
 
         	  system(comandoNuevo);
         	  printf("\n");
-
     	  }
 
     	  free(comandoNuevo);
@@ -297,15 +290,13 @@ void analizarComando(char * linea){
     	  		printf("\n");
     	  		printf("info [path_archivo] //Muestra toda la información del archivo\n");
     	  		printf("\n");
-      }break;
+      } break;
       default:
     	  	printf("Comando no reconocido.\n");
             break;
-
     }
 
   	liberarArrayComando(comandoDesarmado);
-
 }
 
 void IniciarConsola(){
