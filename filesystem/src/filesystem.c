@@ -17,6 +17,7 @@ char* obtenerNombreDirectorio(char** rutaDesmembrada){
 void persistirDirectorio(){
 	char* path=string_new();
 	char * puerto = config_get_string_value(configFs,"PATH_METADATA");
+	string_append(&path,"../");
 	string_append(&path,config_get_string_value(configFs,"PATH_METADATA"));
 	string_append(&path,"directorios.dat");
 
@@ -44,6 +45,7 @@ void persistirDirectorio(){
 
 void persistirRegistroArchivo(){
 	char* path=string_new();
+	string_append(&path, "../");
 	string_append(&path,config_get_string_value(configFs,"PATH_ARCHIVOS"));
 	string_append(&path,"registro.dat");
 
@@ -66,6 +68,7 @@ void persistirRegistroArchivo(){
 void persistirArchivos(tablaArchivo  * elemento){
 
 	char* path=string_new();
+	string_append(&path, "../");
 	string_append(&path,config_get_string_value(configFs,"PATH_ARCHIVOS"));
 	string_append(&path,string_itoa(elemento->directorioPadre));
 	string_append(&path,"/");
@@ -875,7 +878,7 @@ tablaArchivo * buscarArchivoPorNombre(char * nombreArchivo) {
 
 void persistirNodosFuncion(){
 	char * nombre = string_duplicate("[");
-	FILE * archivo = fopen ("metadata/nodos.bin","w+");
+	FILE * archivo = fopen ("../metadata/nodos.bin","w+");
 	fputs("TAMANO_TOTAL",archivo);
 	fputs("=",archivo);
 	fputs(string_itoa(sumatoriaDeBloquesTotal()),archivo);
@@ -953,7 +956,7 @@ void crearBitmapDeNodosConectados(char * NodoConectado, int cantBloques) {
 	void crearBitmapXNodo(char * nodoConectado) {
 
 		char * PATH_bitmap_xNOdo = string_new();
-		string_append(&PATH_bitmap_xNOdo, "bitmaps/");
+		string_append(&PATH_bitmap_xNOdo, "../metadata/bitmaps/");
 		string_append(&PATH_bitmap_xNOdo, nodoConectado);
 		string_append(&PATH_bitmap_xNOdo, ".dat");
 		crearBitmap(PATH_bitmap_xNOdo, nodoConectado, cantBloques);
@@ -1907,11 +1910,11 @@ void soyServidor(char * puerto) {
 		char * archivos=string_new();
 		char * bitmaps=string_new();
 		string_append(&metadata,"mkdir ");
-		string_append(&metadata,"metadata");
+		string_append(&metadata,"../metadata");
 		string_append(&archivos,"mkdir ");
-		string_append(&archivos,"metadata/archivos");
+		string_append(&archivos,"../metadata/archivos");
 		string_append(&bitmaps,"mkdir ");
-		string_append(&bitmaps,"bitmaps");
+		string_append(&bitmaps,"../metadata/bitmaps");
 		system(metadata);
 		system(archivos);
 		system(bitmaps);
@@ -1925,12 +1928,12 @@ void soyServidor(char * puerto) {
 			char * metadata=string_new();
 				char * archivos=string_new();
 				char * bitmaps=string_new();
-				string_append(&metadata,"rm -r -f ");
-				string_append(&metadata,"metadata");
-				string_append(&archivos,"rm -r -f ");
-				string_append(&archivos,"metadata/archivos");
-				string_append(&bitmaps,"rm -r -f ");
-				string_append(&bitmaps,"bitmaps");
+				string_append(&metadata,"rm -rf ");
+				string_append(&metadata,"../metadata");
+				string_append(&archivos,"rm -rf ");
+				string_append(&archivos,"../metadata/archivos");
+				string_append(&bitmaps,"rm -rf ");
+				string_append(&bitmaps,"../metadata/bitmaps");
 				system(metadata);
 				system(archivos);
 				system(bitmaps);
@@ -1962,11 +1965,12 @@ int main(int argc, char *argv[]) {
 	listaDirectorios=list_create();
 	registroArchivos=list_create();
 	char * PUERTO;
-	logFs = log_create("../FileSystem.log", "FileSystem", 0, 0);
+	mkdir("../log", 0775);
+	logFs = log_create("../log/FileSystem.log", "FileSystem", 0, 0);
 	configFs = config_create("../../config/configFilesystem.txt");
-	persistirNodos =config_create("metadata/nodos.bin");
-	directorios =config_create("metadata/directorios.dat");
-	registroArchivo =config_create("metadata/archivos/registro.dat");
+	persistirNodos =config_create("../metadata/nodos.bin");
+	directorios =config_create("../metadata/directorios.dat");
+	registroArchivo =config_create("../metadata/archivos/registro.dat");
 //	configFs = config_create("../config/configFilesystem.txt");
 //	persistirNodos =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/nodos.bin");
 //	directorios =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/directorios.dat");
@@ -1984,8 +1988,8 @@ int main(int argc, char *argv[]) {
 			cargarEstructuraArchivos(registroArchivo);
 			cargarDirectorio(directorios);
 			cargarListaDeNodosAnteriores();
-			FILE * directorios = fopen("metadata/directorios.dat", "a+");
-			FILE * nodos = fopen("metadata/nodos.bin", "a+");
+			FILE * directorios = fopen("../metadata/directorios.dat", "a+");
+			FILE * nodos = fopen("../metadata/nodos.bin", "a+");
 			PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
 			pthread_create(&hiloConsola,NULL,(void*)IniciarConsola,NULL);
 			soyServidor(PUERTO);
@@ -1996,8 +2000,8 @@ int main(int argc, char *argv[]) {
 			config_set_value(configFs,"ESTADO_ANTERIOR","1");
 			config_save(configFs);
 			inicializarCarpetas();
-			FILE * directorios = fopen("metadata/directorios.dat", "w+");
-			FILE * nodos = fopen("metadata/nodos.bin", "wb");
+			FILE * directorios = fopen("../metadata/directorios.dat", "w+");
+			FILE * nodos = fopen("../metadata/nodos.bin", "wb");
 			PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
 			pthread_create(&hiloConsola,NULL,(void*)IniciarConsola,NULL);
 			soyServidor(PUERTO);

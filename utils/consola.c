@@ -177,7 +177,7 @@ void analizarComando(char * linea){
     	  if(nuevoDirectorio != NULL){
     		  if(!existeDirectorio(nuevoDirectorio)){
     			  if(crearDirectorio(nuevoDirectorio) == 1){
-    			      printf("\n");
+    			      printf("Directorio creado\n");
     			  }else{
     			  	  printf("No se pudo crear el directorio. Por favor vuelva a intentarlo\n");
     	  		  }
