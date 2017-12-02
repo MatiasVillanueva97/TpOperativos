@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
 				strcpy(reductorString, arrayMensajes[0]);
 
 				int cantTemporales;
-				cantTemporales = arrayMensajes[1];
+				cantTemporales = atoi(arrayMensajes[1]);
 
 				for (i = 0; i < cantidadMensajes; i++) {
 					free(arrayMensajes[i]);
