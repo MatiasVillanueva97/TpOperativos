@@ -1,7 +1,18 @@
 #include "filesystem.h"
 #include "../../utils/consola.c"
-
 ///
+char* obtenerNombreDirectorio(char** rutaDesmembrada){
+  int posicion = 0;
+  char* nombreArchivo = string_new();
+  while(1){
+    if(rutaDesmembrada[posicion+1] == NULL){
+      string_append(&nombreArchivo, rutaDesmembrada[posicion]);
+      break;
+    }
+    posicion++;
+  }
+  return nombreArchivo;
+}
 
 void persistirDirectorio(){
 	char* path=string_new();
@@ -110,6 +121,10 @@ void persistirArchivos(tablaArchivo  * elemento){
 			fputs("=",archivo);
 			fputs(array,archivo);
 			fputc('\n',archivo);
+			fputs(bloque_bytes,archivo);
+			fputs("=",archivo);
+			fputs(string_itoa(bloquesArchivo->bytes),archivo);
+			fputc('\n',archivo);
 		}
 
 		else{
@@ -133,14 +148,19 @@ void persistirArchivos(tablaArchivo  * elemento){
 						fputs("=",archivo);
 						fputs(array,archivo);
 						fputc('\n',archivo);
+						fputs(bloque_bytes,archivo);
+						fputs("=",archivo);
+						fputs(string_itoa(bloquesArchivo->bytes),archivo);
+						fputc('\n',archivo);
 
 		}
 	k++;}
 		list_iterate(elemento->bloqueCopias,(void*)persistirBloquesDeArchivo);
-							fclose(archivo);}
+		list_add(registroArchivos,path);
+		persistirRegistroArchivo();
+		fclose(archivo);}
 
-
-void cargarEstructuraDirectorio(t_config* archivoDirectorio){
+void cargarDirectorio(t_config* archivoDirectorio){
 	uint32_t cantidadDeDirectorio=config_keys_amount(archivoDirectorio);
 	uint32_t posicion=0;
 	while(posicion<cantidadDeDirectorio){
@@ -154,6 +174,99 @@ void cargarEstructuraDirectorio(t_config* archivoDirectorio){
 		entradaDirectorio->nombre=arrayDirectorioPosicion[1];
 		entradaDirectorio->padre=atoi(arrayDirectorioPosicion[2]);
 		list_add(listaDirectorios,entradaDirectorio);
+		posicion++;
+	}
+}
+
+void cargarTablaArchivo(char* pathArchivo){
+	char** rutaDesmembrada = string_split(pathArchivo, "/");
+	char* nombreArchivo=obtenerNombreDirectorio(rutaDesmembrada);
+
+	uint32_t posicion=0;
+	while(rutaDesmembrada[posicion] != NULL){
+	   posicion++;
+	}
+
+	t_config* archivo=config_create(pathArchivo);
+	tablaArchivo * entradaArchivo=malloc(sizeof(tablaArchivo));
+	entradaArchivo->nombre=string_new();
+	entradaArchivo->tipo=string_new();
+	entradaArchivo->bloqueCopias=list_create();
+	string_append(&entradaArchivo->nombre,nombreArchivo);
+
+	entradaArchivo->directorioPadre= atoi(rutaDesmembrada[posicion-3]);
+
+	uint32_t tamanio=atoi(config_get_string_value(archivo,"TAMANIO"));
+	entradaArchivo->tamanio=tamanio;
+
+	char* tipo=config_get_string_value(archivo,"TIPO");
+	string_append(&entradaArchivo->tipo,tipo);
+
+	uint32_t cantidadDeCopiasXBloque=(config_keys_amount(archivo)-2)/3;
+	uint32_t contBloque=0;
+	int k=0;
+	int i=0;
+	int j=0;
+	while(contBloque<cantidadDeCopiasXBloque){
+	ContenidoBloque* copiaBloque=malloc(sizeof(ContenidoBloque));
+
+		if(j>=1){
+					j=0;
+				}
+				if(k%2==0){
+					char * bloque_copia =string_new();
+					char * bloque_bytes = string_new();
+					string_append(&bloque_copia,"BLOQUE");
+					string_append(&bloque_copia,string_itoa(i));
+					string_append(&bloque_copia,"COPIA");
+					string_append(&bloque_copia,string_itoa(j));
+					string_append(&bloque_bytes,"BLOQUE");
+					string_append(&bloque_bytes,string_itoa(i));
+					string_append(&bloque_bytes,"BYTES");
+					char ** array =config_get_array_value(archivo,bloque_copia);
+
+					copiaBloque->nodo=array[0];
+					copiaBloque->bloque=atoi(array[1]);
+					copiaBloque->bytes=config_get_int_value(archivo,bloque_bytes);
+					list_add(entradaArchivo->bloqueCopias,copiaBloque);
+				}
+
+				else{
+					j++;
+
+					char * bloque_copia =string_new();
+					char * bloque_bytes = string_new();
+					string_append(&bloque_copia,"BLOQUE");
+					string_append(&bloque_copia,string_itoa(i));
+					string_append(&bloque_copia,"COPIA");
+					string_append(&bloque_copia,string_itoa(j));
+					string_append(&bloque_bytes,"BLOQUE");
+					string_append(&bloque_bytes,string_itoa(i));
+					string_append(&bloque_bytes,"BYTES");
+					char ** array =config_get_array_value(archivo,bloque_copia);
+					i++;
+					copiaBloque->nodo=array[0];
+					copiaBloque->bloque=atoi(array[1]);
+					copiaBloque->bytes=config_get_int_value(archivo,bloque_bytes);
+					list_add(entradaArchivo->bloqueCopias,copiaBloque);
+				}
+			k++;
+			contBloque++;
+
+
+	}
+	list_add(tablaArchivos,entradaArchivo);
+}
+
+void cargarEstructuraArchivos(t_config* archivoRegistroArchivos){
+	uint32_t cantidadDeDirectorio=config_keys_amount(archivoRegistroArchivos);
+	uint32_t posicion=0;
+	while(posicion<cantidadDeDirectorio){
+		char* etiqueta=string_new();
+		string_append(&etiqueta,"ARCHIVO");
+		string_append(&etiqueta,string_itoa(posicion));
+		char* pathArchivoSeleccionado = config_get_string_value(archivoRegistroArchivos, etiqueta);
+		cargarTablaArchivo(pathArchivoSeleccionado);
 		posicion++;
 	}
 }
@@ -174,19 +287,6 @@ void liberarDirectorio(tablaDeDirectorios* directorio){
   free(directorio);
 }
 
-
-char* obtenerNombreDirectorio(char** rutaDesmembrada){
-  int posicion = 0;
-  char* nombreArchivo = string_new();
-  while(1){
-    if(rutaDesmembrada[posicion+1] == NULL){
-      string_append(&nombreArchivo, rutaDesmembrada[posicion]);
-      break;
-    }
-    posicion++;
-  }
-  return nombreArchivo;
-}
 
 int obtenerDirectorioPadre(char** rutaDesmembrada){
   char* fathersName = string_new();
@@ -284,7 +384,6 @@ int crearDirectorio(char* ruta){
       list_add(listaDirectorios, newDirectory);
       liberarArrayComando(rutaDesmembrada);
       persistirDirectorio();
-      printf("Se creo correctamente el directorio");
       return 1;
   }else{
 	  printf("No se pudo crear el directorio, se llego al limite");
@@ -611,7 +710,7 @@ void liberarArray(char ** lista,int cantidad){
 						char * nombreNodo = string_new();
 						string_append(&nombreNodo,arrayDeNodosAnteriores[i]);
 						list_add(listaDeNodosDeEstadoAnterior,nombreNodo);
-						printf("%s\n",arrayDeNodosAnteriores[i]);
+						//printf("%s\n",arrayDeNodosAnteriores[i]);
 					}
 						liberarArray2(arrayDeNodosAnteriores);
 	}
@@ -965,8 +1064,8 @@ void partirArchivoBinario(char* PATH,char * PathDirectorio) {
 
 	nuevoArchivo->bloqueCopias = list_create();
 	nuevoArchivo->tamanio = tamano;
-	nuevoArchivo->directorioPadre = 1;
-	nuevoArchivo->tipo = 0;
+	nuevoArchivo->directorioPadre = obtenerDirectorioPadre(rutaDirectorio);
+	nuevoArchivo->tipo = 1;
 
 	void * archivoABytes = malloc(buff.st_size);
 	void * contenidoAEnviar = malloc(1048576);
@@ -979,7 +1078,7 @@ void partirArchivoBinario(char* PATH,char * PathDirectorio) {
 
 		if (tamano > 0 && tamano < 1048576) {
 
-			fread(contenidoAEnviar, tamano, 1, archivo);
+			fread(contenidoAEnviar, 1048576, 1, archivo);
 			printf("%d\n",tamano);
 			tablaBitmapXNodos * nodo2 = obtenerNodoConMayorPosicionLibre();
 			ContenidoXNodo * nodoBuscado3 = buscarNodoPorNombreS(nodo2->nodo);
@@ -1021,11 +1120,14 @@ void partirArchivoBinario(char* PATH,char * PathDirectorio) {
 								perror("error de malloc 1");
 							strcpy(arrayMensajesSerializar[i], tipoDeArchivoString);
 							i++;
-					char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
+							char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO, arrayMensajesSerializar, cantStrings);
 						//printf("%s\n",mensajeSerializado);
 						int bytesEnviados = enviarMensaje(nodoBuscado3->socket, mensajeSerializado);
 						printf("bytes enviados: %d\n", bytesEnviados);
 						liberarArray(arrayMensajesSerializar,cantStrings);
+						free(mensajeSerializado);
+
+
 			//SEND
 
 
@@ -1073,6 +1175,7 @@ void partirArchivoBinario(char* PATH,char * PathDirectorio) {
 									int bytesEnviados1 = enviarMensaje(nodobuscado4->socket, mensajeSerializado1);
 									printf("bytes enviados: %d\n", bytesEnviados1);
 									liberarArray(arrayMensajesSerializar1,cantStrings1);
+									free(mensajeSerializado1);
 									//SEND - Copia
 
 			break;
@@ -1127,6 +1230,7 @@ void partirArchivoBinario(char* PATH,char * PathDirectorio) {
 						int bytesEnviados = enviarMensaje(nodoBuscado->socket, mensajeSerializado);
 						printf("bytes enviados: %d\n", bytesEnviados);
 						liberarArray(arrayMensajesSerializar,cantStrings);
+						free(mensajeSerializado);
 			//SEND
 
 
@@ -1175,6 +1279,7 @@ void partirArchivoBinario(char* PATH,char * PathDirectorio) {
 						int bytesEnviados1 = enviarMensaje(nodoBuscado2->socket, mensajeSerializado1);
 						printf("bytes enviados: %d\n", bytesEnviados1);
 						liberarArray(arrayMensajesSerializar1,cantStrings1);
+						free(mensajeSerializado1);
 						//SEND - Copia
 
 
@@ -1189,7 +1294,7 @@ void partirArchivoBinario(char* PATH,char * PathDirectorio) {
 	free(archivoABytes);
 	fclose(archivo);
 }else {
-	printf("No hay espacio suficiente para partir el archivo %s \n",nuevoArchivo->nombre);
+	printf("No hay espacio suficiente para guardar el archivo %s \n",nuevoArchivo->nombre);
 }
 
 }
@@ -1331,6 +1436,7 @@ void partirArchivoDeTexto(char* PATH,char * PathDirectorio) {
 						int bytesEnviados = enviarMensaje(nodoBuscado->socket, mensajeSerializado);
 						printf("bytes enviados: %d\n", bytesEnviados);
 						liberarArray(arrayMensajesSerializar,cantStrings);
+						free(mensajeSerializado);
 			//SEND
 
 			tablaBitmapXNodos * nodo1 = obtenerNodoConMayorPosicionLibre();
@@ -1377,6 +1483,7 @@ void partirArchivoDeTexto(char* PATH,char * PathDirectorio) {
 						int bytesEnviados1 = enviarMensaje(nodoBuscado2->socket, mensajeSerializado1);
 						printf("bytes enviados: %d\n", bytesEnviados1);
 						liberarArray(arrayMensajesSerializar1,cantStrings1);
+						free(mensajeSerializado1);
 						//SEND - Copia
 
 			log_info(logFs, "Archivo - bloque %d ", contenido2->bloque);
@@ -1433,6 +1540,7 @@ void partirArchivoDeTexto(char* PATH,char * PathDirectorio) {
 						int bytesEnviados = enviarMensaje(nodoBuscado3->socket, mensajeSerializado);
 						printf("bytes enviados: %d\n", bytesEnviados);
 						liberarArray(arrayMensajesSerializar,cantStrings);
+						free(mensajeSerializado);
 			//SEND
 
 
@@ -1486,6 +1594,7 @@ void partirArchivoDeTexto(char* PATH,char * PathDirectorio) {
 						int bytesEnviados1 = enviarMensaje(nodobuscado4->socket, mensajeSerializado1);
 						printf("bytes enviados: %d\n", bytesEnviados1);
 						liberarArray(arrayMensajesSerializar1,cantStrings1);
+						free(mensajeSerializado1);
 						//SEND - Copia
 
 			log_info(logFs, "Archivo - bloque %d ", contenido4->bloque);
@@ -1687,8 +1796,6 @@ void enviarInfoNodos(int socketCliente) {
 	printf("mensaje serializado: %s\n", mensajeSerializado);
 	int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);
 	printf("bytes enviados: %d\n", bytesEnviados);
-	puts("presionar ENTER");
-	getchar();
 }
 
 
@@ -1796,7 +1903,6 @@ void soyServidor(char * puerto) {
 		printf("te mate gato \n");
 	}
 	void inicializarCarpetas(){
-		tablaDeDirectorios * nuevoDirectorio = malloc(sizeof(tablaDeDirectorios));
 		char * metadata=string_new();
 		char * archivos=string_new();
 		char * bitmaps=string_new();
@@ -1815,6 +1921,35 @@ void soyServidor(char * puerto) {
 		free(archivos);
 		free(bitmaps);
 	}
+	void eliminarCarpetas(){
+			char * metadata=string_new();
+				char * archivos=string_new();
+				char * bitmaps=string_new();
+				string_append(&metadata,"rm -r -f ");
+				string_append(&metadata,"metadata");
+				string_append(&archivos,"rm -r -f ");
+				string_append(&archivos,"metadata/archivos");
+				string_append(&bitmaps,"rm -r -f ");
+				string_append(&bitmaps,"bitmaps");
+				system(metadata);
+				system(archivos);
+				system(bitmaps);
+				free(metadata);
+				free(archivos);
+				free(bitmaps);
+
+	}
+	void eliminarListas(){
+		list_clean_and_destroy_elements(listaDeBitMap,free);
+		list_clean_and_destroy_elements(tablaNodos,free);
+		list_clean_and_destroy_elements(tablaArchivos,free);
+		list_clean_and_destroy_elements(listaDeNodosDeFormateo,free);
+		list_clean_and_destroy_elements(listaDeNodosDeEstadoAnterior,free);
+		list_clean_and_destroy_elements(listaDirectorios,free);
+		list_clean_and_destroy_elements(registroArchivos,free);
+
+
+	}
 int main(int argc, char *argv[]) {
 
 	//signal(SIGINT,matarTodo);
@@ -1825,20 +1960,29 @@ int main(int argc, char *argv[]) {
 	listaDeNodosDeEstadoAnterior = list_create();
 	listaDeNodosDeFormateo=list_create();
 	listaDirectorios=list_create();
+	registroArchivos=list_create();
 	char * PUERTO;
 	logFs = log_create("../FileSystem.log", "FileSystem", 0, 0);
 	configFs = config_create("../../config/configFilesystem.txt");
 	persistirNodos =config_create("metadata/nodos.bin");
-	directorios =config_create("metadata/directorios.dat.bin");
+	directorios =config_create("metadata/directorios.dat");
+	registroArchivo =config_create("metadata/archivos/registro.dat");
+//	configFs = config_create("../config/configFilesystem.txt");
+//	persistirNodos =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/nodos.bin");
+//	directorios =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/directorios.dat");
+//	registroArchivo =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/archivos/registro.dat");
 	pthread_t hiloConsola;
 	estadoAnterior = config_get_int_value(configFs,"ESTADO_ANTERIOR");
 	estadoEstable = config_get_int_value(configFs,"ESTADO_ESTABLE");
+
 
 	if(argv[1]==NULL){
 		if(estadoAnterior==1){
 			//cargar estado anterior
 			//cargar directorios
 			//cargar archivos
+			cargarEstructuraArchivos(registroArchivo);
+			cargarDirectorio(directorios);
 			cargarListaDeNodosAnteriores();
 			FILE * directorios = fopen("metadata/directorios.dat", "a+");
 			FILE * nodos = fopen("metadata/nodos.bin", "a+");
@@ -1863,9 +2007,11 @@ int main(int argc, char *argv[]) {
 	else{
 		if(!strcmp(argv[1], "--clean")){
 
-		printf("limpiame gato\n");
-		//elimino estructuras,carpetas y levanto
 
+		//elimino estructuras,carpetas y levanto
+			eliminarListas();
+			eliminarCarpetas();
+			inicializarCarpetas();
 		config_set_value(configFs,"ESTADO_ANTERIOR","0");
 		config_set_value(configFs,"ESTADO_ESTABLE","0");
 		config_save(configFs);

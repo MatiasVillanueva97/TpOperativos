@@ -89,16 +89,16 @@ void analizarComando(char * linea){
         if(strcmp(comandoDesarmado[1], "-d")==0){
         	int pudoBorrar = deleteDirectory(comandoDesarmado[2]);
         	if(pudoBorrar == 0){
-        		printf("El directorio a borrar no existe.");
+        		printf("El directorio a borrar no existe.\n");
         	}else if(pudoBorrar == -1){
-        		printf("El directorio a borrar tiene subdirectorios. No se puede borrar.");
+        		printf("El directorio a borrar tiene subdirectorios. No se puede borrar.\n");
         	}else{
         		char* comandoPConsola = string_new();
         		string_append(&comandoPConsola, "rmdir ");
         		string_append(&comandoPConsola, comandoDesarmado[2]);
         		system(comandoPConsola);
         		persistirDirectorio();
-        		printf("Directorio borrado exitosamente.");
+        		printf("Directorio borrado exitosamente.\n");
         		free(comandoPConsola);
         	}
         }else if(strcmp(comandoDesarmado[1], "-b")==0){
@@ -119,7 +119,7 @@ void analizarComando(char * linea){
     	  char * nombreArchivoNuevo = comandoDesarmado[2];
 
     	  if(nombreArchivoViejo == NULL || nombreArchivoNuevo == NULL){
-    	  	  printf("Faltan parametros para ejecutar el comando rename");
+    	  	  printf("Faltan parametros para ejecutar el comando rename\n");
     	  } else {
 
     		  renameDirectory(nombreArchivoViejo,nombreArchivoNuevo);
@@ -146,7 +146,7 @@ void analizarComando(char * linea){
     	  char * pathFinal = comandoDesarmado[2];
 
     	  if(pathOriginal == NULL || pathFinal == NULL){
-    		  printf("Faltan parametros para ejecutar el comando mv");
+    		  printf("Faltan parametros para ejecutar el comando mv\n");
     	  } else {
 
         	  moveDirectory(pathOriginal,pathFinal);
@@ -177,16 +177,15 @@ void analizarComando(char * linea){
     	  if(nuevoDirectorio != NULL){
     		  if(!existeDirectorio(nuevoDirectorio)){
     			  if(crearDirectorio(nuevoDirectorio) == 1){
-    				  system(linea);
     			      printf("\n");
     			  }else{
-    			  	  printf("No se pudo crear el directorio. Por favor vuelva a intentarlo");
+    			  	  printf("No se pudo crear el directorio. Por favor vuelva a intentarlo\n");
     	  		  }
     		  }else{
-    			  printf("No se pudo crear el directorio. El directorio ya existe.");
+    			  printf("No se pudo crear el directorio. El directorio ya existe.\n");
     		  }
     	  }else{
-      		  printf("Asegurese de ingresar el nombre del directorio. Por favor vuelva a intentarlo");
+      		  printf("Asegurese de ingresar el nombre del directorio. Por favor vuelva a intentarlo\n");
       	  }
       }
       break;
@@ -196,9 +195,8 @@ void analizarComando(char * linea){
     	   char * nombreArchivoNuevo = comandoDesarmado[2];
     	   char * flag = comandoDesarmado[3];
     	   if(nombreArchivoViejo != NULL && nombreArchivoNuevo != NULL && flag != NULL){
-    		   //partirArchivoDeTexto("/home/utnso/Escritorio/FileSystem.h");
     		  almacenarArchivo(nombreArchivoViejo,nombreArchivoNuevo,flag);
-    		   printf("El archivo ha sido copiado exitosamente.");
+    		   printf("El archivo ha sido copiado exitosamente.\n");
     	   }else{
     		   printf("Faltan parametros para ejecutar el comando cpfrom\n");
     	   }
@@ -315,9 +313,9 @@ void IniciarConsola(){
   char * linea;
   char * barraDeComando = string_from_format("%s>", getlogin());
 
-  	  puts("Iniciando Consola");
+  	  puts("Iniciando Consola\n");
   	sleep(1);
-  	puts("Consola lista");
+  	puts("Consola lista\n");
 
   while(1) {
     linea = (char *) readline(barraDeComando);

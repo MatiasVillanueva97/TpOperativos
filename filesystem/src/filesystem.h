@@ -108,7 +108,6 @@ tablaDeNodos * tablaNodosGlobal;
 
 t_log * logFs;
 t_config * configFs;
-t_bitarray* bitMap ;
 t_list * listaDeNodosDeEstadoAnterior;
 t_list * listaDeNodosDeFormateo;
 t_list * listaDirectorios;
@@ -116,6 +115,7 @@ t_list * registroArchivos;
 t_config * persistirNodos;
 t_config * persistirArchivo;
 t_config *directorios;
+t_config * registroArchivo;
 int formateado;
 int estadoAnterior;
 int	estadoEstable;
