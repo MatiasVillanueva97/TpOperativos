@@ -36,10 +36,14 @@ t_log* logWorker;
 
 #define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
 
+struct stat st = {0};
+char carpeta_temporal[6] = "../tmp";
+//char carpeta_temporal[58] = "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
+
 char* guardar_script(char* codigo_script, char* nombre) {
-	char* path = malloc(string_length(nombre) + 15);
-	//path = string_from_format("../tmp/script_%s", nombre);
-	path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
+	char* path = malloc(string_length(carpeta_temporal) + string_length(nombre));
+	path = string_from_format("%s/script_%s", carpeta_temporal, nombre);
+	//path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
 		fputs(codigo_script, fp);
@@ -64,7 +68,6 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 int ejecutar_system(char* path_script, char* datos_origen, char* archivo_temporal) {
 
 	char* comando = string_new();
-	// ../tmp/
 	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script, datos_origen, path_script, archivo_temporal);
 	log_trace(logWorker, "El comando a ejecutar es %s", comando);
 	//int resultado = system(comando);
@@ -86,7 +89,6 @@ int ejecutar_system(char* path_script, char* datos_origen, char* archivo_tempora
 int system_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
 
 	char* comando = string_new();
-	// ../tmp/
 	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
 	log_trace(logWorker, "El comando a ejecutar es %s", comando);
 	//int resultado = system(comando);
@@ -119,19 +121,7 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	FILE* temporal;
 	temporal = fopen(destino, "w");
 	fclose(temporal);
-	/*
-	 t_script archivo_temporal_bloque = reconstruir_archivo("../tmp/bloques_sin_transformar/", bloque, datos_transformacion.ocupado_del_bloque +1);
 
-	 if(archivo_temporal_bloque.ruta == NULL){
-	 log_error(logWorker, "No se pudo construir el archivo temporal para almacenar el contenido del bloque leido");
-
-	 free(bloque);
-
-	 script_destroy(archivo_temporal_bloque);
-
-	 return -1;
-	 }
-	 */
 	int resultado = system_transformacion(path_script, bloque, destino);
 	//script_destroy(archivo_temporal_bloque);
 	//free(bloque);
@@ -143,8 +133,8 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	return resultado;
 }
 
-int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
-	FILE *fr1, *fr2, *fr3;
+int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UNA LINEA EN BLANCO AL PRINCIPIO CUANDO EL ARCHIVO ESTA VACIO
+	FILE *fr1, *fr2, *faux;
 
 	char* fst = string_new();
 	char* snd = string_new();
@@ -154,9 +144,9 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	int comparacion;
 	bool f1 = true, f2 = true;
 
+	faux = fopen(path_f1, "r+");
 	fr1 = fopen(path_f1, "r");
 	fr2 = fopen(path_f2, "r");
-	fr3 = fopen(path_f3, "w");
 
 	while (!feof(fr1) && !feof(fr2)) {
 		if (f1) {
@@ -173,25 +163,32 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 		if (comparacion == 0) {
 			f1 = true;
 			f2 = true;
-			fwrite (fst,1,string_length(fst),fr3);
-			fwrite (snd,1,string_length(snd),fr3);
+			fwrite (fst,1,string_length(fst),faux);
+			fwrite (snd,1,string_length(snd),faux);
 		} else if (comparacion > 0) {
 			f1 = false;
 			f2 = true;
-			fwrite (snd,1,string_length(snd),fr3);
+			fwrite (snd,1,string_length(snd),faux);
 		} else {
 			f2 = false;
 			f1 = true;
-			fwrite (fst,1,string_length(fst),fr3);
+			fwrite (fst,1,string_length(fst),faux);
 		}
+	}
+	fwrite ("\n",1,1,faux);
+	if (!feof(fr1)) {
+		fwrite (fst,1,string_length(fst),faux);
+	}
+	else {
+		fwrite (snd,1,string_length(snd),faux);
 	}
 	while (!feof(fr1)) {
 		fgets(fst, 1000, fr1);
-		fwrite (fst,1,string_length(fst),fr3);
+		fwrite (fst,1,string_length(fst),faux);
 	}
 	while (!feof(fr2)) {
 		fgets(snd, 1000, fr2);
-		fwrite (snd,1,string_length(snd),fr3);
+		fwrite (snd,1,string_length(snd),faux);
 	}
 	free(fst);
 	free(snd);
@@ -199,7 +196,7 @@ int apareo_archivos(char* path_f1, char* path_f2, char* path_f3) {
 	free(frth);
 	fclose(fr1);
 	fclose(fr2);
-	fclose(fr3);
+	fclose(faux);
 	return 0;
 }
 
@@ -232,6 +229,13 @@ int main(int argc, char *argv[]) {
 		puts("No pude iniciar como servidor");
 		return EXIT_FAILURE;
 	}
+
+
+
+	if (stat(carpeta_temporal, &st) == -1) {
+		mkdir(carpeta_temporal, 0775);
+	}
+
 	while (1) {	//inicio bucle para recibir conexiones y forkear
 		puts("Ya estoy preparado para recibir conexiones\n");
 
@@ -327,11 +331,40 @@ int main(int argc, char *argv[]) {
 			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
 				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 				char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+
+				char *reductorString = malloc(string_length(arrayMensajes[0]) + 1);
+				strcpy(reductorString, arrayMensajes[0]);
+
+				int cantTemporales;
+				cantTemporales = arrayMensajes[1];
+
+				for (i = 0; i < cantidadMensajes; i++) {
+					free(arrayMensajes[i]);
+				}
+				free(arrayMensajes);
+
+				char **arrayTemporales = deserializarMensaje(socketCliente, cantTemporales);
+
+				char **arrayTempDestino = deserializarMensaje(socketCliente, 1);
+				char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
+				strcpy(temporalDestino,arrayTempDestino[0]);
+
+
+
+				char* path_temporales_reduccion = string_new();
+				path_temporales_reduccion = "/home/utnso/Escritorio/reduccionLocal";
+				char* path_temporal_destino = string_new();
+				string_append_with_format(&path_temporal_destino, "%s/%s", path_temporales_reduccion, temporalDestino);
+
+				FILE *temporalDestinoLocal = fopen(path_temporal_destino, "w");
+				fclose (temporalDestinoLocal);
+
+				for (i = 0; i < cantTemporales; i++) {
+					apareo_archivos(path_temporal_destino,arrayTemporales[i]);
+				}
+
+
 				/*
-				char *transformadorString = malloc(string_length(arrayMensajes[0]) + 1);
-				strcpy(transformadorString, arrayMensajes[0]);
-				int bloque = atoi(arrayMensajes[1]);
-				int bytesOcupados = atoi(arrayMensajes[2]);
 				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
 				strcpy(temporalDestino, arrayMensajes[3]);
 				printf("Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s\n", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
@@ -341,12 +374,6 @@ int main(int argc, char *argv[]) {
 				//aparear archivos
 				//ejecutar reductor
 				//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
-
-
-				for (i = 0; i < cantidadMensajes; i++) {
-					free(arrayMensajes[i]);
-				}
-				free(arrayMensajes);
 
 
 			}
