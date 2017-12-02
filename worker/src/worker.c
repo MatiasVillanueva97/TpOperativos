@@ -17,10 +17,10 @@
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 enum keys {
-	IP_PROPIA, PUERTO_PROPIO, RUTA_DATABIN
+	IP_PROPIA, PUERTO_PROPIO, RUTA_DATABIN, FS_IP, FS_PUERTO, NOMBRE_NODO,
 };
-char* keysConfigWorker[] = { "IP_PROPIA", "PUERTO_PROPIO", "RUTA_DATABIN", NULL };
-char* datosConfigWorker[3];
+char* keysConfigWorker[] = { "IP_PROPIA", "PUERTO_PROPIO", "RUTA_DATABIN", "FS_IP", "FS_PUERTO", "NOMBRE_NODO", NULL };
+char* datosConfigWorker[6];
 
 t_log* logWorker;
 
@@ -225,6 +225,53 @@ int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 	return resultado;
 }
 
+int conexionAFileSystem() {
+	log_info(logWorker, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigWorker[FS_IP], datosConfigWorker[FS_PUERTO]);
+	int socketFS = conectarA(datosConfigWorker[FS_IP], datosConfigWorker[FS_PUERTO]);
+	if (socketFS < 0) {
+		puts("Filesystem not ready\n");
+		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
+	}
+	return socketFS;
+}
+
+void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
+	FILE* archivo = fopen(rutaArchivo, "r");
+	int fd = fileno(archivo);
+	int tamano;
+	struct stat buff;
+	fstat(fd, &buff);
+	tamano = buff.st_size;
+	char* buffer = malloc(tamano);
+	fseek(archivo, 0, SEEK_SET);
+	fread(buffer,tamano,1,archivo);
+	printf("%s\n",buffer);
+	int socketFS; //= conectarA("127.0.0.1","5000");
+	int preparadoEnviarFs = 1, i;
+	if ((socketFS = conexionAFileSystem()) < 0) {
+		preparadoEnviarFs = 0;
+	}
+	int modulo = worker;
+	//se identifica con el FS
+	send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
+	//arma el array de strings para serializar
+	int bytesEnviados;
+	char **arrayMensajes = malloc(sizeof(char*) * 2);
+	arrayMensajes[0] = malloc(string_length(rutaFinal) + 1);
+	strcpy(arrayMensajes[0], rutaFinal);
+	arrayMensajes[1] = malloc(string_length(buffer) + 1);
+	strcpy(arrayMensajes[1], buffer);
+		//serializa los mensajes y los envía
+	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, 2);
+	bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);//envio el mensaje serializado a FS
+	printf("%s\n",mensajeSerializado);
+	//libera todos los pedidos de malloc
+	for (i = 0; i < 2; i++) {
+		free(arrayMensajes[i]);
+	}
+	free(arrayMensajes);
+	free(buffer);
+}
 int main(int argc, char *argv[]) {
 	//tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
 	int i, j, k, h;
@@ -239,6 +286,8 @@ int main(int argc, char *argv[]) {
 		printf("Hubo un error al leer el archivo de configuración");
 		return 0;
 	}
+
+	//almacenamientoFinal("/home/utnso/test.txt","/ruta/donde/almacena/fs/archivoFinal.loQueSea");
 
 	// 2º) inicializar server y aguardar conexiones (de master)
 	//HAY QUE VER COMO SE CONECTA CON OTROS WORKERS

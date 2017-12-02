@@ -1861,6 +1861,11 @@ void soyServidor(char * puerto) {
 									break;
 								case worker: {
 									SocketWorker = nuevoSocket;
+									//atender a worker,supongo que almacenar el archivo
+								/*	char** mensajes = deserializarMensaje(SocketWorker, 2);
+									printf("%s\n",mensajes[0]);
+									printf("%s\n",mensajes[1]);
+								*/
 								}
 									break;
 								case datanode: {
