@@ -37,11 +37,12 @@ enum tiposMensajes {
 	TIPO_MSJ_PEDIR_BLOQUES,
 	TIPO_MSJ_BLOQUE_DESDE_DATANODE,
 	TIPO_MSJ_DATA_TRANSFORMACION_WORKER,
-	TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER
+	TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER,
+	TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL,
 };
 
 // OJO! Si se agrega algo en el enum de arriba actualizar dejar siempre acá el último valor del array
-const int protocoloCantidadMensajes[TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER + 1] = {
+const int protocoloCantidadMensajes[TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL + 1] = {
 		0,
 		1,
 		1,
@@ -72,9 +73,11 @@ const int protocoloCantidadMensajes[TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER + 1] = 
 		1,
 		1,
 		4,
-		2 };
+		2,
+		2
+};
 
-const char* protocoloMensajesPredefinidos[TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER + 1] = {
+const char* protocoloMensajesPredefinidos[TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL + 1] = {
 		"EN_DESUSO",
 		"TABLA_TRANSFORMACION",
 		"TABLA_REDUCCION_LOCAL",
@@ -105,4 +108,6 @@ const char* protocoloMensajesPredefinidos[TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER +
 		"PEDIR_BLOQUES",
 		"BLOQUE_DESDE_DATANODE",
 		"DATA_TRANSFORMACION_WORKER",
-		"DATA_REDUCCION_LOCAL_WORKER" };
+		"DATA_REDUCCION_LOCAL_WORKER",
+		"TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL"
+};
