@@ -504,7 +504,7 @@ void* conectarAWorkerTransformacion(void *arg) {
 	printf("datos -2 adentro del hilo: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
 
 //pasa el archivo a string para enviarlo al worker
-	char *pathArchivo = string_from_format("../..%s", archivoTransformador);
+	char *pathArchivo = string_from_format("%s", archivoTransformador);
 	fp = fopen(pathArchivo, "r"); // read mode
 	fseek(fp, 0, SEEK_END);
 	long length = ftell(fp);

@@ -57,7 +57,7 @@ master:
 	@echo "Compilando MASTER..."
 	$(COMPILER) $(MASTER)/$(SRC_PATH)/$(MASTER).c -o $(MASTER)/$(BIN_PATH)/$(MASTER) $(COMMONS) $(THREAD) $(READLINE)
 	@echo "Ejecutando MASTER..."
-	cd $(MASTER)/$(BIN_PATH) && ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py yamafs:/nombres.csv yamafs:/analisis/resultado.json
+	cd $(MASTER)/$(BIN_PATH) &&  ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
 
 error: 
 	@echo "[ERROR] Pasar como argumento el proceso: make filesystem/datanode/yama/worker/master"
