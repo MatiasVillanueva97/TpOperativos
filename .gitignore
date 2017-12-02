@@ -1,6 +1,16 @@
 
 # Created by https://www.gitignore.io/api/c,cmake,eclipse
 
+# TP
+*.log
+filesystem/log
+filesystem/metadata
+yama/log
+master/log
+datanode/log
+worker/log
+worker/tmp
+
 ### C ###
 # Prerequisites
 *.d

@@ -1,6 +1,7 @@
 COMPILER=gcc
 BIN_PATH=bin
 SRC_PATH=src
+LOG_PATH=log
 COMMONS=-lcommons
 THREAD=-lpthread
 READLINE=-lreadline
@@ -19,7 +20,7 @@ default: error
 
 filesystem:
 	@echo "Limpiando FILESYSTEM..."
-	rm -rf $(FILESYSTEM)/$(BIN_PATH) && rm -rf $(FILESYSTEM)/*.log
+	rm -rf $(FILESYSTEM)/$(BIN_PATH) && rm -rf $(FILESYSTEM)/${LOG_PATH}/*.log
 	@echo "Compilando FILESYSTEM..."
 	mkdir -p $(FILESYSTEM)/$(BIN_PATH) && $(COMPILER) $(FILESYSTEM)/$(SRC_PATH)/$(FILESYSTEM).c -o $(FILESYSTEM)/$(BIN_PATH)/$(FILESYSTEM) $(COMMONS) $(THREAD) $(READLINE) $(MATH)
 	@echo "Ejecutando FILESYSTEM..."
