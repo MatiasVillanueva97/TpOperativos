@@ -65,32 +65,19 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 	return *buffer;
 }
 
-int ejecutar_system(char* path_script, char* datos_origen, char* archivo_temporal) {
-
-	char* comando = string_new();
-	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script, datos_origen, path_script, archivo_temporal);
-	log_trace(logWorker, "El comando a ejecutar es %s", comando);
-	//int resultado = system(comando);
-	int status;
-	system(comando);
-	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-	/*if (WIFEXITED(status)) {
-	 log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", WEXITSTATUS(status));
-	 }
-	 else {
-	 //log_trace(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
-	 log_trace(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
-	 }*/
-	free(comando);
-	//return resultado;
-	return status;
-}
-
-int system_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
-
+char* crear_comando_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
 	char* comando = string_new();
 	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
-	log_trace(logWorker, "El comando a ejecutar es %s", comando);
+	return comando;
+}
+
+char* crear_comando_reduccionLoc(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
+	char* comando = string_new();
+	string_append_with_format(&comando, "chmod +x %s && cat %s | %s > /home/utnso/Escritorio/resultados/%s", path_script_reduccionLoc, path_origen, path_script_reduccionLoc, archivo_destino);
+	return comando;
+}
+
+int ejecutar_system(char* comando) {
 	//int resultado = system(comando);
 	int status;
 	system(comando);
@@ -122,7 +109,10 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	temporal = fopen(destino, "w");
 	fclose(temporal);
 
-	int resultado = system_transformacion(path_script, bloque, destino);
+	char* comando = crear_comando_transformacion(path_script, bloque, destino);
+	log_trace(logWorker, "El comando a ejecutar es %s", comando);
+
+	int resultado = ejecutar_system(comando);
 	//script_destroy(archivo_temporal_bloque);
 	//free(bloque);
 	if (resultado < 0) {
@@ -200,8 +190,19 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 	return 0;
 }
 
-int reduccion_local(char* path_script, int origen, int bytesOcupados, char* destino) {
-	int resultado;
+int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
+
+	char* comando = crear_comando_transformacion(path_script, path_origen, path_destino);
+	log_trace(logWorker, "El comando a ejecutar es %s", comando);
+
+	int resultado = ejecutar_system(comando);
+	//script_destroy(archivo_temporal_bloque);
+	//free(bloque);
+	if (resultado < 0) {
+		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
+	} else {
+		log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado.");
+	}
 	return resultado;
 }
 
@@ -329,6 +330,11 @@ int main(int argc, char *argv[]) {
 			}
 
 			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
+
+				//aparear archivos
+				//ejecutar reductor
+				//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
+
 				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 				char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
 
@@ -349,6 +355,10 @@ int main(int argc, char *argv[]) {
 				char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
 				strcpy(temporalDestino,arrayTempDestino[0]);
 
+				char* path_script = guardar_script(reductorString, temporalDestino);
+
+				char* path_temporal_origen = string_new();
+				string_append_with_format(&path_temporal_origen, "%s/origen_%s", carpeta_temporal, temporalDestino);
 
 
 				char* path_temporales_reduccion = string_new();
@@ -356,26 +366,24 @@ int main(int argc, char *argv[]) {
 				char* path_temporal_destino = string_new();
 				string_append_with_format(&path_temporal_destino, "%s/%s", path_temporales_reduccion, temporalDestino);
 
-				FILE *temporalDestinoLocal = fopen(path_temporal_destino, "w");
-				fclose (temporalDestinoLocal);
+				FILE *temporalOrigenDestino = fopen(path_temporal_origen, "w");
+				fclose (temporalOrigenDestino);
 
 				for (i = 0; i < cantTemporales; i++) {
-					apareo_archivos(path_temporal_destino,arrayTemporales[i]);
+					apareo_archivos(path_temporal_origen,arrayTemporales[i]);
 				}
 
+				resultado = reduccion_local(path_script,path_temporal_origen,path_temporal_destino);
 
-				/*
-				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
-				strcpy(temporalDestino, arrayMensajes[3]);
-				printf("Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s\n", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
-				*/
-
-
-				//aparear archivos
-				//ejecutar reductor
-				//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
-
-
+				free(path_script);
+				free(reductorString);
+				free(temporalDestino);
+				if (resultado == 0) {
+					enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_OK);
+				}
+				else {
+					enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_ERROR);
+				}
 			}
 
 			if (headerId == (int32_t) "REDUCCION_GLOBAL") {
