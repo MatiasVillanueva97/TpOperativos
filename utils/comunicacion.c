@@ -1,13 +1,25 @@
 #include "constantes.h"
 #include <stdint.h>
+#include <errno.h>
 
 /* ****************************** funciones para enviar mensajes ******************************/
 //el send no manda siempre todos los bytes que le pongo por el protocolo IP
 //leer la cantidad de bytes enviados que es lo que devuelve
 int enviarMensaje(int serverSocket, char *message) {
 	int cantBytesEnviados = send(serverSocket, message, string_length(message), MSG_WAITALL);
+	int errsv = errno;
+	printf("somecall() failed %d", errsv);
+
+	int bla = string_length(message);
+	printf("message %s:", message);
+	printf("lenght del msje: %d", bla);
+
+	printf("cant bytes enviados: %d", cantBytesEnviados);
+
 	if (cantBytesEnviados != string_length(message)) {
+
 		puts("Error. No se enviaron todos los bytes del mensaje\n");
+
 		return 0;
 	}
 	return cantBytesEnviados;
@@ -29,7 +41,7 @@ int enviarHeaderSolo(int serverSocket, int32_t headerId) {
 int recibirMensaje(char *message, int socketCliente, int packageSize) {
 	//char *message=malloc(packageSize);
 	int cantBytesRecibidos;
-	if ((cantBytesRecibidos = recv(socketCliente, message, packageSize, MSG_WAITALL)) < 0) {
+	if ((cantBytesRecibidos = recv(socketCliente, message, packageSize, MSG_WAITALL)) <= 0) {
 		perror("Recepción Mensaje");
 		strcpy(message, "-1");
 	}
@@ -76,7 +88,7 @@ char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings
 int32_t deserializarHeader(int socketCliente) {
 	char idString[LARGO_STRING_HEADER_ID + 1];
 	recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
-	if (idString < 0) {
+	if (idString <= 0) {
 		return -1;
 	}
 	idString[LARGO_STRING_HEADER_ID] = '\0';
