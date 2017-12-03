@@ -1,26 +1,18 @@
 #include "constantes.h"
 #include <stdint.h>
-#include <errno.h>
 
 /* ****************************** funciones para enviar mensajes ******************************/
 //el send no manda siempre todos los bytes que le pongo por el protocolo IP
 //leer la cantidad de bytes enviados que es lo que devuelve
 int enviarMensaje(int serverSocket, char *message) {
 	int cantBytesEnviados = send(serverSocket, message, string_length(message), MSG_WAITALL);
-	int errsv = errno;
-	printf("somecall() failed %d", errsv);
-
-	int bla = string_length(message);
-	printf("message %s:", message);
-	printf("lenght del msje: %d", bla);
-
-	printf("cant bytes enviados: %d", cantBytesEnviados);
 
 	if (cantBytesEnviados != string_length(message)) {
 
-		puts("Error. No se enviaron todos los bytes del mensaje\n");
-
+		puts("Error. No se enviaron todos los bytes del mensaje.\n");
+		printf("Largo mensaje: %d, bytes enviados: %d", string_length(message), cantBytesEnviados);
 		return 0;
+
 	}
 	return cantBytesEnviados;
 }
