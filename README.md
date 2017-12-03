@@ -22,15 +22,28 @@ Matias Villanueva | 1559837 | matias.nahuel.villanueva@hotmail.com |
 3. Tener instaladas la pthreads library
 4. Tener instaladas la readline library (sudo apt-get install libreadline6-dev)
 5. Tener instalado Ruby o Python si se corre algún script (Transformador o Reductor) de tipo `.rb o `.py`
-  
+
 
 ## Instrucciones
 
 1. Clonar este repositorio: `git clone https://github.com/sisoputnfrba/tp-2017-2c-Mi-Grupo-1234`
 2. Entrar al directorio: `cd tp-2017-2c-Mi-Grupo-1234`
-2. Instalar dependencias ejecutando `chmod +x install.sh && ./install.sh` 
+2. Instalar dependencias ejecutando `chmod +x install.sh && ./install.sh`
 3. Ejecutar `export LC_ALL=C`
-4. Compilar y ejecutar el $PROCESO deseado (filesystem/datanode/yama/worker/master): `make $PROCESO`
+4. Ejecutar el PROCESO deseado: ver Comandos.
+
+### Comandos
+- `make clean-(PROCESO)`: borra el PROCESO. Ej.: `make clean-filesystem`
+
+- `make compile-(PROCESO)`: borra y compila el PROCESO. Ej.: `make compile-master`
+
+- `make run-(PROCESO)`: borra, compila y ejecuta el PROCESO. Ej.: `make run-worker`
+
+- `make debug-(PROCESO)`: borra, compila y ejecuta el PROCESO usando Valgrind. Ej.: `make debug-worker`
+
+- `make all`: borra y compila todos los PROCESOS. Es el default para el Build ("martillito") de Eclipse.
+
+**(PROCESO) = filesystem / datanode / yama / worker / master**
 
 > Ojo! Si lo corrés varias veces seguidas falla porq las conexiones quedan abiertas, para resolverlo guardá los cambios y ejecutá lo siguiente :)
 
@@ -96,6 +109,3 @@ Link: https://sisoputnfrba.gitbooks.io/yama-tp-2c2017/content/
 	* int32_t headerId = deserializarHeader(socketCliente)	//recibe el id del header para saber qué esperar
 	* int cantidadMensajes = protocoloCantidadMensajes[headerId]	//averigua la cantidad de mensajes que le van a llegar
 	* char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes)	//recibe los mensajes en un array de strings
-
-
-
