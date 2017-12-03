@@ -73,7 +73,6 @@ char* guardar_script(char* codigo_script, char* nombre) {
 
 char* leer_bloque(int numeroBloque, int cantBytes) {
 	FILE* archivo;
-	printf("entré");
 	archivo = fopen(datosConfigWorker[RUTA_DATABIN], "r");
 	int tamanioBloque = 1048576;
 	char *buffer[cantBytes];
@@ -86,11 +85,8 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 }
 
 char* crear_comando_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
-	//char* comando = string_new();
-	char *comando[200];
-	//string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
-	string_append(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
-
+	char* comando = string_new();
+	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
 	return comando;
 }
 
@@ -116,7 +112,6 @@ int ejecutar_system(char* comando) {
 		return -1;
 	}
 	free(comando);
-	return 0;
 	//return resultado;
 	//return status;
 }
@@ -322,6 +317,14 @@ int main(int argc, char *argv[]) {
 
 		log_info(logWorker, "Master conectado al worker, esperando mensajes");
 		printf("master conectado con socket %d\n", socketCliente);
+		/*
+		 // ***** PIPES: 0 lectura, 1 escritura *****
+		 int pipe_padreAHijo[2];
+		 int pipe_hijoAPadre[2];
+
+		 pipe(pipe_padreAHijo);
+		 pipe(pipe_hijoAPadre);
+		 */
 
 		pid_t pid;
 		int status;
@@ -333,6 +336,15 @@ int main(int argc, char *argv[]) {
 			puts("Estoy dentro del hijo");
 			close(listenningSocket);
 
+			/*
+			 dup2(pipe_padreAHijo[0],STDIN_FILENO);
+			 dup2(pipe_hijoAPadre[1],STDOUT_FILENO);
+			 // ***** Cerramos pipes duplicados *****
+			 close(pipe_padreAHijo[1]);
+			 close(pipe_hijoAPadre[0]);
+			 close(pipe_hijoAPadre[1]);
+			 close(pipe_padreAHijo[0]);
+			 */
 			char *argv[] = { NULL };
 			char *envp[] = { NULL };
 			/*
@@ -343,7 +355,7 @@ int main(int argc, char *argv[]) {
 			 */
 
 			int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
-printf ("header: %d", headerId);
+
 			/* *****Cantidad de mensajes segun etapa*****
 			 Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
 			 Reduccion local (3): script, lista de temporales (origen), temporal(destino)
@@ -371,19 +383,17 @@ printf ("header: %d", headerId);
 				}
 				free(arrayMensajes);
 
-				char* path_script = guardar_script(transformadorString, temporalDestino); //OK
-				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino); //NO OK
-				printf("resultado: %d", resultado);
+				char* path_script = guardar_script(transformadorString, temporalDestino);
+				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
+
 				free(path_script);
 				free(transformadorString);
 				free(temporalDestino);
 				if (resultado == 0) {
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
-					printf("resultado OK");
 				}
 				else {
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
-					printf("resultado error");
 				}
 			}
 
