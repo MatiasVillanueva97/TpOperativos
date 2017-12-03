@@ -6,9 +6,13 @@
 //leer la cantidad de bytes enviados que es lo que devuelve
 int enviarMensaje(int serverSocket, char *message) {
 	int cantBytesEnviados = send(serverSocket, message, string_length(message), MSG_WAITALL);
+
 	if (cantBytesEnviados != string_length(message)) {
-		puts("Error. No se enviaron todos los bytes del mensaje\n");
+
+		puts("Error. No se enviaron todos los bytes del mensaje.\n");
+		printf("Largo mensaje: %d, bytes enviados: %d", string_length(message), cantBytesEnviados);
 		return 0;
+
 	}
 	return cantBytesEnviados;
 }
@@ -29,7 +33,7 @@ int enviarHeaderSolo(int serverSocket, int32_t headerId) {
 int recibirMensaje(char *message, int socketCliente, int packageSize) {
 	//char *message=malloc(packageSize);
 	int cantBytesRecibidos;
-	if ((cantBytesRecibidos = recv(socketCliente, message, packageSize, MSG_WAITALL)) < 0) {
+	if ((cantBytesRecibidos = recv(socketCliente, message, packageSize, MSG_WAITALL)) <= 0) {
 		perror("Recepción Mensaje");
 		strcpy(message, "-1");
 	}
@@ -76,7 +80,7 @@ char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings
 int32_t deserializarHeader(int socketCliente) {
 	char idString[LARGO_STRING_HEADER_ID + 1];
 	recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
-	if (idString < 0) {
+	if (idString <= 0) {
 		return -1;
 	}
 	idString[LARGO_STRING_HEADER_ID] = '\0';
