@@ -570,7 +570,8 @@ void* conectarAWorkerTransformacion(void *arg) {
 	headerIdFinalizado = headerIdWorker;
 //	printf("headerIdFinalizado: %d\n", headerIdFinalizado);
 //	sleep(2);
-//	pthread_mutex_unlock(&mutexHilosMaster);
+	printf("hilo %lu sale en zona crítica - socket %d, nodo %d, bloque %d, ip %s, respuesta %s \n", idHilo, socketWorker, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, protocoloMensajesPredefinidos[headerIdWorker]);
+	pthread_mutex_unlock(&mutexHilosMaster);
 //	pthread_mutex_unlock(&mutexEntreHilos);
 
 }
