@@ -355,6 +355,7 @@ int main(int argc, char *argv[]) {
 			 */
 
 			int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
+			printf ("header: %d", headerId);
 
 			/* *****Cantidad de mensajes segun etapa*****
 			 Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
@@ -471,32 +472,8 @@ int main(int argc, char *argv[]) {
 		} else {
 			puts("Pasó por el padre");
 			close(socketCliente);
-			/*
-			 close(pipe_padreAHijo[0]); //Lado de lectura de lo que el padre le pasa al hijo.
-			 close(pipe_hijoAPadre[1]); //Lado de escritura de lo que hijo le pasa al padre.
-
-			 //REVISAR
-			 //write(pipe_padreAHijo[1],argv[1],strlen(argv[1])); //codigo
-			 //write(pipe_padreAHijo[1],argv[2],strlen(argv[2])); //origen
-			 //write(pipe_padreAHijo[1],argv[3],strlen(argv[3])); //destino
-			 //-------------------------
-			 close(pipe_padreAHijo[1]);
-			 */
 			waitpid(pid, &status, 0);
-			/*
-			 read(pipe_hijoAPadre[0], buffer, SIZE);
-			 close(pipe_hijoAPadre[0]);
-			 exit(0);
-			 */
 		}
-
-		/*
-		 FILE* fd = fopen("/tmp/resultado","w"); //ESCRIBIR RESULTADO
-		 fputs(buffer,fd);
-		 fclose(fd);
-
-		 free(buffer);
-		 */
 
 		/*
 		 3º) creo forks para ejecutar instrucciones de master
