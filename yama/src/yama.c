@@ -666,6 +666,7 @@ int main(int argc, char *argv[]) {
 								/* ********************* */
 								//recibir la info de los nodos donde están esos archivos
 								headerId = deserializarHeader(socketFS);
+								printf("%d header en nodos",headerId);
 								if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
 									printf("El FS no mandó los nodos\n");
 								}
