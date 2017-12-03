@@ -45,6 +45,8 @@ Matias Villanueva | 1559837 | matias.nahuel.villanueva@hotmail.com |
 
 **(PROCESO) = filesystem / datanode / yama / worker / master**
 
+> En el caso del FileSystem se puede pasar el flag `--clean` opcionalmente: `make run-filesystem ARG="--clean"`
+
 > Ojo! Si lo corrés varias veces seguidas falla porq las conexiones quedan abiertas, para resolverlo guardá los cambios y ejecutá lo siguiente :)
 
 `sudo sysctl -w net.ipv4.tcp_tw_recycle=1 && sudo sysctl -w net.ipv4.tcp_tw_reuse=1 && sudo reboot`
