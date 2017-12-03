@@ -33,7 +33,7 @@ compile-filesystem: clean-filesystem
 
 run-filesystem: compile-filesystem
 	@echo "Ejecutando FILESYSTEM..."
-	cd $(FILESYSTEM)/$(BIN_PATH) && ./$(FILESYSTEM)
+	cd $(FILESYSTEM)/$(BIN_PATH) && ./$(FILESYSTEM) ${ARG}
 
 debug-filesystem: compile-filesystem
 		@echo "Ejecutando FILESYSTEM en modo DEBUG..."
