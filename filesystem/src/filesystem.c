@@ -110,7 +110,6 @@ void persistirDirectorio() {
 		cont++;
 	}
 	fclose(archivoDirectorio);
-
 }
 
 void persistirRegistroArchivo() {
@@ -831,7 +830,6 @@ int sumatoriaDeBloquesLibres() {
 	list_iterate(listaDeBitMap, (void*) sumar);
 	return suma;
 }
-
 
 int sumatoriaDeBloquesTotal() {
 	int suma = 0;
@@ -1804,6 +1802,7 @@ void soyServidor(char * puerto) {
 					} else {
 						FD_SET(nuevoSocket, &master);
 						recv(nuevoSocket, &quiensoy, sizeof(int), MSG_WAITALL); //Devuelve -1 en error
+
 						switch (quiensoy) {
 
 						case yama: {
@@ -1811,7 +1810,10 @@ void soyServidor(char * puerto) {
 								SocketYama = nuevoSocket;
 								enviarHeaderSolo(SocketYama, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
 							} else {
+								SocketYama = nuevoSocket;
 								enviarHeaderSolo(SocketYama, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
+								close(SocketYama);
+								FD_CLR(SocketYama, &master);
 							}
 						}
 							break;
@@ -1835,8 +1837,9 @@ void soyServidor(char * puerto) {
 						}
 					}
 				} else {
-					int32_t headerId = deserializarHeader(i);
+					int32_t headerId = deserializarHeader(i); // funciona cuando solo recibe 0?
 					if (headerId <= 0) { //error o desconexión de un cliente
+						printf("header id %d",headerId);
 						eliminarDeLasListas(i);
 						cerrarCliente(i); // bye!
 						FD_CLR(i, &master); // remove from master set

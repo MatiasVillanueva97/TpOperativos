@@ -20,6 +20,7 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include <errno.h>
 #include "../../utils/constantes.h"
 #include "../../utils/utils.h"
 #include "../../utils/conexionesSocket.h"
@@ -56,12 +57,24 @@ datosPropiosNodo listaGlobalNodos[50];
 #include "planificacion.h"
 #include "nroMasterJob.c"
 #include "inicializacion.c"
+#include <signal.h>
 #include "comunicacionesFS.c"
 
 //para el select
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+int recargarConfig = 0;
+
+// mover a utils.h o alguna libreria
+void sig_handler(int signal){
+
+	if (signal == SIGUSR1) {
+		printf ("Recieved SIGUSR1");
+		recargarConfig = 1;
+	}
+}
 
 char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, int cantPartesArchivo) {
 	int i, j, k, cantStringsASerializar, largoStringDestinoCopia;
@@ -293,6 +306,15 @@ char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalAlmFinal)
 }
 
 int main(int argc, char *argv[]) {
+
+	sigset_t new_set, old_set;
+	sigemptyset(&new_set);
+	sigaddset(&new_set,SIGINT);
+	sigaddset(&new_set,SIGUSR1);
+	sigprocmask(SIG_BLOCK, &new_set, &old_set);
+
+	signal(SIGINT,sig_handler);
+
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int h, i, j, k;
 	char mensajeHeaderSolo[4];
@@ -313,22 +335,32 @@ int main(int argc, char *argv[]) {
 	//para la planificación
 	disponibBase = atoi(datosConfigYama[DISPONIBILIDAD_BASE]);
 	strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
+
 	/* ************** conexión como cliente al FS *************** */
 	int socketFS, preparadoFs = 0;
-	if ((socketFS = conexionAFileSystem()) < 0) {
-		//preparadoEnviarFs = 0;
-		puts("Abortar ejecución");
-		return EXIT_FAILURE;
-	}
 	int modulo = yama;
+
+//	if ((socketFS = conexionAFileSystem()) < 0) {
+//		puts("Abortar ejecución");
+//		return EXIT_FAILURE;
+//	}
+
 	while (preparadoFs == 0) {
+		if ((socketFS = conexionAFileSystem()) < 0) {
+			puts("Abortar ejecución");
+			return EXIT_FAILURE;
+		}
 		send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 		headerId = deserializarHeader(socketFS);
-		if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK)
+		if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 			preparadoFs = 1;
-		else
-			puts("Sigo esperando que el Filesystem esté estable");
+			puts("Conectado a FileSystem");
+		} else {
+			puts("Sigo esperando que el FileSystem esté estable");
+			sleep(5);
+		}
 	}
+
 	// add the socketFs to the master set
 	//FD_SET(socketFS, &socketsLecturaMaster);
 	// keep track of the biggest file descriptor
@@ -354,8 +386,18 @@ int main(int argc, char *argv[]) {
 		listaGlobalNodos[i].carga = 0;
 	}
 	for (;;) {
+		//if(recargarConfig){
+			//recargar config
+		    //if (!getDatosConfiguracion()) {
+			//	return EXIT_FAILURE;
+			//}
+			//para la planificación
+			//disponibBase = atoi(datosConfigYama[DISPONIBILIDAD_BASE]);
+			//strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
+
+		//}
 		socketsLecturaTemp = socketsLecturaMaster;
-		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
+		if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &old_set) != -1) {
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
 					if (nroSocket == listenningSocket) {	//conexión nueva
@@ -642,6 +684,7 @@ int main(int argc, char *argv[]) {
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							break;
 						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
+							/* TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR */
 							;
 							char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
 							strcpy(archivo, arrayMensajes[0]);
@@ -729,6 +772,7 @@ int main(int argc, char *argv[]) {
 							} else {
 								perror("No se pudo pedir el archivo al FS");
 							}
+							/* FIN */
 
 							break;
 						default:
@@ -740,11 +784,20 @@ int main(int argc, char *argv[]) {
 					// END handle data from client
 				} //if (FD_ISSET(i, &socketsLecturaTemp)) END got new incoming connection
 			} //for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) END looping through file descriptors
-		} else {
-			perror("Error en select()");
 		}
+		// else {
+		//	perror("Error en select()");
 	}
+	if (errno == EINTR) {
+		puts("interrupted by SIGINT");
+	}else{
+		perror("pselect()");
+	}
+	//sigprocmask()
+
 // END for(;;)
+
+	sigprocmask(SIG_SETMASK, &old_set, NULL);
 
 //cerrarServer(listenningSocket);
 //cerrarServer(socketCliente);
