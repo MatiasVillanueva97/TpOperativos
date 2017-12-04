@@ -75,7 +75,7 @@ char* guardar_script(char* codigo_script, char* nombre) {
 }*/
 
 char* leer_bloque(int numeroBloque, int cantBytes) {
-	log_info(logWorker, "[leer_bloque]: Numero de bloque: %d - Cantidad de bytes: %s", numeroBloque, cantBytes);
+	log_info(logWorker, "[leer_bloque]: Numero de bloque: %d - Cantidad de bytes: %d", numeroBloque, cantBytes);
 	FILE* archivo;
 	archivo = fopen(datosConfigWorker[RUTA_DATABIN], "r");
 	int tamanioBloque = 1048576;
@@ -84,7 +84,7 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 	fseek(archivo, posicion, SEEK_SET);
 	fread(buffer, cantBytes, 1, archivo);
 	log_info(logWorker, "[leer_bloque]: Datos leidos: %s", buffer);
-	printf("%i bytes leidos en el bloque %i\n", cantBytes, numeroBloque);
+	printf("%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
 	printf("[leer_bloque]: Datos leidos: %s\n", buffer);
 	fclose(archivo);
 	return buffer;
@@ -217,7 +217,7 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 
 int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 
-	char* comando = crear_comando_transformacion(path_script, path_origen, path_destino);
+	char* comando = crear_comando_reduccionLoc(path_script, path_origen, path_destino);
 	log_info(logWorker, "[reduccion_local] El comando a ejecutar es %s", comando);
 
 	int resultado = ejecutar_system(comando);
@@ -382,8 +382,9 @@ int main(int argc, char *argv[]) {
 				free(arrayMensajes);
 
 				char* path_script = guardar_script(transformadorString, temporalDestino);
-				log_info(logWorker,"Script guardado. Path script: %s", path_script);
+				log_trace(logWorker,"Script guardado. Path script: %s", path_script);
 				printf("Script guardado. Path script: %s\n", path_script);
+				log_info(logWorker,"Antes de entrar a la funcion transformacion");
 				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
 				log_info(logWorker, "El resultado de la transformacion fue: %d", resultado);
 				printf("El resultado de la transformacion fue: %d\n", resultado);
