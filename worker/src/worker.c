@@ -41,6 +41,7 @@ t_log* logWorker;
 struct stat st = {0};
 char carpeta_temporal[6] = "../tmp";
 //char carpeta_temporal[58] = "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
+char carpeta_resultados[33] = "/home/utnso/Escritorio/resultados";
 
 char* guardar_script(char* codigo_script, char* nombre) {
 	log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
@@ -91,13 +92,13 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 
 char* crear_comando_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
 	char* comando = string_new();
-	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > /home/utnso/Escritorio/resultados/%s", path_script_transformacion, datos_origen, path_script_transformacion, archivo_temporal);
+	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > %s/%s", path_script_transformacion, datos_origen, path_script_transformacion,carpeta_resultados, archivo_temporal);
 	return comando;
 }
 
 char* crear_comando_reduccionLoc(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
 	char* comando = string_new();
-	string_append_with_format(&comando, "chmod +x %s && cat %s | %s > /home/utnso/Escritorio/resultados/%s", path_script_reduccionLoc, path_origen, path_script_reduccionLoc, archivo_destino);
+	string_append_with_format(&comando, "chmod +x %s && cat %s | %s > %s/%s", path_script_reduccionLoc, path_origen, path_script_reduccionLoc, carpeta_resultados, archivo_destino);
 	return comando;
 }
 
@@ -304,7 +305,7 @@ int main(int argc, char *argv[]) {
 		puts("No pude iniciar como servidor\n");
 		return EXIT_FAILURE;
 	}
-	log_trace(logWorker, "Se inicio worker como server. IP: %d, Puerto: %d", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
+	log_trace(logWorker, "Se inicio worker como server. IP: %s, Puerto: %s", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 
 	if (stat(carpeta_temporal, &st) == -1) {
 		log_trace(logWorker, "Carpeta temporal no existe, creandola: %s", carpeta_temporal);
