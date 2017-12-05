@@ -45,7 +45,7 @@ char carpeta_resultados[33] = "/home/utnso/Escritorio/resultados";
 
 char* guardar_script(char* codigo_script, char* nombre) {
 	log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
-	char* path = malloc(string_length(carpeta_temporal) + string_length(nombre));
+	char* path = malloc(string_length(carpeta_temporal) + string_length(nombre) + 8);
 	path = string_from_format("%s/script_%s", carpeta_temporal, nombre);
 	//path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
@@ -54,6 +54,20 @@ char* guardar_script(char* codigo_script, char* nombre) {
 		fclose(fp);
 	}
 	log_info(logWorker, "[guardar_script]: Path script guardado: %s", path);
+	return path;
+}
+
+char* guardar_datos_origen(char* datos_origen, char* nombre) {
+	log_info(logWorker, "[guardar_datos_origen]: Datos recibidos: %s", datos_origen);
+	char* path = malloc(string_length(carpeta_temporal) + string_length(nombre) + 7);
+	path = string_from_format("%s/datos_%s", carpeta_temporal, nombre);
+	//path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
+	FILE *fp = fopen(path, "w");
+	if (fp != NULL) {
+		fputs(datos_origen, fp);
+		fclose(fp);
+	}
+	log_info(logWorker, "[guardar_datos_origen]: Path datos guardado: %s", path);
 	return path;
 }
 
@@ -90,11 +104,19 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 	return buffer;
 }
 
-char* crear_comando_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
+char* crear_comando_transformacion(char* path_script_transformacion, char* path_datos_origen, char* archivo_temporal) {
 	char* comando = string_new();
-	string_append_with_format(&comando, "chmod +x %s && echo %s | %s | sort > %s/%s", path_script_transformacion, datos_origen, path_script_transformacion,carpeta_resultados, archivo_temporal);
+	string_append_with_format(&comando, "chmod +x %s && cat %s | %s | sort > %s/%s", path_script_transformacion, path_datos_origen, path_script_transformacion, carpeta_resultados, archivo_temporal);
 	return comando;
 }
+
+/*
+char* crear_comando_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
+	char* comando = string_new();
+	string_append_with_format(&comando, "chmod +x %s && echo \"%s\" | %s | sort > %s/%s", path_script_transformacion, datos_origen, path_script_transformacion, carpeta_resultados, archivo_temporal);
+	return comando;
+}
+*/
 
 char* crear_comando_reduccionLoc(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
 	char* comando = string_new();
@@ -107,7 +129,7 @@ int ejecutar_system(char* comando) {
 	int status;
 	system(comando);
 	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-	if (WIFEXITED(status)) {
+	if (WIFEXITED(status) != 0) {
 		int exit_status = WEXITSTATUS(status);
 		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
 		return 0;
@@ -130,6 +152,37 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 		log_error(logWorker, "No se pudo leer el bloque (numero %d) completo segun el tamaño especificado (%d bytes)", origen, bytesOcupados);
 		return -1;
 	}
+
+	char* path_datos_origen = guardar_datos_origen(bloque, destino); //revisar
+
+	FILE* temporal;
+	temporal = fopen(destino, "w");
+	fclose(temporal);
+
+	char* comando = crear_comando_transformacion(path_script, path_datos_origen, destino);
+	log_info(logWorker, "[transformacion] El comando a ejecutar es %s", comando);
+
+	int resultado = ejecutar_system(comando);
+	log_trace(logWorker, "[transformacion] El resultado fue: %d", resultado);
+	//free(bloque);
+	if (resultado < 0) {
+		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
+	} else {
+		log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado.");
+	}
+	return resultado;
+}
+
+/*
+int transformacion(char* path_script, int origen, int bytesOcupados, char* destino) {
+	char* bloque = leer_bloque(origen, bytesOcupados);
+	//char* bloque = "WBAN,Date,Time,StationType,SkyCondition,SkyConditionFlag,Visibility,VisibilityFlag,WeatherType,WeatherTypeFlag,DryBulbFarenheit,DryBulbFarenheitFlag,DryBulbCelsius,DryBulbCelsiusFlag,WetBulbFarenheit,WetBulbFarenheitFlag,WetBulbCelsius,WetBulbCelsiusFlag,DewPointFarenheit,DewPointFarenheitFlag,DewPointCelsius,DewPointCelsiusFlag,RelativeHumidity,RelativeHumidityFlag,WindSpeed,WindSpeedFlag,WindDirection,WindDirectionFlag,ValueForWindCharacter,ValueForWindCharacterFlag,StationPressure,StationPressureFlag,PressureTendency,PressureTendencyFlag,PressureChange,PressureChangeFlag,SeaLevelPressure,SeaLevelPressureFlag,RecordType,RecordTypeFlag,HourlyPrecip,HourlyPrecipFlag,Altimeter,AltimeterFlag\
+03011,20130101,0000,0,OVC, , 5.00, , , ,M, ,M, ,M, ,M, ,M, ,M, ,M, , 5, ,120, , , ,M, , , , , ,M, ,AA, , , ,29.93, ";
+	if (bloque == NULL) {
+		log_error(logWorker, "No se pudo leer el bloque (numero %d) completo segun el tamaño especificado (%d bytes)", origen, bytesOcupados);
+		return -1;
+	}
+
 	FILE* temporal;
 	temporal = fopen(destino, "w");
 	fclose(temporal);
@@ -147,6 +200,7 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	}
 	return resultado;
 }
+*/
 
 int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UNA LINEA EN BLANCO AL PRINCIPIO CUANDO EL ARCHIVO ESTA VACIO
 	FILE *fr1, *fr2, *faux;
