@@ -129,7 +129,7 @@ int ejecutar_system(char* comando) {
 	int status;
 	system(comando);
 	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-	if (WIFEXITED(status) != 0) {
+	if (WIFEXITED(status) == 0) {
 		int exit_status = WEXITSTATUS(status);
 		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
 		return 0;
@@ -140,8 +140,7 @@ int ejecutar_system(char* comando) {
 		return -1;
 	}
 	free(comando);
-	//return resultado;
-	//return status;
+	return 0;
 }
 
 int transformacion(char* path_script, int origen, int bytesOcupados, char* destino) {
@@ -448,10 +447,11 @@ int main(int argc, char *argv[]) {
 				free(temporalDestino);
 				if (resultado == 0) {
 					log_trace(logWorker, "Enviando header de TRANSFORMACION_OK");
-					printf("Enviando header de OK");
+					printf("Enviando header de OK\n");
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
 				}
 				else {
+					printf("Enviando header de ERROR\n");
 					log_error(logWorker, "Enviando header de TRANSFORMACION_ERROR");
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
 				}
