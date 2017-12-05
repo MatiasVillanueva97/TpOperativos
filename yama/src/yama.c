@@ -73,8 +73,11 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 	arrayMensajes[0] = malloc(largoStringDestinoCopia);
 	strcpy(arrayMensajes[0], intToArrayZerosLeft(cantPartesArchivo, 4));
 	j = 1;
+	printf("\n ---------- Tabla de transformación a enviar a master ---------- \n");
+	printf("\tNodo\tIP\tPuerto\tBloque\tBytes\tTemporal\n");
+	printf("---------------------------------------------------------------------------------------------\n");
 	for (i = 0; i < cantPartesArchivo; i++) {
-		printf("\nnodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", datosParaTransformacion[i].nroNodo, listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip, listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
+		printf("\t%d\t%s\t%d\%d\t%d\t%s\n", datosParaTransformacion[i].nroNodo, listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip, listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
 
 		//número de nodo
 		largoStringDestinoCopia = 4 + 1;
@@ -112,7 +115,7 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 		strcpy(arrayMensajes[j], datosParaTransformacion[i].temporal);
 		j++;
 	}
-
+	printf("\n");
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_TABLA_TRANSFORMACION, arrayMensajes, cantStringsASerializar);
 	for (j = 0; j < cantStringsASerializar; j++) {
 		free(arrayMensajes[j]);
@@ -383,11 +386,12 @@ int main(int argc, char *argv[]) {
 						/* *************************** recepción de un mensaje ****************************/
 						socketConectado = nroSocket;
 						masterJobActual = getNroMasterJobByFD(socketConectado);
-						printf("\n-----------------------\nsocketConectado: %d\n", socketConectado);
-						printf("master actual: %d\n", masterJobActual.nroMaster);
-						printf("job actual: %d\n", masterJobActual.nroJob);
+						printf("\nSocket conectado: %d\n", socketConectado);
+						printf("Master actual: %d\n", masterJobActual.nroMaster);
+						printf("Job actual: %d\n", masterJobActual.nroJob);
 						int32_t headerId = deserializarHeader(socketConectado);
-						printf("headerId: %d\n", headerId);
+						printf("\nHeader Id: %d\n", headerId);
+						printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
 						if (headerId <= 0) {//error o desconexión de un cliente
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
@@ -400,8 +404,8 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
-							printf("nodo recibido: %d\n", nroNodoRecibido);
-							printf("bloque recibido: %d\n", nroBloqueRecibido);
+							printf("Nodo recibido: %d\n", nroNodoRecibido);
+							printf("Bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
 
 							//pongo la fila en estado FIN_OK
@@ -440,8 +444,8 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
-							free(arrayMensajes[0]);
-							free(arrayMensajes[1]);
+							printf("Nodo recibido: %d\n", nroNodoRecibido);
+							printf("Bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, ERROR) == 0) {
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
@@ -655,10 +659,12 @@ int main(int argc, char *argv[]) {
 								if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
 									perror("El FS no mandó los bloques");
 								}
-								printf("headerId recibido: %d\n", headerId);
+								printf("Header Id: %d\n", headerId);
+								printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
 								cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
 
 								bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
+								printf("\n ---------- Lista de bloques del archivo devuelto por FS ---------- \n");
 								for (i = 0; i < cantPartesArchivo; i++) {
 									printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
 								}
@@ -666,7 +672,8 @@ int main(int argc, char *argv[]) {
 								/* ********************* */
 								//recibir la info de los nodos donde están esos archivos
 								headerId = deserializarHeader(socketFS);
-								printf("%d header en nodos",headerId);
+								printf("Header Id: %d\n", headerId);
+								printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
 								if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
 									printf("El FS no mandó los nodos\n");
 								}
@@ -674,9 +681,10 @@ int main(int argc, char *argv[]) {
 								//guardar los nodos en la listaGlobal
 								datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
 								recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
-								for (k = 0; k < cantNodosArchivo; k++) {
-									printf("listaGlobalNodos %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
-									printf("nodosParaPlanificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
+								printf("\n ---------- Lista global de nodos ---------- \n");
+										for (k = 0; k < cantNodosArchivo; k++) {
+									printf("Nodo %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
+									printf("Planificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
 								}
 								/* ***************************************************************** */
 
@@ -685,8 +693,9 @@ int main(int argc, char *argv[]) {
 								//indexado por partes del archivo
 								nodoParaAsignar asignacionesNodos[cantPartesArchivo];
 								planificar(socketConectado, bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
+								printf("\n ---------- Lista de nodos para planificación ---------- \n");
 								for (i = 0; i < cantNodosArchivo; i++) {
-									printf("nro %d - carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
+									printf("Nro nodo %d - Carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
 								}
 								//guardo el nodo donde se va a hacer la reducción global de ese master y job
 								asignarNodoReduccGlobal((uint16_t) nodosParaPlanificar[0].numero, socketConectado);
@@ -721,10 +730,10 @@ int main(int argc, char *argv[]) {
 								/* ****** envío de nodos para la transformación ******************* */
 								//envía al master la lista de nodos donde trabajar cada bloque
 								char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
-								printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
+								printf("\n ---------- Mensaje serializado ---------- \n%s\n", mensajeSerializado);
 								enviarMensaje(socketConectado, mensajeSerializado);
 								/* **************************************************************** */
-								puts("\nlista de elementos luego de enviar la tabla de transformación");
+								//puts("\nlista de elementos luego de enviar la tabla de transformación");
 								mostrarTablaEstados();
 							} else {
 								perror("No se pudo pedir el archivo al FS");
