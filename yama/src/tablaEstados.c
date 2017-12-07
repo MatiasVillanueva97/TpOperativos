@@ -71,7 +71,6 @@ int agregarElemTablaEstados(struct filaTablaEstados fila) {
 		ultimoTablaEstados = nuevo;
 	}
 	return 1;
-	//if()
 }
 
 void mostrarTablaEstados() {

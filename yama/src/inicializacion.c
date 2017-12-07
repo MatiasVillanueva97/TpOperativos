@@ -45,7 +45,6 @@ int conexionAFileSystem() {
 int inicializoComoServidor() {
 	int listenningSocket = inicializarServer(datosConfigYama[IP_PROPIA], datosConfigYama[PUERTO_PROPIO]);
 	if (listenningSocket < 0) {
-		log_error(logYAMA, "No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
 	}
 	return listenningSocket;
