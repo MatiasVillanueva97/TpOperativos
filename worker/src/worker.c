@@ -99,7 +99,7 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 	fread(buffer, cantBytes, 1, archivo);
 	log_info(logWorker, "[leer_bloque]: Datos leidos: %s", buffer);
 	printf("%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
-	printf("[leer_bloque]: Datos leidos: %s\n", buffer);
+	//printf("[leer_bloque]: Datos leidos: %s\n", buffer);
 	fclose(archivo);
 	return buffer;
 }
@@ -305,7 +305,7 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	char* buffer = malloc(tamano);
 	fseek(archivo, 0, SEEK_SET);
 	fread(buffer,tamano,1,archivo);
-	printf("%s\n",buffer);
+//	printf("%s\n",buffer);
 	int socketFS; //= conectarA("127.0.0.1","5000");
 	int preparadoEnviarFs = 1, i;
 	if ((socketFS = conexionAFileSystem()) < 0) {
@@ -367,7 +367,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	while (1) {	//inicio bucle para recibir conexiones y forkear
-		puts("Ya estoy preparado para recibir conexiones\n");
+		puts("\nYa estoy preparado para recibir conexiones\n-----------------------------------------\n");
 
 		int socketCliente = aceptarConexion(listenningSocket);
 		if (socketCliente < 0) {
@@ -522,6 +522,8 @@ int main(int argc, char *argv[]) {
 
 			}
 
+			//TODO: ??????????????????????? esto está bien???
+			//porque lo único que hace es mandar un header=0............. raro....
 			if (resultado == 0) {
 				enviarHeaderSolo(socketCliente, resultado);
 			}

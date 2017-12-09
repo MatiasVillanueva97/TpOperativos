@@ -30,6 +30,8 @@ char * archivoReductor;
 char * archivoRequerido;
 char * archivoDestino;
 
+//char archivoTransformador[200], archivoReductor[200], archivoRequerido[200],archivoDestino[200];
+
 int masterCorriendo = 0;
 int socketYama;
 
@@ -81,7 +83,7 @@ void recibirTablaTransformacion(struct filaTransformacion *datosTransformacion, 
 
 	//recibir la tabla de transformación
 	printf("\n ---------- Tabla de transformación ---------- \n");
-	printf("\tNodo\tIP\tPuerto\tBloque\tBytes\tTemporal\n");
+	printf("\tNodo\tIP\t\tPuerto\tBloque\tBytes\t\tTemporal\n");
 	printf("---------------------------------------------------------------------------------------------\n");
 	for (i = 0, j = 0; i < cantBloquesArchivo; i++) {
 		// cada msje es una fila de la tabla transformacion
@@ -97,7 +99,7 @@ void recibirTablaTransformacion(struct filaTransformacion *datosTransformacion, 
 		j++;
 		strcpy(datosTransformacion[i].temporal, arrayTablaTransformacion[j]);
 		j++;
-		printf("\t%d\t%s\t%d\%d\t%d\t%s\n", datosTransformacion[i].nodo, datosTransformacion[i].ip, datosTransformacion[i].puerto, datosTransformacion[i].bloque, datosTransformacion[i].bytes, datosTransformacion[i].temporal);
+		printf("\t%d\t%s\t%d\t%d\t%d\t\t%s\n", datosTransformacion[i].nodo, datosTransformacion[i].ip, datosTransformacion[i].puerto, datosTransformacion[i].bloque, datosTransformacion[i].bytes, datosTransformacion[i].temporal);
 	}
 	printf("\n");
 
@@ -130,7 +132,6 @@ int envioFinTransformacion(int headerId, int nroNodo, int nroBloque) {
 	pthread_mutex_lock(&mutexSocketYama);
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
 	pthread_mutex_unlock(&mutexSocketYama);
-
 	//libera todos los pedidos de malloc
 	for (i = 0; i < cantMensajes; i++) {
 		free(arrayMensajes[i]);
@@ -307,7 +308,8 @@ void conectarAWorkerTransformacion(void *arg) {
 	// Abrir conexión a Worker
 //	pthread_mutex_lock(&mutexSocketWorker);
 	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
-//	pthread_mutex_unlock(&mutexSocketYama);
+//	pthread_mutex_unlock(&mutexSocketWorker);
+
 	printf("socket worker hilo %lu: %d\n", idHilo, socketWorker);
 	//	if (strcmp(datosEnHilo->ip, "127.0.0.1") || datosEnHilo->bloque == 76)
 	//	printf("datos 0 adentro del hilo: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
@@ -344,9 +346,10 @@ void conectarAWorkerTransformacion(void *arg) {
 
 	// Avisar a YAMA
 	int bytesEnviadosMensaje = envioFinTransformacion(headerId, datosEnHilo->nodo, datosEnHilo->bloque);
-	printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
+	//printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
 	printf("Datos al final del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
-	printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
+	//printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
+	puts("");
 }
 
 void conectarAWorkerReduccionLocal(void *arg) {
@@ -434,12 +437,17 @@ int main(int argc, char *argv[]) {
 	uint32_t preparadoEnviarYama = 1;
 	int32_t headerIdYama;
 
-	//TODO !!!!!!!!! Esto está mal, no se está haciendo un malloc para los char* por ende está usando cualquier parte de la memoria
+	//TODO !!!!!!!!! Creo que esto está mal, no se está haciendo un malloc para los char*
+	//por ende está usando cualquier parte de la memoria
 	//probable segmentation fault
 	archivoTransformador = argv[1];
 	archivoReductor = argv[2];
 	archivoRequerido = argv[3];
 	archivoDestino = argv[4];
+//	strcpy(archivoTransformador, argv[1]);
+//	strcpy(archivoReductor, argv[2]);
+//	strcpy(archivoRequerido, argv[3]);
+//	strcpy(archivoDestino, argv[4]);
 
 	log_info(logMASTER, "Iniciando proceso MASTER");
 	printf("\n*** Proceso Master ***\n");
