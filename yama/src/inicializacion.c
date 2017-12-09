@@ -36,7 +36,7 @@ int conexionAFileSystem() {
 	log_info(logYAMA, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigYama[FS_IP], datosConfigYama[FS_PUERTO]);
 	int socketFS = conectarA(datosConfigYama[FS_IP], datosConfigYama[FS_PUERTO]);
 	if (socketFS < 0) {
-		puts("Filesystem not ready\n");
+		puts("El FileSystem no está funcionando");
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 	}
 	return socketFS;

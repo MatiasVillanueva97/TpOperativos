@@ -74,10 +74,10 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 	strcpy(arrayMensajes[0], intToArrayZerosLeft(cantPartesArchivo, 4));
 	j = 1;
 	printf("\n ---------- Tabla de transformación a enviar a master ---------- \n");
-	printf("\tNodo\tIP\tPuerto\tBloque\tBytes\tTemporal\n");
+	printf("\tNodo\tIP\t\tPuerto\tBloque\tBytes\t\tTemporal\n");
 	printf("---------------------------------------------------------------------------------------------\n");
 	for (i = 0; i < cantPartesArchivo; i++) {
-		printf("\t%d\t%s\t%d\%d\t%d\t%s\n", datosParaTransformacion[i].nroNodo, listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip, listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
+		printf("\t%d\t%s\t%d\t%d\t%d\t\t%s\n", datosParaTransformacion[i].nroNodo, listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip, listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
 
 		//número de nodo
 		largoStringDestinoCopia = 4 + 1;
@@ -503,7 +503,7 @@ int main(int argc, char *argv[]) {
 								/* ****** envío de nodos para la transformación ******************* */
 								//envía al master la lista de nodos donde trabajar cada bloque
 								char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
-								printf("\n ---------- Mensaje serializado ---------- \n%s\n", mensajeSerializado);
+								//printf("\n ---------- Mensaje serializado ---------- \n%s\n", mensajeSerializado);
 								enviarMensaje(socketConectado, mensajeSerializado);
 								/* **************************************************************** */
 								//puts("\nlista de elementos luego de enviar la tabla de transformación");
