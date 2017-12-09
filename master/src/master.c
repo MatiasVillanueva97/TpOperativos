@@ -55,7 +55,7 @@ struct filaReduccionLocal {
 	char temporalReduccLocal[LARGO_TEMPORAL];
 };
 
-pthread_mutex_t mutexHilosMaster, mutex;
+pthread_mutex_t mutexSocketWorker, mutexSocketYama;
 //int nroNodoFinalizado, nroBloqueFinalizado;
 int32_t headerIdFinalizado = 0;
 
@@ -127,9 +127,9 @@ int envioFinTransformacion(int headerId, int nroNodo, int nroBloque) {
 
 	//serializa los mensajes y los envía
 	char *mensajeSerializado = serializarMensaje(headerId, arrayMensajes, cantMensajes);
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutexSocketYama);
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutexSocketYama);
 
 	//libera todos los pedidos de malloc
 	for (i = 0; i < cantMensajes; i++) {
@@ -279,19 +279,14 @@ int getCantNodos(int socketYama, int cantMensajes) {
 	return cantNodos;
 }
 
-//char archivoTransformador[200], archivoReductor[200], archivoRequerido[200], archivoDestino[200];
-
 void conectarAWorkerTransformacion(void *arg) {
-	//	pthread_mutex_lock(&mutexEntreHilos);
 	FILE *fp;
 	int i, j;
 	pthread_t idHilo = pthread_self();
 	struct filaTransformacion *datosEnHilo = (struct filaTransformacion*) arg;
-	//struct filaTransformacion datosEnHilo;
-	//	datosEnHilo.
 	printf("Se creó el hilo %lu\n", idHilo);
 
-	printf("Datos adentro del hilo: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
+	printf("Datos adentro del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
 
 	//pasa el archivo a string para enviarlo al worker
 	char *pathArchivo = string_from_format("%s", archivoTransformador);
@@ -310,7 +305,10 @@ void conectarAWorkerTransformacion(void *arg) {
 	//	printf("datos -1 adentro del hilo: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
 
 	// Abrir conexión a Worker
+//	pthread_mutex_lock(&mutexSocketWorker);
 	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
+//	pthread_mutex_unlock(&mutexSocketYama);
+	printf("socket worker hilo %lu: %d\n", idHilo, socketWorker);
 	//	if (strcmp(datosEnHilo->ip, "127.0.0.1") || datosEnHilo->bloque == 76)
 	//	printf("datos 0 adentro del hilo: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
 
@@ -340,14 +338,15 @@ void conectarAWorkerTransformacion(void *arg) {
 
 	// Recibir resultado del Worker
 	int32_t headerId = deserializarHeader(socketWorker);
-
+	printf("header recibido por parte del worker en hilo %lu: %d\n", idHilo, headerId);
 	// Cerrar conexión a Worker
 	cerrarCliente(socketWorker);
 
 	// Avisar a YAMA
 	int bytesEnviadosMensaje = envioFinTransformacion(headerId, datosEnHilo->nodo, datosEnHilo->bloque);
 	printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
-	printf("Bytes enviados mensaje: %d\n\n", bytesEnviadosMensaje);
+	printf("Datos al final del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
+	printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
 }
 
 void conectarAWorkerReduccionLocal(void *arg) {
@@ -403,10 +402,8 @@ void conectarAWorkerReduccionLocal(void *arg) {
 	//	enviarMensaje(socketWorker, mensajeSerializado);
 	//
 	//	int32_t headerIdWorker = deserializarHeader(socketWorker);
-	//	pthread_mutex_lock(&mutexHilosMaster);
 	//	nroNodoFinalizado = datos->nodo;
 	//	headerIdFinalizado = headerIdWorker;
-	//pthread_mutex_unlock(&mutexHilosMaster);
 	// Avisar a Yama
 	//TIPO_MSJ_REDUCC_LOCAL_OK,
 	//TIPO_MSJ_REDUCC_LOCAL_ERROR,
@@ -437,6 +434,8 @@ int main(int argc, char *argv[]) {
 	uint32_t preparadoEnviarYama = 1;
 	int32_t headerIdYama;
 
+	//TODO !!!!!!!!! Esto está mal, no se está haciendo un malloc para los char* por ende está usando cualquier parte de la memoria
+	//probable segmentation fault
 	archivoTransformador = argv[1];
 	archivoReductor = argv[2];
 	archivoRequerido = argv[3];
@@ -445,7 +444,11 @@ int main(int argc, char *argv[]) {
 	log_info(logMASTER, "Iniciando proceso MASTER");
 	printf("\n*** Proceso Master ***\n");
 
-	if (pthread_mutex_init(&mutex, NULL) != 0) {
+	if (pthread_mutex_init(&mutexSocketYama, NULL) != 0) {
+		printf("\n mutex init failed\n");
+		return 1;
+	}
+	if (pthread_mutex_init(&mutexSocketWorker, NULL) != 0) {
 		printf("\n mutex init failed\n");
 		return 1;
 	}
@@ -489,21 +492,19 @@ int main(int argc, char *argv[]) {
 		int cantBytesRecibidos, cantBloquesArchivo;
 
 		while (masterCorriendo == 0) {
-			//headerIdYama = deserializarHeader(socketYama);
+			headerIdYama = deserializarHeader(socketYama);
 
-			if (recv(socketYama, idString, LARGO_STRING_HEADER_ID, 0) == -1) {
-				puts("No se recibió el header YAMA");
-				sleep(2);
-				headerIdYama = 0;
-			} else {
-				idString[LARGO_STRING_HEADER_ID] = '\0';
-				headerIdYama = atoi(idString);
-				printf("headerIdYama: %d - %s\n\n", headerIdYama, protocoloMensajesPredefinidos[headerIdYama]);
-			}
+//			if (recv(socketYama, idString, LARGO_STRING_HEADER_ID, 0) == -1) {
+//				puts("No se recibió el header YAMA");
+//				sleep(2);
+//				headerIdYama = 0;
+//			} else {
+//				idString[LARGO_STRING_HEADER_ID] = '\0';
+//				headerIdYama = atoi(idString);
+//				printf("headerIdYama: %d - %s\n\n", headerIdYama, protocoloMensajesPredefinidos[headerIdYama]);
+//			}
 
 			switch (headerIdYama) {
-
-			//if (headerIdYama == TIPO_MSJ_TABLA_TRANSFORMACION) { //recibe la tabla de transformaciones
 			case TIPO_MSJ_TABLA_TRANSFORMACION: {
 				cantBloquesArchivo = getCantBloquesArchivo(socketYama, protocoloCantidadMensajes[headerIdYama]);
 				pthread_t hilosWorker[cantBloquesArchivo];
@@ -517,25 +518,20 @@ int main(int argc, char *argv[]) {
 				}
 
 				for (i = 0; i < cantBloquesArchivo; i++) {
-								//TODO: está bien hecho así??????????
-								//TODO: no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
-								pthread_join(hilosWorker[i], NULL);
+					//TODO: está bien hecho así??????????
+					//TODO: no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
+					pthread_join(hilosWorker[i], NULL);
 				}
 				masterCorriendo = 1;
 			}
 				break;
-
-				//if (headerIdYama == TIPO_MSJ_TABLA_REDUCCION_LOCAL) {
 			case TIPO_MSJ_TABLA_REDUCCION_LOCAL:
 				//recibirTablaReduccLocalYEnviarAWorker(socketYama, headerIdYama);
 				break;
-
 			case TIPO_MSJ_TABLA_REDUCCION_GLOBAL:
 				break;
-
 			case TIPO_MSJ_TABLA_ALMACENAMIENTO_FINAL:
 				break;
-
 			} // fin switch
 
 			/*
@@ -564,7 +560,7 @@ int main(int argc, char *argv[]) {
 
 	// 6º) Calcular métricas, finalizar Master y desconectar Yama
 	clock_t end = clock();
-	float tiempoTranscurrido = (float)(end - start) / CLOCKS_PER_SEC;
+	float tiempoTranscurrido = (float) (end - start) / CLOCKS_PER_SEC;
 	calcularMetricas(tiempoTranscurrido);
 	log_info(logMASTER, "Master finalizado.");
 	printf("Master finalizado.\n");
