@@ -84,6 +84,10 @@ actualizarCargaGlobalNodo(datosPropiosNodo nodo, int carga) {
 	listaGlobalNodos[nodo.numero].carga = carga;
 }
 
+disminuirCargaGlobalNodo(datosPropiosNodo nodo, int cantidadRestar) {
+	listaGlobalNodos[nodo.numero].carga -= cantidadRestar;
+}
+
 /*
  * busca el nodo con mayor disponibilidad
  * recibe un puntero a la lista de nodos

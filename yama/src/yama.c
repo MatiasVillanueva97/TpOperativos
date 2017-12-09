@@ -515,13 +515,13 @@ int main(int argc, char *argv[]) {
 							break;
 						case TIPO_MSJ_TRANSFORMACION_OK:
 							;
-
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
 							log_info(logYAMA, "Se recibió mensaje de fin de transformación OK, nodo %d, bloque %d", nroNodoRecibido, nroBloqueRecibido);
 							printf("Nodo recibido: %d\n", nroNodoRecibido);
 							printf("Bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
 
 							//pongo la fila en estado FIN_OK
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, FIN_OK) == 0) {
@@ -569,6 +569,8 @@ int main(int argc, char *argv[]) {
 							printf("Nodo recibido: %d\n", nroNodoRecibido);
 							printf("Bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, ERROR) == 0) {
 								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
@@ -627,6 +629,8 @@ int main(int argc, char *argv[]) {
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Local OK, nodo %d.", nroNodoRecibido);
 							printf("nroNodoRecibido: %d\n", nroNodoRecibido);
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+
 							//modificar el estado en la tabla de estados
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, FIN_OK) == 0) {
 								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Local OK");
@@ -709,8 +713,9 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Local ERROR, nodo %d.", nroNodoRecibido);
-
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, ERROR) == 0) {
 								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Local ERROR");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
@@ -729,6 +734,7 @@ int main(int argc, char *argv[]) {
 							//obtengo el nodo donde se hizo la reducción global
 							int nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global OK, nodo %d.", nroNodoReduccGlobal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
 
 							//modifica el estado de la fila
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, FIN_OK) == 0) {
@@ -766,6 +772,8 @@ int main(int argc, char *argv[]) {
 							free(arrayMensajes);
 							nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global ERROR, nodo %d.", nroNodoReduccGlobal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
+
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, ERROR) == 0) {
 								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Global ERROR");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
@@ -783,6 +791,7 @@ int main(int argc, char *argv[]) {
 							free(arrayMensajes);
 							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final OK, nodo %d.", nroNodoAlmacFinal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
 
 							//modifica el estado de la fila
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoAlmacFinal, 0, ALMAC_FINAL, EN_PROCESO, FIN_OK) == 0) {
@@ -801,6 +810,7 @@ int main(int argc, char *argv[]) {
 							free(arrayMensajes);
 							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final ERROR, nodo %d.", nroNodoAlmacFinal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
 
 							//modifica el estado de la fila
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoAlmacFinal, 0, ALMAC_FINAL, EN_PROCESO, ERROR) == 0) {
