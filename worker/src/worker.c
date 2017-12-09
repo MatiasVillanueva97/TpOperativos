@@ -17,6 +17,9 @@
 #define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
+//tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
+
+char *nameArchivoConfig = "configNodo.txt";
 enum keys {
 	IP_PROPIA, PUERTO_PROPIO, RUTA_DATABIN, FS_IP, FS_PUERTO, NOMBRE_NODO,
 };
@@ -25,9 +28,11 @@ char* datosConfigWorker[6];
 
 t_log* logWorker;
 
-char carpeta_temporal[6] = "../tmp";
-//char carpeta_temporal[58] = "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
-char carpeta_resultados[33] = "/home/utnso/Escritorio/resultados";
+struct stat st = {0};
+//char* carpeta_temporal = "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
+char* carpeta_temporal = "../tmp";
+//char* carpeta_resultados = "/home/utnso/Escritorio/resultados";
+char* carpeta_resultados = "../resultados";
 
 /*
  ================================================================
@@ -41,19 +46,31 @@ char carpeta_resultados[33] = "/home/utnso/Escritorio/resultados";
  ================================================================
  */
 
-void crear_carpeta_temporal() {
-	struct stat st = {0};
-	if (stat(carpeta_temporal, &st) == -1) {
-		log_trace(logWorker, "Carpeta temporal no existe, creandola: %s", carpeta_temporal);
-		//printf("Carpeta temporal no existe, creandola: %s\n", carpeta_temporal);
-		mkdir(carpeta_temporal, 0775);
+//---------------------- FUNCIONES GENERALES ----------------------
+void crear_carpeta(char carpeta[]) {
+	//struct stat st = {0};
+	if (stat(carpeta, &st) == -1) {
+		log_trace(logWorker, "Carpeta no existe, creandola: %s", carpeta);
+		//printf("Carpeta no existe, creandola: %s\n", carpeta);
+		mkdir(carpeta, 0775);
 		}
+	else {
+		log_trace(logWorker, "Carpeta ya existe: %s", carpeta);
+	}
 }
 
+void liberar_estructura(char** estructura, int cantidad_elementos) {
+	int i;
+	for (i = 0; i < cantidad_elementos; i++) {
+		free(estructura[i]);
+	}
+	free(estructura);
+}
+
+
 char* guardar_script(char* codigo_script, char* nombre) {
-	log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
-	char* path = malloc(string_length(carpeta_temporal) + string_length(nombre) + 8);
-	path = string_from_format("%s/script_%s", carpeta_temporal, nombre);
+	//log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
+	char* path = string_from_format("%s/script_%s", carpeta_temporal, nombre);
 	//path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
@@ -64,36 +81,42 @@ char* guardar_script(char* codigo_script, char* nombre) {
 	return path;
 }
 
+
+int ejecutar_system(char* comando) {
+	log_info(logWorker, "[ejecutar_system]: Comando recibido: %s", comando);
+	int status;
+	system(comando);
+	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
+	if (WIFEXITED(status) == 0) {
+		int exit_status = WEXITSTATUS(status);
+		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
+		return 0;
+	} else {
+		//log_error(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
+		//log_error(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
+		log_error(logWorker, "System fallo\n");
+		return -1;
+	}
+	//free(comando);
+	return 0;
+}
+
+
+//---------------------- FUNCIONES TRANSFORMACION ----------------------
+
 char* guardar_datos_origen(char* datos_origen, char* nombre) {
-	log_info(logWorker, "[guardar_datos_origen]: Datos recibidos: %s", datos_origen);
-	char* path = malloc(string_length(carpeta_temporal) + string_length(nombre) + 7);
-	path = string_from_format("%s/datos_%s", carpeta_temporal, nombre);
+	//log_info(logWorker, "[guardar_datos_origen]: Datos recibidos: %s", datos_origen);
+	char* path = string_from_format("%s/datos_%s", carpeta_temporal, nombre);
 	//path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
 		fputs(datos_origen, fp);
 		fclose(fp);
 	}
-	log_info(logWorker, "[guardar_datos_origen]: Path datos guardado: %s", path);
+	log_info(logWorker, "[guardar_datos_origen]: Path datos guardados: %s", path);
 	return path;
 }
 
-/*char* getBloque(int idBloque){
-	int fd;
-	int tamanioBloque = 1048576;
-	char *buffer = malloc(tamanioBloque);
-	int posicion = idBloque * tamanioBloque;
-	mapArchivo = mmap(0,tamanioBloque, PROT_READ, MAP_SHARED, fd, posicion);
-	if(mapArchivo == MAP_FAILED){
-		perror("mmap");
-		close(fd);
-		exit(1);
-	}
-	strncpy(buffer, mapArchivo,tamanioBloque);
-	printf("bytes leidos en el bloque %i\n",idBloque);
-	//printf("%s\n",buffer);
-	return buffer;
-}*/
 
 char* leer_bloque(int numeroBloque, int cantBytes) {
 	log_info(logWorker, "[leer_bloque]: Numero de bloque: %d - Cantidad de bytes: %d", numeroBloque, cantBytes);
@@ -113,8 +136,7 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 }
 
 char* crear_comando_transformacion(char* path_script_transformacion, char* path_datos_origen, char* archivo_temporal) {
-	char* comando = string_new();
-	string_append_with_format(&comando, "chmod +x %s && cat %s | %s | sort > %s/%s", path_script_transformacion, path_datos_origen, path_script_transformacion, carpeta_resultados, archivo_temporal);
+	char* comando = string_from_format("chmod +x %s && cat %s | %s | sort > %s/%s", path_script_transformacion, path_datos_origen, path_script_transformacion, carpeta_resultados, archivo_temporal);
 	return comando;
 }
 
@@ -126,30 +148,6 @@ char* crear_comando_transformacion(char* path_script_transformacion, char* datos
 }
 */
 
-char* crear_comando_reduccionLoc(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
-	char* comando = string_new();
-	string_append_with_format(&comando, "chmod +x %s && cat %s | %s > %s/%s", path_script_reduccionLoc, path_origen, path_script_reduccionLoc, carpeta_resultados, archivo_destino);
-	return comando;
-}
-
-int ejecutar_system(char* comando) {
-	log_info(logWorker, "[ejecutar_system]: Comando recibido: %s", comando);
-	int status;
-	system(comando);
-	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-	if (WIFEXITED(status) == 0) {
-		int exit_status = WEXITSTATUS(status);
-		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
-		return 0;
-	} else {
-		//log_error(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
-		//log_error(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
-		log_error(logWorker, "System fallo\n");
-		return -1;
-	}
-	free(comando);
-	return 0;
-}
 
 int transformacion(char* path_script, int origen, int bytesOcupados, char* destino) {
 	char* bloque = leer_bloque(origen, bytesOcupados);
@@ -208,6 +206,52 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	return resultado;
 }
 */
+
+
+int transformacion_worker(int headerId, int socketCliente) {
+	int resultado;
+
+	log_trace(logWorker, "Entrando en transformacion");
+	//printf("Entrando en transformacion\n");
+	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
+	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+	char *transformadorString = malloc(string_length(arrayMensajes[0]) + 1);
+	strcpy(transformadorString, arrayMensajes[0]);
+	int bloque = atoi(arrayMensajes[1]);
+	int bytesOcupados = atoi(arrayMensajes[2]);
+	char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
+	strcpy(temporalDestino, arrayMensajes[3]);
+	//log_info(logWorker,"Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
+	log_info(logWorker,"Datos recibidos: Transformador %d\nSocket %d - Bloque %d - Bytes %d - Temporal %s", string_length(transformadorString), socketCliente, bloque, bytesOcupados, temporalDestino);
+	//printf("Datos recibidos\n");
+
+	liberar_estructura(arrayMensajes, cantidadMensajes);
+
+	char* path_script = guardar_script(transformadorString, temporalDestino);
+	log_trace(logWorker,"Script guardado. Path script: %s", path_script);
+	//printf("Script guardado. Path script: %s\n", path_script);
+	log_info(logWorker,"Antes de entrar a la funcion transformacion");
+	resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
+	log_info(logWorker, "El resultado de la transformacion fue: %d", resultado);
+	//printf("El resultado de la transformacion fue: %d\n", resultado);
+
+	//free(path_script);
+	free(transformadorString);
+	free(temporalDestino);
+	if (resultado == 0) {
+		log_trace(logWorker, "Enviando header de TRANSFORMACION_OK");
+		//printf("Enviando header de OK\n");
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
+	}
+	else {
+		//printf("Enviando header de ERROR\n");
+		log_error(logWorker, "Enviando header de TRANSFORMACION_ERROR");
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
+	}
+}
+
+
+//---------------------- FUNCIONES REDUCCION LOCAL ----------------------
 
 int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UNA LINEA EN BLANCO AL PRINCIPIO CUANDO EL ARCHIVO ESTA VACIO
 	FILE *fr1, *fr2, *faux;
@@ -276,6 +320,12 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 	return 0;
 }
 
+char* crear_comando_reduccionLoc(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
+	char* comando = string_from_format("chmod +x %s && cat %s | %s > %s/%s", path_script_reduccionLoc, path_origen, path_script_reduccionLoc, carpeta_resultados, archivo_destino);
+	return comando;
+}
+
+
 int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 
 	char* comando = crear_comando_reduccionLoc(path_script, path_origen, path_destino);
@@ -292,6 +342,13 @@ int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 	}
 	return resultado;
 }
+
+
+//---------------------- FUNCIONES REDUCCION GLOBAL ----------------------
+
+
+
+//---------------------- FUNCIONES ALMACENAMIENTO FINAL ----------------------
 
 int conexionAFileSystem() {
 	log_info(logWorker, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigWorker[FS_IP], datosConfigWorker[FS_PUERTO]);
@@ -340,23 +397,25 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	free(arrayMensajes);
 	free(buffer);
 }
+
+
+
+//---------------------- MAIN ----------------------
+
+
 int main(int argc, char *argv[]) {
-	//tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
-	int i, j, k, h;
+	int i;
 	logWorker = log_create("logFile.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 
-	log_info(logWorker, "Iniciando Worker");
+	log_trace(logWorker, "Iniciando Worker");
 	printf("\n*** Proceso worker ***\n");
 
 	// 1º) leer archivo de config.
-	char *nameArchivoConfig = "configNodo.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) { //leerArchivoConfig devuelve 1 si hay error
 		log_error(logWorker, "Hubo un error al leer el archivo de configuración.");
 		//printf("Hubo un error al leer el archivo de configuración.\n");
-		return 0;
+		return EXIT_FAILURE;
 	}
-
-	//almacenamientoFinal("/home/utnso/test.txt","/ruta/donde/almacena/fs/archivoFinal.loQueSea");
 
 	// 2º) inicializar server y aguardar conexiones (de master)
 	//HAY QUE VER COMO SE CONECTA CON OTROS WORKERS
@@ -368,7 +427,8 @@ int main(int argc, char *argv[]) {
 	}
 	log_trace(logWorker, "Se inicio worker como server. IP: %s, Puerto: %s", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 
-	crear_carpeta_temporal();
+	crear_carpeta(carpeta_temporal);
+	crear_carpeta(carpeta_resultados);
 
 	while (1) {	//inicio bucle para recibir conexiones y forkear
 		puts("\nYa estoy preparado para recibir conexiones\n-----------------------------------------\n");
@@ -415,11 +475,12 @@ int main(int argc, char *argv[]) {
 			 Almacenam final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
 			 */
 
-			//char* comando = "echo hola pepe | ./script_transformacion.py > /tmp/resultado";
 			int resultado;
 
 			if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
 
+				resultado = transformacion_worker(headerId, socketCliente);
+/*
 				log_trace(logWorker, "Entrando en transformacion");
 				//printf("Entrando en transformacion\n");
 				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
@@ -430,13 +491,11 @@ int main(int argc, char *argv[]) {
 				int bytesOcupados = atoi(arrayMensajes[2]);
 				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
 				strcpy(temporalDestino, arrayMensajes[3]);
-				log_info(logWorker,"Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
+				//log_info(logWorker,"Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
+				log_info(logWorker,"Datos recibidos: Transformador %d\nSocket %d - Bloque %d - Bytes %d - Temporal %s", string_length(transformadorString), socketCliente, bloque, bytesOcupados, temporalDestino);
 				//printf("Datos recibidos\n");
 
-				for (i = 0; i < cantidadMensajes; i++) {
-					free(arrayMensajes[i]);
-				}
-				free(arrayMensajes);
+				liberar_estructura(arrayMensajes, cantidadMensajes);
 
 				char* path_script = guardar_script(transformadorString, temporalDestino);
 				log_trace(logWorker,"Script guardado. Path script: %s", path_script);
@@ -446,7 +505,7 @@ int main(int argc, char *argv[]) {
 				log_info(logWorker, "El resultado de la transformacion fue: %d", resultado);
 				//printf("El resultado de la transformacion fue: %d\n", resultado);
 
-				free(path_script);
+				//free(path_script);
 				free(transformadorString);
 				free(temporalDestino);
 				if (resultado == 0) {
@@ -459,6 +518,7 @@ int main(int argc, char *argv[]) {
 					log_error(logWorker, "Enviando header de TRANSFORMACION_ERROR");
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
 				}
+				*/
 			}
 
 			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
@@ -476,10 +536,7 @@ int main(int argc, char *argv[]) {
 				int cantTemporales;
 				cantTemporales = atoi(arrayMensajes[1]);
 
-				for (i = 0; i < cantidadMensajes; i++) {
-					free(arrayMensajes[i]);
-				}
-				free(arrayMensajes);
+				liberar_estructura(arrayMensajes, cantidadMensajes);
 
 				char **arrayTemporales = deserializarMensaje(socketCliente, cantTemporales);
 
@@ -489,14 +546,12 @@ int main(int argc, char *argv[]) {
 
 				char* path_script = guardar_script(reductorString, temporalDestino);
 
-				char* path_temporal_origen = string_new();
-				string_append_with_format(&path_temporal_origen, "%s/origen_%s", carpeta_temporal, temporalDestino);
+				char* path_temporal_origen = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
 
 
 				char* path_temporales_reduccion = string_new();
 				path_temporales_reduccion = "/home/utnso/Escritorio/reduccionLocal";
-				char* path_temporal_destino = string_new();
-				string_append_with_format(&path_temporal_destino, "%s/%s", path_temporales_reduccion, temporalDestino);
+				char* path_temporal_destino = string_from_format("%s/%s", path_temporales_reduccion, temporalDestino);
 
 				FILE *temporalOrigenDestino = fopen(path_temporal_origen, "w");
 				fclose (temporalOrigenDestino);
@@ -518,7 +573,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 
-			if (headerId == (int32_t) "REDUCCION_GLOBAL") {
+			if (headerId == TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER) {
 
 			}
 
@@ -528,9 +583,13 @@ int main(int argc, char *argv[]) {
 
 			//TODO: ??????????????????????? esto está bien???
 			//porque lo único que hace es mandar un header=0............. raro....
+			/*
 			if (resultado == 0) {
 				enviarHeaderSolo(socketCliente, resultado);
 			}
+			*/
+
+			//close(socketCliente);
 
 			exit(0);
 			//aca termina el hijo
@@ -565,5 +624,6 @@ int main(int argc, char *argv[]) {
 	/*
 	 wait();
 	 */
+	log_destroy(logWorker);
 	return EXIT_SUCCESS;
 }
