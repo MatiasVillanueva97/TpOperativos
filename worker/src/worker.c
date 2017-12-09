@@ -14,6 +14,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
+#define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 enum keys {
@@ -23,6 +24,10 @@ char* keysConfigWorker[] = { "IP_PROPIA", "PUERTO_PROPIO", "RUTA_DATABIN", "FS_I
 char* datosConfigWorker[6];
 
 t_log* logWorker;
+
+char carpeta_temporal[6] = "../tmp";
+//char carpeta_temporal[58] = "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
+char carpeta_resultados[33] = "/home/utnso/Escritorio/resultados";
 
 /*
  ================================================================
@@ -36,12 +41,14 @@ t_log* logWorker;
  ================================================================
  */
 
-#define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
-
-struct stat st = {0};
-char carpeta_temporal[6] = "../tmp";
-//char carpeta_temporal[58] = "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
-char carpeta_resultados[33] = "/home/utnso/Escritorio/resultados";
+void crear_carpeta_temporal() {
+	struct stat st = {0};
+	if (stat(carpeta_temporal, &st) == -1) {
+		log_trace(logWorker, "Carpeta temporal no existe, creandola: %s", carpeta_temporal);
+		//printf("Carpeta temporal no existe, creandola: %s\n", carpeta_temporal);
+		mkdir(carpeta_temporal, 0775);
+		}
+}
 
 char* guardar_script(char* codigo_script, char* nombre) {
 	log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
@@ -97,8 +104,9 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 	int posicion = numeroBloque * tamanioBloque;
 	fseek(archivo, posicion, SEEK_SET);
 	fread(buffer, cantBytes, 1, archivo);
-	log_info(logWorker, "[leer_bloque]: Datos leidos: %s", buffer);
-	printf("%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
+	//log_info(logWorker, "[leer_bloque]: Datos leidos: %s", buffer);
+	log_info(logWorker, "%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
+	//printf("%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
 	//printf("[leer_bloque]: Datos leidos: %s\n", buffer);
 	fclose(archivo);
 	return buffer;
@@ -277,10 +285,10 @@ int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 	log_info(logWorker, "[reduccion_local] El resultado es: %d", resultado);
 	if (resultado < 0) {
 		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
-		printf("No se pudo transformar y ordenar el bloque solicitado.\n");
+		//printf("No se pudo transformar y ordenar el bloque solicitado.\n");
 	} else {
 		log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado.");
-		printf("Se pudo transformar y ordenar correctamente el bloque solicitado.\n");
+		//printf("Se pudo transformar y ordenar correctamente el bloque solicitado.\n");
 	}
 	return resultado;
 }
@@ -335,7 +343,7 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 int main(int argc, char *argv[]) {
 	//tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
 	int i, j, k, h;
-	logWorker = log_create("logFile.log", "WORKER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
+	logWorker = log_create("logFile.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 
 	log_info(logWorker, "Iniciando Worker");
 	printf("\n*** Proceso worker ***\n");
@@ -344,7 +352,7 @@ int main(int argc, char *argv[]) {
 	char *nameArchivoConfig = "configNodo.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) { //leerArchivoConfig devuelve 1 si hay error
 		log_error(logWorker, "Hubo un error al leer el archivo de configuración.");
-		printf("Hubo un error al leer el archivo de configuración.\n");
+		//printf("Hubo un error al leer el archivo de configuración.\n");
 		return 0;
 	}
 
@@ -355,16 +363,12 @@ int main(int argc, char *argv[]) {
 	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 	if (listenningSocket < 0) {
 		log_error(logWorker, "No se pudo iniciar worker como servidor");
-		puts("No pude iniciar como servidor\n");
+		//puts("No pude iniciar como servidor\n");
 		return EXIT_FAILURE;
 	}
 	log_trace(logWorker, "Se inicio worker como server. IP: %s, Puerto: %s", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 
-	if (stat(carpeta_temporal, &st) == -1) {
-		log_trace(logWorker, "Carpeta temporal no existe, creandola: %s", carpeta_temporal);
-		mkdir(carpeta_temporal, 0775);
-		printf("Carpeta temporal no existe, creandola: %s\n", carpeta_temporal);
-	}
+	crear_carpeta_temporal();
 
 	while (1) {	//inicio bucle para recibir conexiones y forkear
 		puts("\nYa estoy preparado para recibir conexiones\n-----------------------------------------\n");
@@ -372,12 +376,12 @@ int main(int argc, char *argv[]) {
 		int socketCliente = aceptarConexion(listenningSocket);
 		if (socketCliente < 0) {
 			log_error(logWorker, "Hubo un error al aceptar conexiones");
-			puts("Hubo un error al aceptar conexiones\n");
+			//puts("Hubo un error al aceptar conexiones\n");
 			return EXIT_FAILURE;
 		}
 
 		log_trace(logWorker, "Master conectado con socket %d", socketCliente);
-		printf("Master conectado con socket %d\n", socketCliente);
+		//printf("Master conectado con socket %d\n", socketCliente);
 
 		pid_t pid;
 		int status;
@@ -385,10 +389,10 @@ int main(int argc, char *argv[]) {
 		pid = fork();
 		if (pid < 0) {
 			log_error(logWorker, "Error al forkear");
-			puts("Error al forkear");
+			//puts("Error al forkear");
 		} else if (pid == 0) { //aca ya se hizo el proceso hijo
 			log_trace(logWorker, "Hijo creado");
-			puts("Estoy dentro del hijo");
+			//puts("Estoy dentro del hijo");
 			close(listenningSocket);
 
 			char *argv[] = { NULL };
@@ -402,7 +406,7 @@ int main(int argc, char *argv[]) {
 
 			int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
 			log_trace(logWorker,"Header: %d", headerId);
-			printf ("Header: %d\n", headerId);
+			//printf ("Header: %d\n", headerId);
 
 			/* *****Cantidad de mensajes segun etapa*****
 			 Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
@@ -417,7 +421,7 @@ int main(int argc, char *argv[]) {
 			if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
 
 				log_trace(logWorker, "Entrando en transformacion");
-				printf("Entrando en transformacion\n");
+				//printf("Entrando en transformacion\n");
 				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 				char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
 				char *transformadorString = malloc(string_length(arrayMensajes[0]) + 1);
@@ -427,7 +431,7 @@ int main(int argc, char *argv[]) {
 				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
 				strcpy(temporalDestino, arrayMensajes[3]);
 				log_info(logWorker,"Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
-				printf("Datos recibidos\n");
+				//printf("Datos recibidos\n");
 
 				for (i = 0; i < cantidadMensajes; i++) {
 					free(arrayMensajes[i]);
@@ -436,22 +440,22 @@ int main(int argc, char *argv[]) {
 
 				char* path_script = guardar_script(transformadorString, temporalDestino);
 				log_trace(logWorker,"Script guardado. Path script: %s", path_script);
-				printf("Script guardado. Path script: %s\n", path_script);
+				//printf("Script guardado. Path script: %s\n", path_script);
 				log_info(logWorker,"Antes de entrar a la funcion transformacion");
 				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
 				log_info(logWorker, "El resultado de la transformacion fue: %d", resultado);
-				printf("El resultado de la transformacion fue: %d\n", resultado);
+				//printf("El resultado de la transformacion fue: %d\n", resultado);
 
 				free(path_script);
 				free(transformadorString);
 				free(temporalDestino);
 				if (resultado == 0) {
 					log_trace(logWorker, "Enviando header de TRANSFORMACION_OK");
-					printf("Enviando header de OK\n");
+					//printf("Enviando header de OK\n");
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
 				}
 				else {
-					printf("Enviando header de ERROR\n");
+					//printf("Enviando header de ERROR\n");
 					log_error(logWorker, "Enviando header de TRANSFORMACION_ERROR");
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
 				}
