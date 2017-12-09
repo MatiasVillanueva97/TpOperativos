@@ -34,6 +34,8 @@ char* carpeta_temporal = "../tmp";
 //char* carpeta_resultados = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/resultados";
 char* carpeta_resultados = "../resultados";
 
+char* path_temporales_reduccion = "/home/utnso/Escritorio/reduccionLocal";
+
 
 //---------------------- FUNCIONES GENERALES ----------------------
 void crear_carpeta(char carpeta[]) {
@@ -126,8 +128,7 @@ char* crear_comando_transformacion(char* path_script_transformacion, char* path_
 
 /*
 char* crear_comando_transformacion(char* path_script_transformacion, char* datos_origen, char* archivo_temporal) {
-	char* comando = string_new();
-	string_append_with_format(&comando, "chmod +x %s && echo \"%s\" | %s | sort > %s/%s", path_script_transformacion, datos_origen, path_script_transformacion, carpeta_resultados, archivo_temporal);
+	char* comando = string_from_format("chmod +x %s && echo \"%s\" | %s | sort > %s/%s", path_script_transformacion, datos_origen, path_script_transformacion, carpeta_resultados, archivo_temporal);
 	return comando;
 }
 */
@@ -164,7 +165,7 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 }
 
 
-int transformacion_worker(int headerId, int socketCliente) {
+void transformacion_worker(int headerId, int socketCliente) {
 	int resultado;
 
 	log_trace(logWorker, "Entrando en transformacion");
@@ -291,6 +292,61 @@ int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 	return resultado;
 }
 
+void reduccion_local_worker(int headerId, int socketCliente) {
+
+	//aparear archivos
+	//ejecutar reductor
+	//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
+
+
+	int resultado;
+	int i;
+
+	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
+	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+
+	char *reductorString = malloc(string_length(arrayMensajes[0]) + 1);
+	strcpy(reductorString, arrayMensajes[0]);
+
+	int cantTemporales;
+	cantTemporales = atoi(arrayMensajes[1]);
+
+	liberar_estructura(arrayMensajes, cantidadMensajes);
+
+	char **arrayTemporales = deserializarMensaje(socketCliente, cantTemporales);
+
+	char **arrayTempDestino = deserializarMensaje(socketCliente, 1);
+	char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
+	strcpy(temporalDestino,arrayTempDestino[0]);
+
+	liberar_estructura(arrayTempDestino, 1);
+
+	char* path_script = guardar_script(reductorString, temporalDestino);
+
+	char* path_temporal_origen = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
+
+	char* path_temporal_destino = string_from_format("%s/%s", path_temporales_reduccion, temporalDestino);
+
+	FILE *temporalOrigenDestino = fopen(path_temporal_origen, "w");
+	fclose (temporalOrigenDestino);
+
+	for (i = 0; i < cantTemporales; i++) {
+		apareo_archivos(path_temporal_origen,arrayTemporales[i]);
+	}
+
+	resultado = reduccion_local(path_script,path_temporal_origen,path_temporal_destino);
+
+	free(reductorString);
+	free(temporalDestino);
+	if (resultado == 0) {
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_OK);
+	}
+	else {
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_ERROR);
+	}
+}
+
+
 
 //---------------------- FUNCIONES REDUCCION GLOBAL ----------------------
 
@@ -361,7 +417,6 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
  */
 
 int main(int argc, char *argv[]) {
-	int i;
 	logWorker = log_create("logFile.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 
 	log_trace(logWorker, "Iniciando Worker");
@@ -430,60 +485,17 @@ int main(int argc, char *argv[]) {
 
 			if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
 
-				resultado = transformacion_worker(headerId, socketCliente);
+				//resultado = transformacion_worker(headerId, socketCliente);
+				transformacion_worker(headerId, socketCliente);
 
 			}
 
 			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
 
-				//aparear archivos
-				//ejecutar reductor
-				//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
-
-				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
-				char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
-
-				char *reductorString = malloc(string_length(arrayMensajes[0]) + 1);
-				strcpy(reductorString, arrayMensajes[0]);
-
-				int cantTemporales;
-				cantTemporales = atoi(arrayMensajes[1]);
-
-				liberar_estructura(arrayMensajes, cantidadMensajes);
-
-				char **arrayTemporales = deserializarMensaje(socketCliente, cantTemporales);
-
-				char **arrayTempDestino = deserializarMensaje(socketCliente, 1);
-				char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
-				strcpy(temporalDestino,arrayTempDestino[0]);
-
-				char* path_script = guardar_script(reductorString, temporalDestino);
-
-				char* path_temporal_origen = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
+				//resultado = reduccion_local_worker(headerId, socketCliente);
+				reduccion_local_worker(headerId, socketCliente);
 
 
-				char* path_temporales_reduccion = string_new();
-				path_temporales_reduccion = "/home/utnso/Escritorio/reduccionLocal";
-				char* path_temporal_destino = string_from_format("%s/%s", path_temporales_reduccion, temporalDestino);
-
-				FILE *temporalOrigenDestino = fopen(path_temporal_origen, "w");
-				fclose (temporalOrigenDestino);
-
-				for (i = 0; i < cantTemporales; i++) {
-					apareo_archivos(path_temporal_origen,arrayTemporales[i]);
-				}
-
-				resultado = reduccion_local(path_script,path_temporal_origen,path_temporal_destino);
-
-				free(path_script);
-				free(reductorString);
-				free(temporalDestino);
-				if (resultado == 0) {
-					enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_OK);
-				}
-				else {
-					enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_ERROR);
-				}
 			}
 
 			if (headerId == TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER) {
