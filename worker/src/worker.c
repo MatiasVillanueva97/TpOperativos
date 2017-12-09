@@ -29,35 +29,24 @@ char* datosConfigWorker[6];
 t_log* logWorker;
 
 struct stat st = {0};
-//char* carpeta_temporal = "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
+//char* carpeta_temporal = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
 char* carpeta_temporal = "../tmp";
-//char* carpeta_resultados = "/home/utnso/Escritorio/resultados";
+//char* carpeta_resultados = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/resultados";
 char* carpeta_resultados = "../resultados";
 
-/*
- ================================================================
- Worker es el que realiza las operaciones que le pide el Master.
- 1) Lee archivo de configuracion del nodo.
- 2) Espera conexion de Masters.
- 3) Recibe conexion del Master y se forkea
- 4) El principal sigue escuchando, el fork ejecuta la orden
- 5) Termina la orden, aviso a master que terminó y el fork muere
- Puede haber varios Worker corriendo al mismo tiempo.
- ================================================================
- */
 
 //---------------------- FUNCIONES GENERALES ----------------------
 void crear_carpeta(char carpeta[]) {
 	//struct stat st = {0};
 	if (stat(carpeta, &st) == -1) {
-		log_trace(logWorker, "Carpeta no existe, creandola: %s", carpeta);
-		//printf("Carpeta no existe, creandola: %s\n", carpeta);
+		log_trace(logWorker, "Carpeta no existe, creando: %s", carpeta);
 		mkdir(carpeta, 0775);
 		}
 	else {
 		log_trace(logWorker, "Carpeta ya existe: %s", carpeta);
 	}
 }
+
 
 void liberar_estructura(char** estructura, int cantidad_elementos) {
 	int i;
@@ -71,7 +60,6 @@ void liberar_estructura(char** estructura, int cantidad_elementos) {
 char* guardar_script(char* codigo_script, char* nombre) {
 	//log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
 	char* path = string_from_format("%s/script_%s", carpeta_temporal, nombre);
-	//path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
 		fputs(codigo_script, fp);
@@ -92,12 +80,10 @@ int ejecutar_system(char* comando) {
 		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
 		return 0;
 	} else {
-		//log_error(logWorker, "La llamada system no termino normalmente... el codigo de resultado fue: %d\n", resultado);
 		//log_error(logWorker, "System fallo, el codigo de resultado fue: %d\n", resultado);
 		log_error(logWorker, "System fallo\n");
 		return -1;
 	}
-	//free(comando);
 	return 0;
 }
 
@@ -107,7 +93,6 @@ int ejecutar_system(char* comando) {
 char* guardar_datos_origen(char* datos_origen, char* nombre) {
 	//log_info(logWorker, "[guardar_datos_origen]: Datos recibidos: %s", datos_origen);
 	char* path = string_from_format("%s/datos_%s", carpeta_temporal, nombre);
-	//path = string_from_format("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/worker/tmp/script_%s", nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
 		fputs(datos_origen, fp);
@@ -127,11 +112,10 @@ char* leer_bloque(int numeroBloque, int cantBytes) {
 	int posicion = numeroBloque * tamanioBloque;
 	fseek(archivo, posicion, SEEK_SET);
 	fread(buffer, cantBytes, 1, archivo);
-	//log_info(logWorker, "[leer_bloque]: Datos leidos: %s", buffer);
-	log_info(logWorker, "%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
-	//printf("%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
-	//printf("[leer_bloque]: Datos leidos: %s\n", buffer);
 	fclose(archivo);
+	log_info(logWorker, "%d bytes leidos en el bloque %d\n", cantBytes, numeroBloque);
+	//log_info(logWorker, "[leer_bloque]: Datos leidos: %s", buffer);
+	//printf("[leer_bloque]: Datos leidos: %s\n", buffer);
 	return buffer;
 }
 
@@ -164,6 +148,7 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	temporal = fopen(destino, "w");
 	fclose(temporal);
 
+	//char* comando = crear_comando_transformacion(path_script, bloque, destino);
 	char* comando = crear_comando_transformacion(path_script, path_datos_origen, destino);
 	log_info(logWorker, "[transformacion] El comando a ejecutar es %s", comando);
 
@@ -178,41 +163,11 @@ int transformacion(char* path_script, int origen, int bytesOcupados, char* desti
 	return resultado;
 }
 
-/*
-int transformacion(char* path_script, int origen, int bytesOcupados, char* destino) {
-	char* bloque = leer_bloque(origen, bytesOcupados);
-	//char* bloque = "WBAN,Date,Time,StationType,SkyCondition,SkyConditionFlag,Visibility,VisibilityFlag,WeatherType,WeatherTypeFlag,DryBulbFarenheit,DryBulbFarenheitFlag,DryBulbCelsius,DryBulbCelsiusFlag,WetBulbFarenheit,WetBulbFarenheitFlag,WetBulbCelsius,WetBulbCelsiusFlag,DewPointFarenheit,DewPointFarenheitFlag,DewPointCelsius,DewPointCelsiusFlag,RelativeHumidity,RelativeHumidityFlag,WindSpeed,WindSpeedFlag,WindDirection,WindDirectionFlag,ValueForWindCharacter,ValueForWindCharacterFlag,StationPressure,StationPressureFlag,PressureTendency,PressureTendencyFlag,PressureChange,PressureChangeFlag,SeaLevelPressure,SeaLevelPressureFlag,RecordType,RecordTypeFlag,HourlyPrecip,HourlyPrecipFlag,Altimeter,AltimeterFlag\
-03011,20130101,0000,0,OVC, , 5.00, , , ,M, ,M, ,M, ,M, ,M, ,M, ,M, , 5, ,120, , , ,M, , , , , ,M, ,AA, , , ,29.93, ";
-	if (bloque == NULL) {
-		log_error(logWorker, "No se pudo leer el bloque (numero %d) completo segun el tamaño especificado (%d bytes)", origen, bytesOcupados);
-		return -1;
-	}
-
-	FILE* temporal;
-	temporal = fopen(destino, "w");
-	fclose(temporal);
-
-	char* comando = crear_comando_transformacion(path_script, bloque, destino);
-	log_info(logWorker, "[transformacion] El comando a ejecutar es %s", comando);
-
-	int resultado = ejecutar_system(comando);
-	log_trace(logWorker, "[transformacion] El resultado fue: %d", resultado);
-	//free(bloque);
-	if (resultado < 0) {
-		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
-	} else {
-		log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado.");
-	}
-	return resultado;
-}
-*/
-
 
 int transformacion_worker(int headerId, int socketCliente) {
 	int resultado;
 
 	log_trace(logWorker, "Entrando en transformacion");
-	//printf("Entrando en transformacion\n");
 	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
 	char *transformadorString = malloc(string_length(arrayMensajes[0]) + 1);
@@ -222,29 +177,25 @@ int transformacion_worker(int headerId, int socketCliente) {
 	char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
 	strcpy(temporalDestino, arrayMensajes[3]);
 	//log_info(logWorker,"Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
-	log_info(logWorker,"Datos recibidos: Transformador %d\nSocket %d - Bloque %d - Bytes %d - Temporal %s", string_length(transformadorString), socketCliente, bloque, bytesOcupados, temporalDestino);
+	log_info(logWorker,"Datos recibidos: Largo Transformador: %d - Socket: %d - Bloque: %d - Bytes ocupados: %d - Temporal: %s", string_length(transformadorString), socketCliente, bloque, bytesOcupados, temporalDestino);
 	//printf("Datos recibidos\n");
 
 	liberar_estructura(arrayMensajes, cantidadMensajes);
 
 	char* path_script = guardar_script(transformadorString, temporalDestino);
 	log_trace(logWorker,"Script guardado. Path script: %s", path_script);
-	//printf("Script guardado. Path script: %s\n", path_script);
+
 	log_info(logWorker,"Antes de entrar a la funcion transformacion");
 	resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
 	log_info(logWorker, "El resultado de la transformacion fue: %d", resultado);
-	//printf("El resultado de la transformacion fue: %d\n", resultado);
 
-	//free(path_script);
 	free(transformadorString);
 	free(temporalDestino);
 	if (resultado == 0) {
 		log_trace(logWorker, "Enviando header de TRANSFORMACION_OK");
-		//printf("Enviando header de OK\n");
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
 	}
 	else {
-		//printf("Enviando header de ERROR\n");
 		log_error(logWorker, "Enviando header de TRANSFORMACION_ERROR");
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
 	}
@@ -327,7 +278,6 @@ char* crear_comando_reduccionLoc(char* path_script_reduccionLoc, char* path_orig
 
 
 int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
-
 	char* comando = crear_comando_reduccionLoc(path_script, path_origen, path_destino);
 	log_info(logWorker, "[reduccion_local] El comando a ejecutar es %s", comando);
 
@@ -335,10 +285,8 @@ int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 	log_info(logWorker, "[reduccion_local] El resultado es: %d", resultado);
 	if (resultado < 0) {
 		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
-		//printf("No se pudo transformar y ordenar el bloque solicitado.\n");
 	} else {
 		log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado.");
-		//printf("Se pudo transformar y ordenar correctamente el bloque solicitado.\n");
 	}
 	return resultado;
 }
@@ -400,8 +348,17 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 
 
 
-//---------------------- MAIN ----------------------
-
+/*
+ ================================================================
+ Worker es el que realiza las operaciones que le pide el Master.
+ 1) Lee archivo de configuracion del nodo.
+ 2) Espera conexion de Masters.
+ 3) Recibe conexion del Master y se forkea
+ 4) El principal sigue escuchando, el fork ejecuta la orden
+ 5) Termina la orden, aviso a master que terminó y el fork muere
+ Puede haber varios Worker corriendo al mismo tiempo.
+ ================================================================
+ */
 
 int main(int argc, char *argv[]) {
 	int i;
@@ -413,7 +370,6 @@ int main(int argc, char *argv[]) {
 	// 1º) leer archivo de config.
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) { //leerArchivoConfig devuelve 1 si hay error
 		log_error(logWorker, "Hubo un error al leer el archivo de configuración.");
-		//printf("Hubo un error al leer el archivo de configuración.\n");
 		return EXIT_FAILURE;
 	}
 
@@ -422,7 +378,6 @@ int main(int argc, char *argv[]) {
 	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 	if (listenningSocket < 0) {
 		log_error(logWorker, "No se pudo iniciar worker como servidor");
-		//puts("No pude iniciar como servidor\n");
 		return EXIT_FAILURE;
 	}
 	log_trace(logWorker, "Se inicio worker como server. IP: %s, Puerto: %s", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
@@ -436,23 +391,18 @@ int main(int argc, char *argv[]) {
 		int socketCliente = aceptarConexion(listenningSocket);
 		if (socketCliente < 0) {
 			log_error(logWorker, "Hubo un error al aceptar conexiones");
-			//puts("Hubo un error al aceptar conexiones\n");
 			return EXIT_FAILURE;
 		}
 
 		log_trace(logWorker, "Master conectado con socket %d", socketCliente);
-		//printf("Master conectado con socket %d\n", socketCliente);
 
 		pid_t pid;
 		int status;
-		//char* buffer=malloc(SIZE);
 		pid = fork();
 		if (pid < 0) {
 			log_error(logWorker, "Error al forkear");
-			//puts("Error al forkear");
 		} else if (pid == 0) { //aca ya se hizo el proceso hijo
 			log_trace(logWorker, "Hijo creado");
-			//puts("Estoy dentro del hijo");
 			close(listenningSocket);
 
 			char *argv[] = { NULL };
@@ -466,7 +416,8 @@ int main(int argc, char *argv[]) {
 
 			int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
 			log_trace(logWorker,"Header: %d", headerId);
-			//printf ("Header: %d\n", headerId);
+
+
 
 			/* *****Cantidad de mensajes segun etapa*****
 			 Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
@@ -480,45 +431,7 @@ int main(int argc, char *argv[]) {
 			if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
 
 				resultado = transformacion_worker(headerId, socketCliente);
-/*
-				log_trace(logWorker, "Entrando en transformacion");
-				//printf("Entrando en transformacion\n");
-				int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
-				char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
-				char *transformadorString = malloc(string_length(arrayMensajes[0]) + 1);
-				strcpy(transformadorString, arrayMensajes[0]);
-				int bloque = atoi(arrayMensajes[1]);
-				int bytesOcupados = atoi(arrayMensajes[2]);
-				char* temporalDestino = malloc(string_length(arrayMensajes[3]) + 1);
-				strcpy(temporalDestino, arrayMensajes[3]);
-				//log_info(logWorker,"Datos recibidos: Transformador %s\nSocket %d - Bloque %d - Bytes %d - Temporal %s", transformadorString, socketCliente, bloque, bytesOcupados, temporalDestino);
-				log_info(logWorker,"Datos recibidos: Transformador %d\nSocket %d - Bloque %d - Bytes %d - Temporal %s", string_length(transformadorString), socketCliente, bloque, bytesOcupados, temporalDestino);
-				//printf("Datos recibidos\n");
 
-				liberar_estructura(arrayMensajes, cantidadMensajes);
-
-				char* path_script = guardar_script(transformadorString, temporalDestino);
-				log_trace(logWorker,"Script guardado. Path script: %s", path_script);
-				//printf("Script guardado. Path script: %s\n", path_script);
-				log_info(logWorker,"Antes de entrar a la funcion transformacion");
-				resultado = transformacion(path_script, bloque, bytesOcupados, temporalDestino);
-				log_info(logWorker, "El resultado de la transformacion fue: %d", resultado);
-				//printf("El resultado de la transformacion fue: %d\n", resultado);
-
-				//free(path_script);
-				free(transformadorString);
-				free(temporalDestino);
-				if (resultado == 0) {
-					log_trace(logWorker, "Enviando header de TRANSFORMACION_OK");
-					//printf("Enviando header de OK\n");
-					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_OK);
-				}
-				else {
-					//printf("Enviando header de ERROR\n");
-					log_error(logWorker, "Enviando header de TRANSFORMACION_ERROR");
-					enviarHeaderSolo(socketCliente, TIPO_MSJ_TRANSFORMACION_ERROR);
-				}
-				*/
 			}
 
 			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
