@@ -33,8 +33,8 @@ struct stat st = {0};
 char* carpeta_temporal = "../tmp";
 //char* carpeta_resultados = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/resultados";
 char* carpeta_resultados = "../resultados";
-
-char* path_temporales_reduccion = "/home/utnso/Escritorio/reduccionLocal";
+//char* carpeta_temporales_reduccion = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/reduccionLocal";
+char* carpeta_temporales_reduccion = "../reduccionLocal";
 
 
 //---------------------- FUNCIONES GENERALES ----------------------
@@ -325,7 +325,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	char* path_temporal_origen = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
 
-	char* path_temporal_destino = string_from_format("%s/%s", path_temporales_reduccion, temporalDestino);
+	char* path_temporal_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, temporalDestino);
 
 	FILE *temporalOrigenDestino = fopen(path_temporal_origen, "w");
 	fclose (temporalOrigenDestino);
@@ -439,6 +439,7 @@ int main(int argc, char *argv[]) {
 
 	crear_carpeta(carpeta_temporal);
 	crear_carpeta(carpeta_resultados);
+	crear_carpeta(carpeta_temporales_reduccion);
 
 	while (1) {	//inicio bucle para recibir conexiones y forkear
 		puts("\nYa estoy preparado para recibir conexiones\n-----------------------------------------\n");
