@@ -36,7 +36,7 @@ int conexionAFileSystem() {
 	log_info(logYAMA, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigYama[FS_IP], datosConfigYama[FS_PUERTO]);
 	int socketFS = conectarA(datosConfigYama[FS_IP], datosConfigYama[FS_PUERTO]);
 	if (socketFS < 0) {
-		puts("Filesystem not ready\n");
+		puts("El FileSystem no está funcionando");
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 	}
 	return socketFS;
@@ -45,7 +45,6 @@ int conexionAFileSystem() {
 int inicializoComoServidor() {
 	int listenningSocket = inicializarServer(datosConfigYama[IP_PROPIA], datosConfigYama[PUERTO_PROPIO]);
 	if (listenningSocket < 0) {
-		log_error(logYAMA, "No pude iniciar como servidor");
 		puts("No pude iniciar como servidor");
 	}
 	return listenningSocket;

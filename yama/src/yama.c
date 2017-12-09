@@ -86,8 +86,11 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 	arrayMensajes[0] = malloc(largoStringDestinoCopia);
 	strcpy(arrayMensajes[0], intToArrayZerosLeft(cantPartesArchivo, 4));
 	j = 1;
+	printf("\n ---------- Tabla de transformación a enviar a master ---------- \n");
+	printf("\tNodo\tIP\t\tPuerto\tBloque\tBytes\t\tTemporal\n");
+	printf("---------------------------------------------------------------------------------------------\n");
 	for (i = 0; i < cantPartesArchivo; i++) {
-		printf("\nnodo %d - ip %s - puerto %d - bloque %d - bytes %d - temporal %s\n", datosParaTransformacion[i].nroNodo, listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip, listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
+		printf("\t%d\t%s\t%d\t%d\t%d\t\t%s\n", datosParaTransformacion[i].nroNodo, listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip, listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
 
 		//número de nodo
 		largoStringDestinoCopia = 4 + 1;
@@ -125,7 +128,7 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 		strcpy(arrayMensajes[j], datosParaTransformacion[i].temporal);
 		j++;
 	}
-
+	printf("\n");
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_TABLA_TRANSFORMACION, arrayMensajes, cantStringsASerializar);
 	for (j = 0; j < cantStringsASerializar; j++) {
 		free(arrayMensajes[j]);
@@ -330,6 +333,9 @@ int main(int argc, char *argv[]) {
 	FD_ZERO(&socketsLecturaTemp);
 
 	if (!getDatosConfiguracion()) {
+		log_error(logYAMA, "No se pudieron obtener los datos del archivo de configuración. Se aborta la ejecución");
+		log_info(logYAMA, "Server cerrado");
+		log_destroy(logYAMA);
 		return EXIT_FAILURE;
 	}
 	//para la planificación
@@ -338,26 +344,28 @@ int main(int argc, char *argv[]) {
 
 	/* ************** conexión como cliente al FS *************** */
 	int socketFS, preparadoFs = 0;
-	int modulo = yama;
 
-//	if ((socketFS = conexionAFileSystem()) < 0) {
-//		puts("Abortar ejecución");
-//		return EXIT_FAILURE;
-//	}
-
+  int modulo = yama;
+  
 	while (preparadoFs == 0) {
 		if ((socketFS = conexionAFileSystem()) < 0) {
-			puts("Abortar ejecución");
+			log_error(logYAMA, "No se pudo conectar al FileSystem. Se aborta la ejecución");
+	    log_info(logYAMA, "Server cerrado");
+	  	log_destroy(logYAMA);
+	
+      puts("Abortar ejecución");
 			return EXIT_FAILURE;
 		}
 		send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 		headerId = deserializarHeader(socketFS);
 		if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 			preparadoFs = 1;
-			puts("Conectado a FileSystem");
+			log_info(logYAMA, "El Filesystem está estable. Se puede continuar la ejecución");
+      puts("Conectado a FileSystem");
 		} else {
-			puts("Sigo esperando que el FileSystem esté estable");
-			sleep(5);
+			log_info(logYAMA, "Se está esperando que el Filesystem esté estable");
+			puts("Sigo esperando que el Filesystem esté estable");
+      sleep(5);
 		}
 	}
 
@@ -369,6 +377,9 @@ int main(int argc, char *argv[]) {
 	/* ************** inicialización como server ************ */
 	int listenningSocket;
 	if ((listenningSocket = inicializoComoServidor()) < 0) {
+		log_error(logYAMA, "No se puede iniciar como servidor. Se aborta la ejecución");
+		log_info(logYAMA, "Server cerrado");
+		log_destroy(logYAMA);
 		return EXIT_FAILURE;
 	}
 	// add the listener to the master set
@@ -378,7 +389,7 @@ int main(int argc, char *argv[]) {
 
 	int socketCliente, socketConectado, cantStrings, bytesRecibidos = 0,
 			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido,
-			cantPartesArchivo, cantNodosArchivo;
+			nroNodoAlmacFinal, cantPartesArchivo, cantNodosArchivo;
 	nroMasterJob masterJobActual;
 	//pongo la carga de cada nodo en 0 al iniciar
 	int largoListaGlobalNodos = sizeof(listaGlobalNodos) / sizeof(datosPropiosNodo);
@@ -416,7 +427,10 @@ int main(int argc, char *argv[]) {
 									}
 									asignarNroMasterJob(getNuevoNroMaster(), getNuevoNroJob(), socketCliente);
 									enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
+									log_info(logYAMA, "Handshake verificado. Se acepta una nueva conexión de un Master y se la comienza a escuchar");
+
 								} else {
+									log_info(logYAMA, "Handshake denegado. No se acepta la nueva conexión");
 									enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
 								}
 							}
@@ -424,31 +438,136 @@ int main(int argc, char *argv[]) {
 					} else {	//conexión preexistente
 						/* *************************** recepción de un mensaje ****************************/
 						socketConectado = nroSocket;
+						log_info(logYAMA, "Se recibió un mensaje de proceso conectado por FD %d", socketConectado);
 						masterJobActual = getNroMasterJobByFD(socketConectado);
-						printf("\n-----------------------\nsocketConectado: %d\n", socketConectado);
-						printf("master actual: %d\n", masterJobActual.nroMaster);
-						printf("job actual: %d\n", masterJobActual.nroJob);
+						printf("\nSocket conectado: %d\n", socketConectado);
+						printf("Master actual: %d\n", masterJobActual.nroMaster);
+						printf("Job actual: %d\n", masterJobActual.nroJob);
 						int32_t headerId = deserializarHeader(socketConectado);
-						printf("headerId: %d\n", headerId);
+						printf("\nHeader Id: %d\n", headerId);
+						printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
 						if (headerId <= 0) {//error o desconexión de un cliente
+							log_error(logYAMA, "Se desconectó el proceso conectado por FD %d. Se lo deja de escuchar", socketConectado);
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 						}
 						int cantidadMensajes = protocoloCantidadMensajes[headerId];
 						char **arrayMensajes = deserializarMensaje(socketConectado, cantidadMensajes);
 						switch (headerId) {
+                
+						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
+							;
+							char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
+							strcpy(archivo, arrayMensajes[0]);
+							free(arrayMensajes);
+							//pide la metadata del archivo al FS
+							if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
 
+								/* ************* solicitud de info del archivo al FS *************** */
+								//recibir las partes del archivo
+								int32_t headerId = deserializarHeader(socketFS);
+								if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
+									perror("El FS no mandó los bloques");
+								}
+								printf("Header Id: %d\n", headerId);
+								printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
+								cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
+
+								bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
+								printf("\n ---------- Lista de bloques del archivo devuelto por FS ---------- \n");
+								for (i = 0; i < cantPartesArchivo; i++) {
+									printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
+								}
+
+								/* ********************* */
+								//recibir la info de los nodos donde están esos archivos
+								headerId = deserializarHeader(socketFS);
+								printf("Header Id: %d\n", headerId);
+								printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
+								if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
+									printf("El FS no mandó los nodos\n");
+								}
+								cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
+								//guardar los nodos en la listaGlobal
+								datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
+								recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
+								printf("\n ---------- Lista global de nodos ---------- \n");
+								for (k = 0; k < cantNodosArchivo; k++) {
+									printf("Nodo %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
+									printf("Planificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
+								}
+								/* ***************************************************************** */
+
+								/* ************* inicio planificación *************** */
+								//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
+								//indexado por partes del archivo
+								nodoParaAsignar asignacionesNodos[cantPartesArchivo];
+								planificar(socketConectado, bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
+								printf("\n ---------- Lista de nodos para planificación ---------- \n");
+								for (i = 0; i < cantNodosArchivo; i++) {
+									printf("Nro nodo %d - Carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
+								}
+								//guardo el nodo donde se va a hacer la reducción global de ese master y job
+								asignarNodoReduccGlobal((uint16_t) nodosParaPlanificar[0].numero, socketConectado);
+								/* ************* fin planificación *************** */
+
+								/* ************** agregado en tabla de estados *************** */
+								//guarda la info de los bloques del archivo en la tabla de estados
+								struct filaTablaEstados fila;
+								for (i = 0; i < cantPartesArchivo; i++) {
+									//printf("parte de archivo %d asignado a: nodo %d - bloque %d\n", i, asignacionesNodos[i][0], asignacionesNodos[i][1]);
+									//genera una fila en la tabla de estados
+									fila.job = masterJobActual.nroJob;
+									fila.master = masterJobActual.nroMaster;
+									fila.nodo = asignacionesNodos[i].nroNodo;
+									fila.bloque = asignacionesNodos[i].bloque;
+									fila.etapa = TRANSFORMACION;
+									char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
+									strcpy(fila.temporal, temporal);
+									fila.estado = EN_PROCESO;
+									fila.siguiente = NULL;
+									if (!agregarElemTablaEstados(fila)) {
+										log_error(logYAMA, "Ocurrió un error al agregar un elemento la tabla de estados en la etapa de pedido de bloques de archivo");
+										perror("Error al agregar elementos a la tabla de estados");
+									}
+
+									//guarda el archivo temporal en el vector que se va a usar
+									//en la tabla de transformación para el master
+									strcpy(asignacionesNodos[i].temporal, temporal);
+								}
+								//puts("\nlista de elementos asignados a transformación");
+								//mostrarTablaEstados();
+								/* ************** fin agregado en tabla de estados *************** */
+
+								/* ****** envío de nodos para la transformación ******************* */
+								//envía al master la lista de nodos donde trabajar cada bloque
+								char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
+								//printf("\n ---------- Mensaje serializado ---------- \n%s\n", mensajeSerializado);
+								enviarMensaje(socketConectado, mensajeSerializado);
+								/* **************************************************************** */
+								//puts("\nlista de elementos luego de enviar la tabla de transformación");
+								mostrarTablaEstados();
+							} else {
+								perror("No se pudo pedir el archivo al FS");
+							}
+							break;
+                
 						case TIPO_MSJ_TRANSFORMACION_OK:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
-							printf("nodo recibido: %d\n", nroNodoRecibido);
-							printf("bloque recibido: %d\n", nroBloqueRecibido);
+							log_info(logYAMA, "Se recibió mensaje de fin de transformación OK, nodo %d, bloque %d", nroNodoRecibido, nroBloqueRecibido);
+							printf("Nodo recibido: %d\n", nroNodoRecibido);
+							printf("Bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
 
 							//pongo la fila en estado FIN_OK
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, FIN_OK) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la transformación OK");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la transformación OK");
 							}
 							//si no queda ninguna fila de ese nodo en proceso inicia la reducción local
 							if (getCantFilasByJMNEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, TRANSFORMACION, EN_PROCESO) == 0) {
@@ -465,31 +584,41 @@ int main(int argc, char *argv[]) {
 								strcpy(fila.temporal, temporalRedLocal);
 								fila.estado = EN_PROCESO;
 								fila.siguiente = NULL;
-								if (!agregarElemTablaEstados(fila))
-									perror("Error al agregar elementos a la tabla de estados");
 
+								if (!agregarElemTablaEstados(fila)) {
+									log_error(logYAMA, "Ocurrió un error al agregar un elemento la tabla de estados en fin de transformación OK");
+									perror("Error al agregar elementos a la tabla de estados");
+								}
 								/* *********** enviar data para reducción local ********** */
 								//obtener los registros de la tabla de estados, cantidad y temporales
 								char *mensajeSerializadoRedLocal = serializarMensajeReduccLocal(nroNodoRecibido, masterJobActual, temporalRedLocal);
 								printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedLocal);
 								enviarMensaje(socketConectado, mensajeSerializadoRedLocal);
+								log_trace(logYAMA, "Se da inicio a la Reducción Local en el nodo %d", nroNodoRecibido);
 								puts("\nlista de elementos luego de enviar la tabla de reducción local");
 								mostrarTablaEstados();
 							}
-
 							break;
+                
 						case TIPO_MSJ_TRANSFORMACION_ERROR:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
-							free(arrayMensajes[0]);
-							free(arrayMensajes[1]);
+							log_info(logYAMA, "Se recibió mensaje de fin de transformación ERROR, nodo %d, bloque %d. Se intenta replanificar.", nroNodoRecibido, nroBloqueRecibido);
+							printf("Nodo recibido: %d\n", nroNodoRecibido);
+							printf("Bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, ERROR) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la transformación ERROR");
 							}
 							//replanificar: envía el nodo y bloque de la copia del bloque
 							//de archivo que no se pudo transformar
+							//TODO: hacer de nuevo la replanificación !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 							int cantBloquesArchivo = listaNrosMasterJob[socketConectado].cantBloquesArchivo;
 							nodosUsadobloqueArchivo nodoSuplente;
 							int nodoSuplenteEncontrado = 0;
@@ -517,9 +646,11 @@ int main(int argc, char *argv[]) {
 								strcpy(fila.temporal, temporal);
 								fila.estado = EN_PROCESO;
 								fila.siguiente = NULL;
-								if (!agregarElemTablaEstados(fila))
-									perror("Error al agregar elementos a la tabla de estados");
 
+								if (!agregarElemTablaEstados(fila)) {
+									log_error(logYAMA, "Ocurrió un error al agregar un elemento la tabla de estados en fin de transformación ERROR");
+									perror("Error al agregar elementos a la tabla de estados");
+								}
 								//se envía al master la orden de transformación en el nodo donde está la copia
 								nodoParaAsignar dataReplanificacion[1];
 								dataReplanificacion[0].nroNodo = nodoSuplente.nodoSuplente;
@@ -531,14 +662,21 @@ int main(int argc, char *argv[]) {
 								enviarMensaje(socketConectado, mensajeSerializado);
 							}
 							break;
+                
 						case TIPO_MSJ_REDUCC_LOCAL_OK:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
+							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Local OK, nodo %d.", nroNodoRecibido);
 							printf("nroNodoRecibido: %d\n", nroNodoRecibido);
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+
 							//modificar el estado en la tabla de estados
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, FIN_OK) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Local OK");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la Reducción Local OK");
 							}
 
 							//verificar que todos los nodos del job y master hayan terminado la reducción local
@@ -556,9 +694,10 @@ int main(int argc, char *argv[]) {
 								strcpy(fila.temporal, temporalRedGlobal);
 								fila.estado = EN_PROCESO;
 								fila.siguiente = NULL;
-								if (!agregarElemTablaEstados(fila))
+								if (!agregarElemTablaEstados(fila)) {
+									log_error(logYAMA, "Ocurrió un error al agregar un elemento la tabla de estados en fin de Reducción Local OK");
 									perror("Error al agregar elementos a la tabla de estados");
-
+								}
 								//iniciar la reducción global
 								int cantNodosReduccGlobal = getCantFilasByJMEtEs(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_LOCAL, FIN_OK);
 								struct filaTablaEstados filasReduccGlobal[cantNodosReduccGlobal];
@@ -604,31 +743,47 @@ int main(int argc, char *argv[]) {
 									char *mensajeSerializadoRedGlobal = serializarMensajeReduccGlobal(cantNodosReduccGlobal, filasReduccGlobal, temporalRedGlobal);
 									printf("\nmensaje serializado para reducción global: %s\n", mensajeSerializadoRedGlobal);
 									enviarMensaje(socketConectado, mensajeSerializadoRedGlobal);
+									log_info(logYAMA, "Se da inicio a la Reducción Global en el nodo %d", nodoReduccGlobal);
 									puts("\nlista de elementos luego de enviar la tabla de reducción global");
 									mostrarTablaEstados();
 								}
 							}
 							break;
+                
 						case TIPO_MSJ_REDUCC_LOCAL_ERROR:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
+							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Local ERROR, nodo %d.", nroNodoRecibido);
 							free(arrayMensajes);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoRecibido, 0, REDUCC_LOCAL, EN_PROCESO, ERROR) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Local ERROR");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la Reducción Local ERROR");
 							}
 							//abortar el job
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+							log_info(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
+                
 						case TIPO_MSJ_REDUCC_GLOBAL_OK:
 							;
 							free(arrayMensajes);
 							//obtengo el nodo donde se hizo la reducción global
 							int nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
+							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global OK, nodo %d.", nroNodoReduccGlobal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
+
 							//modifica el estado de la fila
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, FIN_OK) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Global OK");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la Reducción Global OK");
 							}
 
 							/* ************** agregado de la fila de almacenamiento final en tabla de estados *************** */
@@ -642,138 +797,77 @@ int main(int argc, char *argv[]) {
 							strcpy(fila.temporal, temporalAlmFinal);
 							fila.estado = EN_PROCESO;
 							fila.siguiente = NULL;
-							if (!agregarElemTablaEstados(fila))
-								perror("Error al agregar elementos a la tabla de estados");
 
+							if (!agregarElemTablaEstados(fila)) {
+								log_error(logYAMA, "Ocurrió un error al agregar un elemento la tabla de estados en fin de Reducción Global OK");
+								perror("Error al agregar elementos a la tabla de estados");
+							}
 							/* ******* envío de la tabla para reducción global ****** */
 							char *mensajeSerializadoAlmFinal = serializarMensajeAlmFinal(nroNodoReduccGlobal, temporalAlmFinal);
 							printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoAlmFinal);
 							enviarMensaje(socketConectado, mensajeSerializadoAlmFinal);
-
+							log_info(logYAMA, "Se da inicio al Almacenamiento Final en el nodo %d", nroNodoReduccGlobal);
 							break;
+                
 						case TIPO_MSJ_REDUCC_GLOBAL_ERROR:
 							;
 							free(arrayMensajes);
-							nroNodoReduccGlobal = 1;
+							nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
+							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global ERROR, nodo %d.", nroNodoReduccGlobal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
+
 							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, ERROR) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Global ERROR");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la Reducción Global ERROR");
 							}
 							//abortar el job
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
 						case TIPO_MSJ_ALM_FINAL_OK:
 							;
 							free(arrayMensajes);
-							int nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
+							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
+							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final OK, nodo %d.", nroNodoAlmacFinal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
+
 							//modifica el estado de la fila
-							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoReduccGlobal, 0, ALMAC_FINAL, EN_PROCESO, FIN_OK) == 0) {
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoAlmacFinal, 0, ALMAC_FINAL, EN_PROCESO, FIN_OK) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin del Almacenamiento Final OK");
 								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin del Almacenamiento Final OK");
 							}
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_FINALIZAR_JOB);
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+							log_trace(logYAMA, "Se da por finalizado correctamente el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
+                
 						case TIPO_MSJ_ALM_FINAL_ERROR:
 							;
 							free(arrayMensajes);
+							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
+							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final ERROR, nodo %d.", nroNodoAlmacFinal);
+							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
+
+							//modifica el estado de la fila
+							if (modificarEstadoFilasTablaEstados(masterJobActual.nroJob, masterJobActual.nroMaster, nroNodoAlmacFinal, 0, ALMAC_FINAL, EN_PROCESO, ERROR) == 0) {
+								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin del Almacenamiento Final ERROR");
+								puts("No se pudo modificar ninguna fila de la tabla de estados");
+							} else {
+								log_info(logYAMA, "Se modificó la tabla de estados en el fin del Almacenamiento Final ERROR");
+							}
+
 							//abortar el job
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
-							break;
-						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
-							/* TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR */
-							;
-							char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
-							strcpy(archivo, arrayMensajes[0]);
-							free(arrayMensajes);
-							//pide la metadata del archivo al FS
-							if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
-
-								/* ************* solicitud de info del archivo al FS *************** */
-								//recibir las partes del archivo
-								int32_t headerId = deserializarHeader(socketFS);
-								if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
-									perror("El FS no mandó los bloques");
-								}
-								printf("headerId recibido: %d\n", headerId);
-								cantPartesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
-
-								bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, cantPartesArchivo);
-								for (i = 0; i < cantPartesArchivo; i++) {
-									printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
-								}
-
-								/* ********************* */
-								//recibir la info de los nodos donde están esos archivos
-								headerId = deserializarHeader(socketFS);
-								printf("%d header en nodos",headerId);
-								if (headerId != TIPO_MSJ_DATOS_CONEXION_NODOS) {
-									printf("El FS no mandó los nodos\n");
-								}
-								cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
-								//guardar los nodos en la listaGlobal
-								datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
-								recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
-								for (k = 0; k < cantNodosArchivo; k++) {
-									printf("listaGlobalNodos %d: nro %d - ip %s - puerto %d\n", k + 1, listaGlobalNodos[k + 1].numero, listaGlobalNodos[k + 1].ip, listaGlobalNodos[k + 1].puerto);
-									printf("nodosParaPlanificar %d: nro %d - ip %s - puerto %d\n", k, nodosParaPlanificar[k].numero, nodosParaPlanificar[k].ip, nodosParaPlanificar[k].puerto);
-								}
-								/* ***************************************************************** */
-
-								/* ************* inicio planificación *************** */
-								//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
-								//indexado por partes del archivo
-								nodoParaAsignar asignacionesNodos[cantPartesArchivo];
-								planificar(socketConectado, bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
-								for (i = 0; i < cantNodosArchivo; i++) {
-									printf("nro %d - carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
-								}
-								//guardo el nodo donde se va a hacer la reducción global de ese master y job
-								asignarNodoReduccGlobal((uint16_t) nodosParaPlanificar[0].numero, socketConectado);
-								/* ************* fin planificación *************** */
-
-								/* ************** agregado en tabla de estados *************** */
-								//guarda la info de los bloques del archivo en la tabla de estados
-								struct filaTablaEstados fila;
-								for (i = 0; i < cantPartesArchivo; i++) {
-									//printf("parte de archivo %d asignado a: nodo %d - bloque %d\n", i, asignacionesNodos[i][0], asignacionesNodos[i][1]);
-									//genera una fila en la tabla de estados
-									fila.job = masterJobActual.nroJob;
-									fila.master = masterJobActual.nroMaster;
-									fila.nodo = asignacionesNodos[i].nroNodo;
-									fila.bloque = asignacionesNodos[i].bloque;
-									fila.etapa = TRANSFORMACION;
-									char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
-									strcpy(fila.temporal, temporal);
-									fila.estado = EN_PROCESO;
-									fila.siguiente = NULL;
-									if (!agregarElemTablaEstados(fila))
-										perror("Error al agregar elementos a la tabla de estados");
-
-									//guarda el archivo temporal en el vector que se va a usar
-									//en la tabla de transformación para el master
-									strcpy(asignacionesNodos[i].temporal, temporal);
-								}
-								//puts("\nlista de elementos asignados a transformación");
-								//mostrarTablaEstados();
-								/* ************** fin agregado en tabla de estados *************** */
-
-								/* ****** envío de nodos para la transformación ******************* */
-								//envía al master la lista de nodos donde trabajar cada bloque
-								char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
-								printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
-								enviarMensaje(socketConectado, mensajeSerializado);
-								/* **************************************************************** */
-								puts("\nlista de elementos luego de enviar la tabla de transformación");
-								mostrarTablaEstados();
-							} else {
-								perror("No se pudo pedir el archivo al FS");
-							}
-							/* FIN */
-
+							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
 						default:
 							;
@@ -784,9 +878,12 @@ int main(int argc, char *argv[]) {
 					// END handle data from client
 				} //if (FD_ISSET(i, &socketsLecturaTemp)) END got new incoming connection
 			} //for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) END looping through file descriptors
+      
+//		} else {
+//			log_error(logYAMA, "Ocurrió un error en el select() principal");
+//			perror("Error en select()");
 		}
-		// else {
-		//	perror("Error en select()");
+	
 	}
 	if (errno == EINTR) {
 		puts("interrupted by SIGINT");
@@ -799,11 +896,9 @@ int main(int argc, char *argv[]) {
 
 	sigprocmask(SIG_SETMASK, &old_set, NULL);
 
-//cerrarServer(listenningSocket);
-//cerrarServer(socketCliente);
+  //cerrarServer(listenningSocket);
+  //cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
-
 	log_destroy(logYAMA);
 	return EXIT_SUCCESS;
 }
-
