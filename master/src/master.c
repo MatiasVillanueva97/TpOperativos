@@ -67,10 +67,8 @@ void enviarArchivoYama(int socketYama, char *archivoRequerido) {
 	strcpy(arrayMensajes[0], archivoRequerido);
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR, arrayMensajes, cantStrings);
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
-	for (i = 0; i < cantStrings; i++) {
-		free(arrayMensajes[i]);
-	}
-	free(arrayMensajes);
+
+	liberar_array(arrayMensajes, cantStrings);
 }
 
 void recibirTablaTransformacion(struct filaTransformacion *datosTransformacion, int socketYama, int cantBloquesArchivo) {
@@ -101,10 +99,7 @@ void recibirTablaTransformacion(struct filaTransformacion *datosTransformacion, 
 	}
 	printf("\n");
 
-	for (i = 0; i < cantStrings; i++) {
-		free(arrayTablaTransformacion[i]);
-	}
-	free(arrayTablaTransformacion);
+	liberar_array(arrayTablaTransformacion, cantStrings);
 }
 
 /*
@@ -131,10 +126,7 @@ int envioFinTransformacion(int headerId, int nroNodo, int nroBloque) {
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
 	pthread_mutex_unlock(&mutexSocketYama);
 	//libera todos los pedidos de malloc
-	for (i = 0; i < cantMensajes; i++) {
-		free(arrayMensajes[i]);
-	}
-	free(arrayMensajes);
+	liberar_array(arrayMensajes, cantMensajes);
 	return bytesEnviados;
 }
 
@@ -205,10 +197,7 @@ void pruebaEnviarFinReduccLocal(int socketYama, int nroNodo) {
 
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_REDUCC_LOCAL_OK, arrayMensajes, cantStrings);
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
-	for (i = 0; i < cantStrings; i++) {
-		free(arrayMensajes[i]);
-	}
-	free(arrayMensajes);
+	liberar_array(arrayMensajes, cantStrings);
 	puts("presionar ENTER en pruebaEnviarFinReduccLocal");
 	getchar();
 
@@ -262,6 +251,23 @@ int32_t handshakeYama(int socketYama) {
 
 }
 
+int32_t handshakeWorker(int socketWorker) {
+	int cantStringsHandshake = protocoloCantidadMensajes[TIPO_MSJ_HANDSHAKE];
+	char **arrayMensajesHandshake = malloc(sizeof(char*) * cantStringsHandshake);
+	char *mensaje = intToArrayZerosLeft(NUM_PROCESO_MASTER, 4);
+	arrayMensajesHandshake[0] = malloc(string_length(mensaje) + 1);
+	strcpy(arrayMensajesHandshake[0], mensaje);
+	char *mensajeSerializadoHS = serializarMensaje(TIPO_MSJ_HANDSHAKE, arrayMensajesHandshake, cantStringsHandshake);
+	enviarMensaje(socketWorker, mensajeSerializadoHS);
+
+	liberar_array(arrayMensajesHandshake, cantStringsHandshake);
+	free(mensajeSerializadoHS);
+
+	//recibe y devuelve la respuesta del worker
+	return deserializarHeader(socketWorker);
+
+}
+
 int getCantBloquesArchivo(int socketYama, int cantMensajes) {
 	char **arrayMensajes = deserializarMensaje(socketYama, cantMensajes);
 	int cantBloquesArchivo = atoi(arrayMensajes[0]);
@@ -304,50 +310,57 @@ void conectarAWorkerTransformacion(void *arg) {
 	//	printf("datos -1 adentro del hilo: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
 
 	// Abrir conexión a Worker
-//	pthread_mutex_lock(&mutexSocketWorker);
+	//	pthread_mutex_lock(&mutexSocketWorker);
 	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
-//	pthread_mutex_unlock(&mutexSocketWorker);
+	if (socketWorker < 0) {
+		puts("No se pudo conectar al worker");
+	}
+	//	pthread_mutex_unlock(&mutexSocketWorker);
 
 	printf("socket worker hilo %lu: %d\n", idHilo, socketWorker);
 	//	if (strcmp(datosEnHilo->ip, "127.0.0.1") || datosEnHilo->bloque == 76)
 	//	printf("datos 0 adentro del hilo: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
 
-	int cantStringsASerializar = 4;	//código de transformación, bloque, bytes y temporal
-	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
-	j = 0;
-	arrayMensajes[j] = malloc(string_length(transformadorString) + 1);
-	strcpy(arrayMensajes[j], transformadorString);
-	j++;
-	arrayMensajes[j] = malloc(4 + 1);
-	strcpy(arrayMensajes[j], intToArrayZerosLeft(datosEnHilo->bloque, 4));
-	j++;
+	int32_t headerIdWorker = handshakeWorker(socketWorker);
+	if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
+		puts("Error de handshake con el worker");
+	} else {
+		puts("Conectado al worker");
 
-	arrayMensajes[j] = malloc(8 + 1);
-	strcpy(arrayMensajes[j], intToArrayZerosLeft(datosEnHilo->bytes, 8));
-	j++;
-	arrayMensajes[j] = malloc(string_length(datosEnHilo->temporal) + 1);
-	strcpy(arrayMensajes[j], datosEnHilo->temporal);
+		int cantStringsASerializar = 4;	//código de transformación, bloque, bytes y temporal
+		char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
+		j = 0;
+		arrayMensajes[j] = malloc(string_length(transformadorString) + 1);
+		strcpy(arrayMensajes[j], transformadorString);
+		j++;
+		arrayMensajes[j] = malloc(4 + 1);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosEnHilo->bloque, 4));
+		j++;
 
-	//TIPO_MSJ_DATA_TRANSFORMACION_WORKER: 4 MENSAJES
-	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATA_TRANSFORMACION_WORKER, arrayMensajes, cantStringsASerializar);
-	for (j = 0; j < cantStringsASerializar; j++) {
-		free(arrayMensajes[j]);
+		arrayMensajes[j] = malloc(8 + 1);
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosEnHilo->bytes, 8));
+		j++;
+		arrayMensajes[j] = malloc(string_length(datosEnHilo->temporal) + 1);
+		strcpy(arrayMensajes[j], datosEnHilo->temporal);
+
+		//TIPO_MSJ_DATA_TRANSFORMACION_WORKER: 4 MENSAJES
+		char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATA_TRANSFORMACION_WORKER, arrayMensajes, cantStringsASerializar);
+		liberar_array(arrayMensajes, cantStringsASerializar);
+		int cantBytesEnviados = enviarMensaje(socketWorker, mensajeSerializado);
+
+		// Recibir resultado del Worker
+		int32_t headerId = deserializarHeader(socketWorker);
+		printf("header recibido por parte del worker en hilo %lu: %d\n", idHilo, headerId);
+		// Cerrar conexión a Worker
+		cerrarCliente(socketWorker);
+
+		// Avisar a YAMA
+		int bytesEnviadosMensaje = envioFinTransformacion(headerId, datosEnHilo->nodo, datosEnHilo->bloque);
+		//printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
+		printf("Datos al final del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
+		//printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
+		puts("");
 	}
-	free(arrayMensajes);
-	int cantBytesEnviados = enviarMensaje(socketWorker, mensajeSerializado);
-
-	// Recibir resultado del Worker
-	int32_t headerId = deserializarHeader(socketWorker);
-	printf("header recibido por parte del worker en hilo %lu: %d\n", idHilo, headerId);
-	// Cerrar conexión a Worker
-	cerrarCliente(socketWorker);
-
-	// Avisar a YAMA
-	int bytesEnviadosMensaje = envioFinTransformacion(headerId, datosEnHilo->nodo, datosEnHilo->bloque);
-	//printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
-	printf("Datos al final del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporal);
-	//printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
-	puts("");
 }
 
 void conectarAWorkerReduccionLocal(void *arg) {

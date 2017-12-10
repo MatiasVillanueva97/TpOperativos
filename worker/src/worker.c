@@ -109,13 +109,13 @@ char* crear_comando_transformacion(char* path_script_transformacion, char* datos
 	char* comando = string_from_format("chmod +x %s && echo \"%s\" | %s | sort > %s/%s", path_script_transformacion, datos_origen, path_script_transformacion, carpeta_resultados, archivo_temporal);
 	return comando;
 }
-*/
+ */
 
 
 int transformacion(char* path_script, int origen, int bytesOcupados, char* destino) {
 	char* bloque = leer_bloque(origen, bytesOcupados);
 	//char* bloque = "WBAN,Date,Time,StationType,SkyCondition,SkyConditionFlag,Visibility,VisibilityFlag,WeatherType,WeatherTypeFlag,DryBulbFarenheit,DryBulbFarenheitFlag,DryBulbCelsius,DryBulbCelsiusFlag,WetBulbFarenheit,WetBulbFarenheitFlag,WetBulbCelsius,WetBulbCelsiusFlag,DewPointFarenheit,DewPointFarenheitFlag,DewPointCelsius,DewPointCelsiusFlag,RelativeHumidity,RelativeHumidityFlag,WindSpeed,WindSpeedFlag,WindDirection,WindDirectionFlag,ValueForWindCharacter,ValueForWindCharacterFlag,StationPressure,StationPressureFlag,PressureTendency,PressureTendencyFlag,PressureChange,PressureChangeFlag,SeaLevelPressure,SeaLevelPressureFlag,RecordType,RecordTypeFlag,HourlyPrecip,HourlyPrecipFlag,Altimeter,AltimeterFlag\
-03011,20130101,0000,0,OVC, , 5.00, , , ,M, ,M, ,M, ,M, ,M, ,M, ,M, , 5, ,120, , , ,M, , , , , ,M, ,AA, , , ,29.93, ";
+	03011,20130101,0000,0,OVC, , 5.00, , , ,M, ,M, ,M, ,M, ,M, ,M, ,M, , 5, ,120, , , ,M, , , , , ,M, ,AA, , , ,29.93, ";
 	if (bloque == NULL) {
 		log_error(logWorker, "No se pudo leer el bloque (numero %d) completo segun el tamaño especificado (%d bytes)", origen, bytesOcupados);
 		return -1;
@@ -209,12 +209,12 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 			frth = string_duplicate(snd);
 			string_to_lower(frth);
 		}
-		comparacion = strcmp(thrd,frth);
+		comparacion = strcmp(thrd, frth);
 		if (comparacion == 0) {
 			f1 = true;
 			f2 = true;
-			fwrite (fst,1,string_length(fst),faux);
-			fwrite (snd,1,string_length(snd),faux);
+			fwrite(fst,1,string_length(fst),faux);
+			fwrite(snd,1,string_length(snd),faux);
 		} else if (comparacion > 0) {
 			f1 = false;
 			f2 = true;
@@ -222,23 +222,23 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 		} else {
 			f2 = false;
 			f1 = true;
-			fwrite (fst,1,string_length(fst),faux);
+			fwrite(fst, 1, string_length(fst), faux);
 		}
 	}
-	fwrite ("\n",1,1,faux);
+	fwrite("\n", 1, 1, faux);
 	if (!feof(fr1)) {
-		fwrite (fst,1,string_length(fst),faux);
+		fwrite(fst, 1, string_length(fst), faux);
 	}
 	else {
-		fwrite (snd,1,string_length(snd),faux);
+		fwrite(snd, 1, string_length(snd), faux);
 	}
 	while (!feof(fr1)) {
 		fgets(fst, 1000, fr1);
-		fwrite (fst,1,string_length(fst),faux);
+		fwrite(fst, 1, string_length(fst), faux);
 	}
 	while (!feof(fr2)) {
 		fgets(snd, 1000, fr2);
-		fwrite (snd,1,string_length(snd),faux);
+		fwrite(snd, 1, string_length(snd), faux);
 	}
 	free(fst);
 	free(snd);
@@ -382,7 +382,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	liberar_array(arrayArchDestino, 1);
 
 	char* path_script = guardar_script(reductorString, archivoDestino);
-/*
+	/*
 	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
 
 	char* path_temporal_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, temporalDestino);
@@ -398,7 +398,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 
 	free(reductorString);
 	free(temporalDestino);
-*/
+	 */
 	if (resultado >= 0) {
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_GLOBAL_OK);
 	}
@@ -429,7 +429,7 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	char* buffer = malloc(tamano);
 	fseek(archivo, 0, SEEK_SET);
 	fread(buffer,tamano,1,archivo);
-//	printf("%s\n",buffer);
+	//	printf("%s\n",buffer);
 	int socketFS; //= conectarA("127.0.0.1","5000");
 	int preparadoEnviarFs = 1, i;
 	if ((socketFS = conexionAFileSystem()) < 0) {
@@ -445,7 +445,7 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	strcpy(arrayMensajes[0], rutaFinal);
 	arrayMensajes[1] = malloc(string_length(buffer) + 1);
 	strcpy(arrayMensajes[1], buffer);
-		//serializa los mensajes y los envía
+	//serializa los mensajes y los envía
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, 2);
 	bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);//envio el mensaje serializado a FS
 	printf("%s\n",mensajeSerializado);
@@ -477,7 +477,7 @@ int main(int argc, char *argv[]) {
 	log_trace(logWorker, "Iniciando Worker");
 	printf("\n*** Proceso worker ***\n");
 
-	// 1º) leer archivo de config.
+	// 1º) Leer archivo de config.
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigWorker, datosConfigWorker)) { //leerArchivoConfig devuelve 1 si hay error
 		log_error(logWorker, "Hubo un error al leer el archivo de configuración.");
 		return EXIT_FAILURE;
@@ -487,7 +487,7 @@ int main(int argc, char *argv[]) {
 	crear_carpeta(carpeta_resultados, logWorker);
 	crear_carpeta(carpeta_temporales_reduccion, logWorker);
 
-	// 2º) inicializar server y aguardar conexiones (de master)
+	// 2º) Inicializar server y aguardar conexiones (de master)
 	//HAY QUE VER COMO SE CONECTA CON OTROS WORKERS
 	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 	if (listenningSocket < 0) {
@@ -505,7 +505,7 @@ int main(int argc, char *argv[]) {
 			return EXIT_FAILURE;
 		}
 
-		log_trace(logWorker, "Master conectado con socket %d", socketCliente);
+		log_trace(logWorker, "Proceso conectado con socket %d", socketCliente);
 
 		pid_t pid;
 		int status;
@@ -525,50 +525,69 @@ int main(int argc, char *argv[]) {
 			 printf("%s\n", lalala);
 			 */
 
-			int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
-			log_trace(logWorker,"Header: %d", headerId);
+			int32_t headerId = deserializarHeader(socketCliente);
+			if (headerId == TIPO_MSJ_HANDSHAKE) {
+				int cantidadMensajes = protocoloCantidadMensajes[headerId];
+				char **arrayMensajesRHS = deserializarMensaje(socketCliente, cantidadMensajes);
+				int idEmisorMensaje = atoi(arrayMensajesRHS[0]);
+				liberar_array(arrayMensajesRHS, cantidadMensajes);
+
+				if (idEmisorMensaje == NUM_PROCESO_MASTER) {
+					enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
+					log_trace(logWorker, "Master conectado, socket: %d", socketCliente);
+
+					headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
+					log_trace(logWorker,"Header: %d", headerId);
+
+					/* *****Cantidad de mensajes segun etapa*****
+					 * Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
+					 * Reduccion local (3): script, lista de temporales (origen), temporal(destino)
+					 * Reduccion global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
+					 * Almacenam final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
+					 */
+
+					int resultado;
+
+					if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
+
+						//resultado = transformacion_worker(headerId, socketCliente);
+						transformacion_worker(headerId, socketCliente);
+
+					}
+
+					if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
+
+						//resultado = reduccion_local_worker(headerId, socketCliente);
+						reduccion_local_worker(headerId, socketCliente);
 
 
+					}
 
-			/* *****Cantidad de mensajes segun etapa*****
-			 Transformacion (4): script, bloque (origen), bytesOcupados, temporal (destino)
-			 Reduccion local (3): script, lista de temporales (origen), temporal(destino)
-			 Reduccion global (4): script, lista de procesos Worker con sus IPs y Puertos, temporales de Reducción Local (origen), temporal (destino)
-			 Almacenam final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
-			 */
+					if (headerId == TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER) {
 
-			int resultado;
+					}
 
-			if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
+					if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
 
-				//resultado = transformacion_worker(headerId, socketCliente);
-				transformacion_worker(headerId, socketCliente);
+					}
 
+					//TODO: ??????????????????????? esto está bien???
+					//porque lo único que hace es mandar un header=0............. raro....
+					/*
+								if (resultado == 0) {
+									enviarHeaderSolo(socketCliente, resultado);
+								}
+					 */
+				}
+
+				if (idEmisorMensaje == NUM_PROCESO_WORKER) {
+					enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
+					log_trace(logWorker, "Worker conectado, socket: %d", socketCliente);
+
+				}
 			}
 
-			if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
 
-				//resultado = reduccion_local_worker(headerId, socketCliente);
-				reduccion_local_worker(headerId, socketCliente);
-
-
-			}
-
-			if (headerId == TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER) {
-
-			}
-
-			if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
-
-			}
-
-			//TODO: ??????????????????????? esto está bien???
-			//porque lo único que hace es mandar un header=0............. raro....
-			/*
-			if (resultado == 0) {
-				enviarHeaderSolo(socketCliente, resultado);
-			}
-			*/
 
 			//close(socketCliente);
 
