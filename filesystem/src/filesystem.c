@@ -1,3 +1,15 @@
+/*
+ ============================================================================
+ Name        : filesystem.c
+ Author      : Grupo 1234
+ Description : Proceso FileSystem
+ Resume      : FileSystem sabe qué está guardado y dónde.
+ Recibe conexiones de DataNodes hasta alcanzar "Estado Estable".
+ Se conecta a YAMA.
+ Sólo hay un FileSystem corriendo al mismo tiempo.
+ ============================================================================
+ */
+
 #include "filesystem.h"
 #include "../../utils/consola.c"
 
@@ -1816,7 +1828,8 @@ void soyServidor(char * puerto) {
 								FD_CLR(SocketYama, &master);
 							}
 						}
-							break;
+						break;
+
 						case worker: {
 							SocketWorker = nuevoSocket;
 							//atender a worker,supongo que almacenar el archivo
@@ -1825,12 +1838,13 @@ void soyServidor(char * puerto) {
 							 printf("%s\n",mensajes[1]);
 							 */
 						}
-							break;
+						break;
+
 						case datanode: {
 							registrarNodo(nuevoSocket);
 							persistirNodosFuncion();
 						}
-							break;
+						break;
 						}
 						if (nuevoSocket > fdmax) {
 							fdmax = nuevoSocket;
@@ -1839,7 +1853,7 @@ void soyServidor(char * puerto) {
 				} else {
 					int32_t headerId = deserializarHeader(i); // funciona cuando solo recibe 0?
 					if (headerId <= 0) { //error o desconexión de un cliente
-						printf("header id %d",headerId);
+						printf("header id %d", headerId);
 						eliminarDeLasListas(i);
 						cerrarCliente(i); // bye!
 						FD_CLR(i, &master); // remove from master set
@@ -1859,13 +1873,14 @@ void soyServidor(char * puerto) {
 	}
 }
 
-char * devolverPathAbsoluto(char * pathYamaFS) {
-	char * pathAbsoluto = string_new();
-	string_append(&pathAbsoluto, "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/yamafs/");
-	string_append(&pathAbsoluto, pathYamaFS);
-	return pathAbsoluto;
-	free(pathAbsoluto);
-}
+// TODO: Esto se usa???
+//char * devolverPathAbsoluto(char * pathYamaFS) {
+//	char * pathAbsoluto = string_new();
+//	string_append(&pathAbsoluto, "/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/yamafs/");
+//	string_append(&pathAbsoluto, pathYamaFS);
+//	return pathAbsoluto;
+//	free(pathAbsoluto);
+//}
 
 void matarTodo() {
 	printf("RIP \n");
@@ -1935,19 +1950,17 @@ int main(int argc, char *argv[]) {
 	persistirNodos = config_create("../metadata/nodos.bin");
 	directorios = config_create("../metadata/directorios.dat");
 	registroArchivo = config_create("../metadata/archivos/registro.dat");
-	//	configFs = config_create("../config/configFilesystem.txt");
-	//	persistirNodos =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/nodos.bin");
-	//	directorios =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/directorios.dat");
-	//	registroArchivo =config_create("/home/utnso/workspace/tp-2017-2c-Mi-Grupo-1234/filesystem/Debug/metadata/archivos/registro.dat");
+
+	log_trace(logFs, "Iniciando FileSystem");
+	printf("\n*** Proceso FileSystem ***\n");
+
 	pthread_t hiloConsola;
 	estadoAnterior = config_get_int_value(configFs, "ESTADO_ANTERIOR");
 	estadoEstable = config_get_int_value(configFs, "ESTADO_ESTABLE");
 
 	if (argv[1] == NULL) {
 		if (estadoAnterior == 1) {
-			//cargar estado anterior
-			//cargar directorios
-			//cargar archivos
+			//cargar estado anterior, directorios y archivos
 			cargarEstructuraArchivos(registroArchivo);
 			cargarDirectorio(directorios);
 			cargarListaDeNodosAnteriores();
@@ -1959,7 +1972,7 @@ int main(int argc, char *argv[]) {
 			pthread_join(hiloConsola, NULL);
 
 		} else {
-			//se Ejecuta por primera vez
+			//se ejecuta por primera vez
 			config_set_value(configFs, "ESTADO_ANTERIOR", "1");
 			config_save(configFs);
 			inicializarCarpetas();
@@ -1973,7 +1986,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		if (!strcmp(argv[1], "--clean")) {
 
-			//elimino estructuras,carpetas y levanto
+			//elimino estructuras, carpetas y levanto
 			eliminarListas();
 			eliminarCarpetas();
 			inicializarCarpetas();

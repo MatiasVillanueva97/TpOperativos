@@ -21,7 +21,7 @@ int enviarHeaderSolo(int serverSocket, int32_t headerId) {
 	int32_t largoStringId = LARGO_STRING_HEADER_ID;
 	char idString[largoStringId];
 	strcpy(idString, intToArrayZerosLeft(headerId, 4));
-	printf("mensajeHeaderSolo: %s\n", idString);
+	//printf("mensajeHeaderSolo: %s\n", idString);
 	return enviarMensaje(serverSocket, idString);
 }
 

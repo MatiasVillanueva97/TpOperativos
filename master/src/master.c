@@ -3,15 +3,13 @@
  Name        : master.c
  Author      : Grupo 1234
  Description : Proceso Master
+ Resume      : Master ejecuta una tarea, sobre un archivo.
+ Se conecta a YAMA para pedir instrucciones,
+ y a los workers (usando hilos) para mandar instrucciones
+ Puede haber varios master corriendo al mismo tiempo.
  ============================================================================
- */
+*/
 
-// ================================================================ //
-// Master ejecuta una tarea, sobre un archivo.
-// Se conecta a YAMA para pedir instrucciones,
-// y a los workers (usando hilos) para mandar instrucciones
-// Puede haber varios master corriendo al mismo tiempo.
-// ================================================================ //
 #include "../../utils/includes.h"
 #include <unistd.h>
 #include <time.h>
@@ -23,7 +21,7 @@ enum keys {
 char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "NODO_IP", "NODO_PUERTO",
 NULL };
 
-char* datosConfigMaster[4];
+char * datosConfigMaster[4];
 
 char * archivoTransformador;
 char * archivoReductor;
@@ -513,6 +511,7 @@ int main(int argc, char *argv[]) {
 //			}
 
 			switch (headerIdYama) {
+
 			case TIPO_MSJ_TABLA_TRANSFORMACION: {
 				cantBloquesArchivo = getCantBloquesArchivo(socketYama, protocoloCantidadMensajes[headerIdYama]);
 				pthread_t hilosWorker[cantBloquesArchivo];
@@ -533,11 +532,14 @@ int main(int argc, char *argv[]) {
 				masterCorriendo = 1;
 			}
 				break;
+
 			case TIPO_MSJ_TABLA_REDUCCION_LOCAL:
 				//recibirTablaReduccLocalYEnviarAWorker(socketYama, headerIdYama);
 				break;
+
 			case TIPO_MSJ_TABLA_REDUCCION_GLOBAL:
 				break;
+
 			case TIPO_MSJ_TABLA_ALMACENAMIENTO_FINAL:
 				break;
 			} // fin switch
