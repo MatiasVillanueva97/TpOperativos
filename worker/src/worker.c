@@ -12,7 +12,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <fcntl.h>
 
 #define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
@@ -28,7 +27,6 @@ char* datosConfigWorker[6];
 
 t_log* logWorker;
 
-struct stat st = {0};
 //char* carpeta_temporal = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
 char* carpeta_temporal = "../tmp";
 //char* carpeta_resultados = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/resultados";
@@ -38,26 +36,6 @@ char* carpeta_temporales_reduccion = "../reduccionLocal";
 
 
 //---------------------- FUNCIONES GENERALES ----------------------
-void crear_carpeta(char carpeta[]) {
-	//struct stat st = {0};
-	if (stat(carpeta, &st) == -1) {
-		log_trace(logWorker, "Carpeta no existe, creando: %s", carpeta);
-		mkdir(carpeta, 0775);
-		}
-	else {
-		log_trace(logWorker, "Carpeta ya existe: %s", carpeta);
-	}
-}
-
-
-void liberar_estructura(char** estructura, int cantidad_elementos) {
-	int i;
-	for (i = 0; i < cantidad_elementos; i++) {
-		free(estructura[i]);
-	}
-	free(estructura);
-}
-
 
 char* guardar_script(char* codigo_script, char* nombre) {
 	//log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
@@ -181,7 +159,7 @@ void transformacion_worker(int headerId, int socketCliente) {
 	log_info(logWorker,"Datos recibidos: Largo Transformador: %d - Socket: %d - Bloque: %d - Bytes ocupados: %d - Temporal: %s", string_length(transformadorString), socketCliente, bloque, bytesOcupados, temporalDestino);
 	//printf("Datos recibidos\n");
 
-	liberar_estructura(arrayMensajes, cantidadMensajes);
+	liberar_array(arrayMensajes, cantidadMensajes);
 
 	char* path_script = guardar_script(transformadorString, temporalDestino);
 	log_trace(logWorker,"Script guardado. Path script: %s", path_script);
@@ -277,7 +255,6 @@ char* crear_comando_reduccion(char* path_script_reduccionLoc, char* path_origen,
 	return comando;
 }
 
-
 int reduccion(char* path_script, char* path_origen, char* path_destino) {
 	char* comando = crear_comando_reduccion(path_script, path_origen, path_destino);
 	log_info(logWorker, "[reduccion] El comando a ejecutar es %s", comando);
@@ -309,7 +286,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	int cantTemporales;
 	cantTemporales = atoi(arrayMensajes[1]);
 
-	liberar_estructura(arrayMensajes, cantidadMensajes);
+	liberar_array(arrayMensajes, cantidadMensajes);
 
 	char **arrayTemporales = deserializarMensaje(socketCliente, cantTemporales);
 
@@ -317,7 +294,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
 	strcpy(temporalDestino,arrayTempDestino[0]);
 
-	liberar_estructura(arrayTempDestino, 1);
+	liberar_array(arrayTempDestino, 1);
 
 	char* path_script = guardar_script(reductorString, temporalDestino);
 
@@ -367,7 +344,7 @@ int32_t handshakeWorker(int socketWorker) {
 	char *mensajeSerializadoHS = serializarMensaje(TIPO_MSJ_HANDSHAKE, arrayMensajesHandshake, cantStringsHandshake);
 	enviarMensaje(socketWorker, mensajeSerializadoHS);
 
-	liberar_estructura(arrayMensajesHandshake, cantStringsHandshake);
+	liberar_array(arrayMensajesHandshake, cantStringsHandshake);
 	free(mensajeSerializadoHS);
 
 	//recibe y devuelve la respuesta del otro worker
@@ -393,7 +370,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	int cantWorkers;
 	cantWorkers = atoi(arrayMensajes[1]);
 
-	liberar_estructura(arrayMensajes, cantidadMensajes);
+	liberar_array(arrayMensajes, cantidadMensajes);
 
 	char **arrayIPsYPuertos = deserializarMensaje(socketCliente, cantWorkers);
 	char **arrayNombresTemporalesOrigen = deserializarMensaje(socketCliente, cantWorkers);
@@ -402,7 +379,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	char *archivoDestino = malloc(string_length(arrayArchDestino[0]));
 	strcpy(archivoDestino,arrayArchDestino[0]);
 
-	liberar_estructura(arrayArchDestino, 1);
+	liberar_array(arrayArchDestino, 1);
 
 	char* path_script = guardar_script(reductorString, archivoDestino);
 /*
@@ -506,9 +483,9 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	crear_carpeta(carpeta_temporal);
-	crear_carpeta(carpeta_resultados);
-	crear_carpeta(carpeta_temporales_reduccion);
+	crear_carpeta(carpeta_temporal, logWorker);
+	crear_carpeta(carpeta_resultados, logWorker);
+	crear_carpeta(carpeta_temporales_reduccion, logWorker);
 
 	// 2º) inicializar server y aguardar conexiones (de master)
 	//HAY QUE VER COMO SE CONECTA CON OTROS WORKERS
