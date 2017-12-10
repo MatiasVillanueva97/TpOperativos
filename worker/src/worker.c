@@ -272,18 +272,18 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 	return 0;
 }
 
-char* crear_comando_reduccionLoc(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
+char* crear_comando_reduccion(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
 	char* comando = string_from_format("chmod +x %s && cat %s | %s > %s/%s", path_script_reduccionLoc, path_origen, path_script_reduccionLoc, carpeta_resultados, archivo_destino);
 	return comando;
 }
 
 
-int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
-	char* comando = crear_comando_reduccionLoc(path_script, path_origen, path_destino);
-	log_info(logWorker, "[reduccion_local] El comando a ejecutar es %s", comando);
+int reduccion(char* path_script, char* path_origen, char* path_destino) {
+	char* comando = crear_comando_reduccion(path_script, path_origen, path_destino);
+	log_info(logWorker, "[reduccion] El comando a ejecutar es %s", comando);
 
 	int resultado = ejecutar_system(comando);
-	log_info(logWorker, "[reduccion_local] El resultado es: %d", resultado);
+	log_info(logWorker, "[reduccion] El resultado es: %d", resultado);
 	if (resultado < 0) {
 		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
 	} else {
@@ -321,18 +321,18 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	char* path_script = guardar_script(reductorString, temporalDestino);
 
-	char* path_temporal_origen = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
+	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
 
 	char* path_temporal_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, temporalDestino);
 
-	FILE *temporalOrigenDestino = fopen(path_temporal_origen, "w");
-	fclose (temporalOrigenDestino);
+	FILE *apareado = fopen(path_apareado, "w");
+	fclose (apareado);
 
 	for (i = 0; i < cantTemporales; i++) {
-		apareo_archivos(path_temporal_origen,arrayTemporales[i]);
+		apareo_archivos(path_apareado,arrayTemporales[i]);
 	}
 
-	resultado = reduccion_local(path_script,path_temporal_origen,path_temporal_destino);
+	resultado = reduccion(path_script,path_apareado,path_temporal_destino);
 
 	free(reductorString);
 	free(temporalDestino);
@@ -373,6 +373,61 @@ int32_t handshakeWorker(int socketWorker) {
 	//recibe y devuelve la respuesta del otro worker
 	return deserializarHeader(socketWorker);
 
+}
+
+
+void reduccion_global_worker(int headerId, int socketCliente) {
+	//aparear archivos
+	//ejecutar reductor
+	//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
+
+	int resultado;
+	int i;
+
+	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
+	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+
+	char *reductorString = malloc(string_length(arrayMensajes[0]) + 1);
+	strcpy(reductorString, arrayMensajes[0]);
+
+	int cantWorkers;
+	cantWorkers = atoi(arrayMensajes[1]);
+
+	liberar_estructura(arrayMensajes, cantidadMensajes);
+
+	char **arrayIPsYPuertos = deserializarMensaje(socketCliente, cantWorkers);
+	char **arrayNombresTemporalesOrigen = deserializarMensaje(socketCliente, cantWorkers);
+
+	char **arrayArchDestino = deserializarMensaje(socketCliente, 1);
+	char *archivoDestino = malloc(string_length(arrayArchDestino[0]));
+	strcpy(archivoDestino,arrayArchDestino[0]);
+
+	liberar_estructura(arrayArchDestino, 1);
+
+	char* path_script = guardar_script(reductorString, archivoDestino);
+/*
+	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
+
+	char* path_temporal_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, temporalDestino);
+
+	FILE *apareado = fopen(path_apareado, "w");
+	fclose (apareado);
+
+	for (i = 0; i < cantTemporales; i++) {
+		apareo_archivos(path_apareado,arrayTemporales[i]);
+	}
+
+	resultado = reduccion(path_script,path_apareado,path_temporal_destino);
+
+	free(reductorString);
+	free(temporalDestino);
+*/
+	if (resultado >= 0) {
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_GLOBAL_OK);
+	}
+	else {
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_GLOBAL_OK);
+	}
 }
 
 //---------------------- FUNCIONES ALMACENAMIENTO FINAL ----------------------
