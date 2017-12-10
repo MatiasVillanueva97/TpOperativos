@@ -431,7 +431,7 @@ int main(int argc, char *argv[]) {
 	clock_t start = clock();
 	int i, j, k, h;
 	t_log* logMASTER;
-	logMASTER = log_create("logMASTER.log", "MASTER", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
+	logMASTER = log_create("logMASTER.log", "MASTER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 	uint32_t preparadoEnviarYama = 1;
 	int32_t headerIdYama;
 
