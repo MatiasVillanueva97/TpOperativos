@@ -39,7 +39,8 @@ enum tiposMensajes {
 	TIPO_MSJ_DATA_TRANSFORMACION_WORKER, //29
 	TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER, //30
 	TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER, //31
-	TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL //32
+	TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER, //32
+	TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL //33
 };
 
 // OJO! Si se agrega algo en el enum de arriba actualizar dejar siempre acá el último valor del array
@@ -76,7 +77,8 @@ const int protocoloCantidadMensajes[TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL + 1] = 
 		4, //29
 		2, //30
 		2, //31
-		2  //32
+		2, //32
+		2  //33
 };
 
 const char* protocoloMensajesPredefinidos[TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL + 1] = {
@@ -112,5 +114,6 @@ const char* protocoloMensajesPredefinidos[TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL +
 		"DATA_TRANSFORMACION_WORKER",
 		"DATA_REDUCCION_LOCAL_WORKER",
 		"DATA_REDUCCION_GLOBAL_WORKER",
+		"DATA_ALMACENAMIENTO_FINAL_WORKER",
 		"WORKER_ALMACENAMIENTO_FINAL"
 };

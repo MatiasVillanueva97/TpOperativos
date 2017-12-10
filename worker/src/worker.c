@@ -293,11 +293,9 @@ int reduccion_local(char* path_script, char* path_origen, char* path_destino) {
 }
 
 void reduccion_local_worker(int headerId, int socketCliente) {
-
 	//aparear archivos
 	//ejecutar reductor
 	//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
-
 
 	int resultado;
 	int i;
@@ -338,6 +336,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	free(reductorString);
 	free(temporalDestino);
+
 	if (resultado >= 0) {
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_OK);
 	}
@@ -355,13 +354,11 @@ int conectarAWorker(char* ip, char* puerto) {
 	int socketWorker = conectarA(ip, puerto);
 	if (socketWorker < 0) {
 		log_error(logWorker, "Fallo la conexión a Worker, IP: %s, Puerto: %s", ip, puerto);
-		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 	}
 	return socketWorker;
 }
 
 int32_t handshakeWorker(int socketWorker) {
-	//envía el pedido de handshake al yama
 	int cantStringsHandshake = protocoloCantidadMensajes[TIPO_MSJ_HANDSHAKE];
 	char **arrayMensajesHandshake = malloc(sizeof(char*) * cantStringsHandshake);
 	char *mensaje = intToArrayZerosLeft(NUM_PROCESO_WORKER, 4);
@@ -369,9 +366,11 @@ int32_t handshakeWorker(int socketWorker) {
 	strcpy(arrayMensajesHandshake[0], mensaje);
 	char *mensajeSerializadoHS = serializarMensaje(TIPO_MSJ_HANDSHAKE, arrayMensajesHandshake, cantStringsHandshake);
 	enviarMensaje(socketWorker, mensajeSerializadoHS);
-	free(arrayMensajesHandshake);
 
-	//recibe la respuesta del yama
+	liberar_estructura(arrayMensajesHandshake, cantStringsHandshake);
+	free(mensajeSerializadoHS);
+
+	//recibe y devuelve la respuesta del otro worker
 	return deserializarHeader(socketWorker);
 
 }
@@ -452,6 +451,10 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	crear_carpeta(carpeta_temporal);
+	crear_carpeta(carpeta_resultados);
+	crear_carpeta(carpeta_temporales_reduccion);
+
 	// 2º) inicializar server y aguardar conexiones (de master)
 	//HAY QUE VER COMO SE CONECTA CON OTROS WORKERS
 	int listenningSocket = inicializarServer(datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
@@ -460,10 +463,6 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 	log_trace(logWorker, "Se inicio worker como server. IP: %s, Puerto: %s", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
-
-	crear_carpeta(carpeta_temporal);
-	crear_carpeta(carpeta_resultados);
-	crear_carpeta(carpeta_temporales_reduccion);
 
 	while (1) {	//inicio bucle para recibir conexiones y forkear
 		puts("\nYa estoy preparado para recibir conexiones\n-----------------------------------------\n");
@@ -527,7 +526,7 @@ int main(int argc, char *argv[]) {
 
 			}
 
-			if (headerId == (int32_t) "ALMACENAMIENTO_FINAL") {
+			if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
 
 			}
 
