@@ -25,92 +25,97 @@ default: all
 # FILESYSTEM #
 clean-filesystem:
 	@echo "Limpiando FILESYSTEM..."
-	rm -rf $(FILESYSTEM)/$(BIN_PATH) && rm -rf $(FILESYSTEM)/${LOG_PATH}/*.log
+	@rm -rf $(FILESYSTEM)/$(BIN_PATH) && rm -rf $(FILESYSTEM)/${LOG_PATH}/*.log
 
 compile-filesystem: clean-filesystem
 	@echo "Compilando FILESYSTEM..."
-	mkdir -p $(FILESYSTEM)/$(BIN_PATH) && $(COMPILER) $(FILESYSTEM)/$(SRC_PATH)/$(FILESYSTEM).c -g -o $(FILESYSTEM)/$(BIN_PATH)/$(FILESYSTEM) $(COMMONS) $(THREAD) $(READLINE) $(MATH)
+	@mkdir -p $(FILESYSTEM)/$(BIN_PATH) && $(COMPILER) $(FILESYSTEM)/$(SRC_PATH)/$(FILESYSTEM).c -g -o $(FILESYSTEM)/$(BIN_PATH)/$(FILESYSTEM) $(COMMONS) $(THREAD) $(READLINE) $(MATH)
 
 run-filesystem: compile-filesystem
 	@echo "Ejecutando FILESYSTEM..."
-	cd $(FILESYSTEM)/$(BIN_PATH) && ./$(FILESYSTEM) ${ARG}
+	@clear
+	@cd $(FILESYSTEM)/$(BIN_PATH) && ./$(FILESYSTEM) ${ARG}
 
 debug-filesystem: compile-filesystem
-		@echo "Ejecutando FILESYSTEM en modo DEBUG..."
-		cd $(FILESYSTEM)/$(BIN_PATH) && valgrind ./$(FILESYSTEM)
+	@echo "Ejecutando FILESYSTEM en modo DEBUG..."
+	cd $(FILESYSTEM)/$(BIN_PATH) && valgrind ./$(FILESYSTEM)
 
 # DATANODE #
 clean-datanode:
 	@echo "Limpiando DATANODE..."
-	rm -rf $(DATANODE)/$(BIN_PATH) && rm -rf $(DATANODE)/*.log
+	@rm -rf $(DATANODE)/$(BIN_PATH) && rm -rf $(DATANODE)/*.log
 
 compile-datanode: clean-datanode
 	@echo "Compilando DATANODE..."
-	mkdir -p $(DATANODE)/$(BIN_PATH) && $(COMPILER) $(DATANODE)/$(SRC_PATH)/$(DATANODE).c -g -o $(DATANODE)/$(BIN_PATH)/$(DATANODE) $(COMMONS) $(THREAD) $(READLINE)
+	@mkdir -p $(DATANODE)/$(BIN_PATH) && $(COMPILER) $(DATANODE)/$(SRC_PATH)/$(DATANODE).c -g -o $(DATANODE)/$(BIN_PATH)/$(DATANODE) $(COMMONS) $(THREAD) $(READLINE)
 
 run-datanode: compile-datanode
 	@echo "Ejecutando DATANODE..."
-	cd $(DATANODE)/$(BIN_PATH) && ./$(DATANODE)
+	@clear
+	@cd $(DATANODE)/$(BIN_PATH) && ./$(DATANODE)
 
 
 debug-datanode: compile-datanode
-		@echo "Ejecutando DATANODE en modo DEBUG..."
-		cd $(DATANODE)/$(BIN_PATH) && valgrind ./$(DATANODE)
+	@echo "Ejecutando DATANODE en modo DEBUG..."
+	@cd $(DATANODE)/$(BIN_PATH) && valgrind ./$(DATANODE)
 
 # YAMA #
 clean-yama:
 	@echo "Limpiando YAMA..."
-	rm -rf $(YAMA)/$(BIN_PATH) && rm -rf $(YAMA)/*.log
+	@rm -rf $(YAMA)/$(BIN_PATH) && rm -rf $(YAMA)/*.log
 
 compile-yama: clean-yama
 	@echo "Compilando YAMA..."
-	mkdir -p $(YAMA)/$(BIN_PATH) && $(COMPILER) $(YAMA)/$(SRC_PATH)/$(YAMA).c -g -o $(YAMA)/$(BIN_PATH)/$(YAMA) $(COMMONS) $(THREAD) $(READLINE)
+	@mkdir -p $(YAMA)/$(BIN_PATH) && $(COMPILER) $(YAMA)/$(SRC_PATH)/$(YAMA).c -g -o $(YAMA)/$(BIN_PATH)/$(YAMA) $(COMMONS) $(THREAD) $(READLINE)
 
 run-yama: compile-yama
 	@echo "Ejecutando YAMA..."
-	cd $(YAMA)/$(BIN_PATH) && ./$(YAMA)
+	@clear
+	@cd $(YAMA)/$(BIN_PATH) && ./$(YAMA)
 
 debug-yama: compile-yama
-		@echo "Ejecutando YAMA en modo DEBUG..."
-		cd $(YAMA)/$(BIN_PATH) && valgrind ./$(YAMA)
+	@echo "Ejecutando YAMA en modo DEBUG..."
+	@cd $(YAMA)/$(BIN_PATH) && valgrind ./$(YAMA)
 
 # WORKER #
 clean-worker:
 	@echo "Limpiando WORKER..."
-	rm -rf $(WORKER)/$(BIN_PATH) && rm -rf $(WORKER)/*.log
+	@rm -rf $(WORKER)/$(BIN_PATH) && rm -rf $(WORKER)/*.log
 
 compile-worker: clean-worker
 	@echo "Compilando WORKER..."
-	mkdir -p $(WORKER)/$(BIN_PATH) && $(COMPILER) $(WORKER)/$(SRC_PATH)/$(WORKER).c -g -o $(WORKER)/$(BIN_PATH)/$(WORKER) $(COMMONS) $(THREAD) $(READLINE)
+	@mkdir -p $(WORKER)/$(BIN_PATH) && $(COMPILER) $(WORKER)/$(SRC_PATH)/$(WORKER).c -g -o $(WORKER)/$(BIN_PATH)/$(WORKER) $(COMMONS) $(THREAD) $(READLINE)
 
 run-worker: compile-worker
 	@echo "Ejecutando WORKER..."
-	cd $(WORKER)/$(BIN_PATH) && ./$(WORKER)
+	@clear
+	@cd $(WORKER)/$(BIN_PATH) && ./$(WORKER)
 
 debug-worker: compile-worker
-		@echo "Ejecutando WORKER en modo DEBUG..."
-		cd $(WORKER)/$(BIN_PATH) && valgrind ./$(WORKER)
+	@echo "Ejecutando WORKER en modo DEBUG..."
+	@cd $(WORKER)/$(BIN_PATH) && valgrind ./$(WORKER)
 
 # MASTER #
 clean-master:
 	@echo "Limpiando MASTER..."
-	rm -rf $(MASTER)/$(BIN_PATH) && rm -rf $(MASTER)/*.log
+	@rm -rf $(MASTER)/$(BIN_PATH) && rm -rf $(MASTER)/*.log
 
 compile-master: clean-master
 	@echo "Compilando MASTER..."
-	mkdir -p $(MASTER)/$(BIN_PATH) && $(COMPILER) $(MASTER)/$(SRC_PATH)/$(MASTER).c -g -o $(MASTER)/$(BIN_PATH)/$(MASTER) $(COMMONS) $(THREAD) $(READLINE)
+	@mkdir -p $(MASTER)/$(BIN_PATH) && $(COMPILER) $(MASTER)/$(SRC_PATH)/$(MASTER).c -g -o $(MASTER)/$(BIN_PATH)/$(MASTER) $(COMMONS) $(THREAD) $(READLINE)
 
 run-master: compile-master
 	@echo "Ejecutando MASTER..."
-	cd $(MASTER)/$(BIN_PATH) &&  ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
+	@cd $(MASTER)/$(BIN_PATH) &&  ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
 
 run-master-arg: compile-master
-		@echo "Ejecutando MASTER..."
-		cd $(MASTER)/$(BIN_PATH) &&  ./$(MASTER) ${ARG}
+	@echo "Ejecutando MASTER..."
+	@clear
+	@cd $(MASTER)/$(BIN_PATH) &&  ./$(MASTER) ${ARG}
 
 debug-master: compile-master
-		@echo "Ejecutando MASTER en modo DEBUG..."
-		cd $(MASTER)/$(BIN_PATH) &&  valgrind ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
+	@echo "Ejecutando MASTER en modo DEBUG..."
+	@cd $(MASTER)/$(BIN_PATH) &&  valgrind ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
 
 all: compile-filesystem compile-datanode compile-worker compile-yama compile-master
 
