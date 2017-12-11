@@ -22,6 +22,8 @@ int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEsta
 
 int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int nroBloque, int etapa, int estadoActual, int estadoNuevo);
 
+int modificarEstadoFilasTablaEstadosByJMEs(int nroJob, int nroMaster, int estadoActual, int estadoNuevo);
+
 int getCantFilasByJMNE(int nroJob, int nroMaster, int nroNodo, int etapa);
 
 int getCantFilasByJMEtEs(int nroJob, int nroMaster, int etapa, int estado);

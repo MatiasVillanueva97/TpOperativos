@@ -27,8 +27,8 @@ typedef struct {
 //o cuando se desconecta el master y el select da de baja el FD
 nroMasterJob listaNrosMasterJob[CANT_MAX_FD];
 
-nroMasterJob getNroMasterJobByFD(int fileDescriptor) {
-	return listaNrosMasterJob[fileDescriptor];
+nroMasterJob* getNroMasterJobByFD(int fileDescriptor) {
+	return &listaNrosMasterJob[fileDescriptor];
 }
 
 void asignarNroMasterJob(uint16_t nroMaster, uint16_t nroJob, int fileDescriptor) {
