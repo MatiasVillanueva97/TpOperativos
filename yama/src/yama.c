@@ -70,8 +70,14 @@ int recargarConfig = 0;
 void sig_handler(int signal) {
 
 	if (signal == SIGUSR1) {
-		printf("Recieved SIGUSR1");
+		printf("\nRecieved SIGUSR1, reloading config...\n");
+		log_info(logYAMA, "Recieved SIGUSR1, reloading config...");
 		recargarConfig = 1;
+	}
+	if (signal == SIGINT) {
+		printf("\nRecieved SIGINT, exiting...\n");
+		log_error(logYAMA, "Recieved SIGINT, exiting...");
+		exit(0);
 	}
 }
 
@@ -320,12 +326,11 @@ abortarJob(int socketConectado) {
 
 int main(int argc, char *argv[]) {
 
-	sigset_t new_set, old_set;
-	sigemptyset(&new_set);
-	sigaddset(&new_set, SIGINT);
-	sigaddset(&new_set, SIGUSR1);
-	sigprocmask(SIG_BLOCK, &new_set, &old_set);
-
+	//sigset_t new_set, old_set;
+	//sigemptyset(&new_set);
+	//sigaddset(&new_set, SIGINT);
+	//sigaddset(&new_set, SIGUSR1);
+	//sigprocmask(SIG_BLOCK, &new_set, &old_set);
 	signal(SIGINT, sig_handler);
 
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
@@ -418,7 +423,8 @@ int main(int argc, char *argv[]) {
 
 		//}
 		socketsLecturaTemp = socketsLecturaMaster;
-		if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &old_set) != -1) {
+		//if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &old_set) != -1) { // para el manejo de signals, no borrar!
+		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
 					if (nroSocket == listenningSocket) {	//conexión nueva
@@ -986,7 +992,7 @@ int main(int argc, char *argv[]) {
 
 	// END for(;;)
 
-	sigprocmask(SIG_SETMASK, &old_set, NULL);
+	//sigprocmask(SIG_SETMASK, &old_set, NULL);
 
 	//cerrarServer(listenningSocket);
 	//cerrarServer(socketCliente);
