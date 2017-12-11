@@ -1814,8 +1814,7 @@ else {
 	printf("Archivo No Recuperable\n");
 }
 }
-
-void enviarInfoBloques(int socketCliente,int headerId) {
+void enviarInfoBloques(int socketCliente, int headerId) {
 	printf("id: %d\n", headerId);
 	printf("mensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
@@ -1827,7 +1826,8 @@ void enviarInfoBloques(int socketCliente,int headerId) {
 	char * nombre = conseguirNombreDePath(archivo);
 	tablaArchivo * archivoRecibido = buscarArchivoPorNombre(nombre);
 
-	int cantBloquesFiles = archivoRecibido->cantidadDeBLoquesaMandar;	//path completo yamafs:
+	//int cantBloquesFiles = cantidadBloquesAMandar(archivo);	//path completo yamafs:
+	int cantBloquesFiles = archivoRecibido->cantidadDeBLoquesaMandar;
 	char *cantBloquesFileString = intToArrayZerosLeft(cantBloquesFiles, 4);
 	int cantMensajesPorPedazoArchivo = 6;
 	int cantStrings = 1 + cantMensajesPorPedazoArchivo * cantBloquesFiles;
@@ -1842,7 +1842,7 @@ void enviarInfoBloques(int socketCliente,int headerId) {
 	i++;
 	void impresion(ContenidoBloque * hola) {
 
-		char *nodo=hola->nodo;
+		char *nodo = hola->nodo;
 		//printf("%s\n", nodo);
 		char *bloque = intToArrayZerosLeft(hola->bloque, 4);
 
@@ -1925,8 +1925,6 @@ void enviarInfoNodos(int socketCliente) {
 	int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);
 	printf("bytes enviados: %d\n", bytesEnviados);
 }
-
-
 bool estadoEstableFuncion(){
 	int countGeneral =0 ;
 void	porArchivo(	tablaArchivo * elemento){
