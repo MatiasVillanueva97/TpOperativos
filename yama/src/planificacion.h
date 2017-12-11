@@ -20,6 +20,12 @@ int calcularDisponibilidadNodo(datosPropiosNodo nodosParaPlanificar);
 
 int nodoConMayorCarga(int cantNodos, datosPropiosNodo *nodosParaPlanificar);
 
+void disminuirCargaGlobalNodo(datosPropiosNodo nodo, int cantidadRestar);
+
+void aumentarCargaGlobalNodo(datosPropiosNodo nodo, int cantidadSumar);
+
+void actualizarCargaGlobalNodo(datosPropiosNodo nodo, int carga);
+
 //void ordenarMayorDisponibilidad(int *listaNodos, int cantNodos);
 
 #endif /* YAMA_SRC_PLANIFICACION_H_ */

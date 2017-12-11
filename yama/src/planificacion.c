@@ -5,31 +5,6 @@
  *      Author: utnso
  */
 
-/*	in_array para c
- * typedef int (*cmpfunc)(void *, void *);
-
- int in_array(void *array[], int size, void *lookfor, cmpfunc cmp)
- {
- int i;
-
- for (i = 0; i < size; i++)
- if (cmp(lookfor, array[i]) == 0)
- return 1;
- return 0;
- }
-
- int main()
- {
- char *str[] = {"this is test", "a", "b", "c", "d"};
-
- if (in_array(str, 5, "c", strcmp))
- printf("yes\n");
- else
- printf("no\n");
-
- return 0;
- }
- */
 typedef struct {
 	//int fd;
 	int parteArchivo;
@@ -80,12 +55,16 @@ int getCargaGlobalNodo(datosPropiosNodo nodo) {
 	return listaGlobalNodos[nodo.numero].carga;
 }
 
-actualizarCargaGlobalNodo(datosPropiosNodo nodo, int carga) {
+void actualizarCargaGlobalNodo(datosPropiosNodo nodo, int carga) {
 	listaGlobalNodos[nodo.numero].carga = carga;
 }
 
-disminuirCargaGlobalNodo(datosPropiosNodo nodo, int cantidadRestar) {
+void disminuirCargaGlobalNodo(datosPropiosNodo nodo, int cantidadRestar) {
 	listaGlobalNodos[nodo.numero].carga -= cantidadRestar;
+}
+
+void aumentarCargaGlobalNodo(datosPropiosNodo nodo, int cantidadSumar) {
+	listaGlobalNodos[nodo.numero].carga += cantidadSumar;
 }
 
 /*
@@ -242,3 +221,31 @@ void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoPa
 	return;
 }
 
+
+
+
+/*	in_array para c
+ * typedef int (*cmpfunc)(void *, void *);
+
+ int in_array(void *array[], int size, void *lookfor, cmpfunc cmp)
+ {
+ int i;
+
+ for (i = 0; i < size; i++)
+ if (cmp(lookfor, array[i]) == 0)
+ return 1;
+ return 0;
+ }
+
+ int main()
+ {
+ char *str[] = {"this is test", "a", "b", "c", "d"};
+
+ if (in_array(str, 5, "c", strcmp))
+ printf("yes\n");
+ else
+ printf("no\n");
+
+ return 0;
+ }
+ */
