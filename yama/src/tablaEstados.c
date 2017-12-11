@@ -252,14 +252,14 @@ void getAllTemporalesByJMNEtEs(char **temporales, int nroJob, int nroMaster, int
 	}
 }
 
-int getNodoReduccGlobal(int nroJob, int nroMaster, int etapa, int estado) {
-	struct filaTablaEstados *auxiliar;
-	auxiliar = primeroTablaEstados;
-	while (auxiliar != NULL) {
-		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->etapa == etapa && auxiliar->estado == estado) {
-			return auxiliar->nodo;
-		}
-		auxiliar = auxiliar->siguiente;
-	}
-	return 0;
-}
+//int getNodoReduccGlobal(int nroJob, int nroMaster, int etapa, int estado) {
+//	struct filaTablaEstados *auxiliar;
+//	auxiliar = primeroTablaEstados;
+//	while (auxiliar != NULL) {
+//		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->etapa == etapa && auxiliar->estado == estado) {
+//			return auxiliar->nodo;
+//		}
+//		auxiliar = auxiliar->siguiente;
+//	}
+//	return 0;
+//}

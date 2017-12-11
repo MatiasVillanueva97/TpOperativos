@@ -79,8 +79,8 @@ char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings
  */
 int32_t deserializarHeader(int socketCliente) {
 	char idString[LARGO_STRING_HEADER_ID + 1];
-	recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
-	if (idString <= 0) {
+//	recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
+	if (recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID) <= 0) {
 		return -1;
 	}
 	idString[LARGO_STRING_HEADER_ID] = '\0';

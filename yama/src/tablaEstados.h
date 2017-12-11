@@ -28,6 +28,6 @@ int getCantFilasByJMEtEs(int nroJob, int nroMaster, int etapa, int estado);
 
 void getAllTemporalesByJMNEtEs(char **temporales, int nroJob, int nroMaster, int nroNodo, int etapa, int estado);
 
-int getNodoReduccGlobal(int nroJob, int nroMaster, int etapa, int estado);
+//int getNodoReduccGlobal(int nroJob, int nroMaster, int etapa, int estado);
 
 #endif /* YAMA_SRC_TABLAESTADOS_H_ */

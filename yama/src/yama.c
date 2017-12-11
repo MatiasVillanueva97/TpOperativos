@@ -597,6 +597,10 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
+							nroNodoReduccGlobal= (int) getNroMasterJobByFD(socketConectado).nodoReduccGlobal;
+							if(nroNodoRecibido==nroNodoReduccGlobal){
+								//elegir otro nodo para reducción global
+							}
 							log_info(logYAMA, "Se recibió mensaje de fin de transformación ERROR, nodo %d, bloque %d. Se intenta replanificar.", nroNodoRecibido, nroBloqueRecibido);
 							printf("Nodo recibido: %d\n", nroNodoRecibido);
 							printf("Bloque recibido: %d\n", nroBloqueRecibido);
@@ -772,7 +776,9 @@ int main(int argc, char *argv[]) {
 							;
 							free(arrayMensajes);
 							//obtengo el nodo donde se hizo la reducción global
-							int nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
+//							int nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
+							nroNodoReduccGlobal = (int) getNroMasterJobByFD(socketConectado).nodoReduccGlobal;
+
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global OK, nodo %d.", nroNodoReduccGlobal);
 							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
 
@@ -810,7 +816,9 @@ int main(int argc, char *argv[]) {
 						case TIPO_MSJ_REDUCC_GLOBAL_ERROR:
 							;
 							free(arrayMensajes);
-							nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
+//							nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, REDUCC_GLOBAL, EN_PROCESO);
+							nroNodoReduccGlobal = (int) getNroMasterJobByFD(socketConectado).nodoReduccGlobal;
+
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global ERROR, nodo %d.", nroNodoReduccGlobal);
 							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
 
@@ -830,7 +838,9 @@ int main(int argc, char *argv[]) {
 						case TIPO_MSJ_ALM_FINAL_OK:
 							;
 							free(arrayMensajes);
-							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
+//							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
+							nroNodoAlmacFinal = (int) getNroMasterJobByFD(socketConectado).nodoReduccGlobal;
+
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final OK, nodo %d.", nroNodoAlmacFinal);
 							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
 
@@ -850,7 +860,9 @@ int main(int argc, char *argv[]) {
 						case TIPO_MSJ_ALM_FINAL_ERROR:
 							;
 							free(arrayMensajes);
-							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
+//							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual.nroJob, masterJobActual.nroMaster, ALMAC_FINAL, EN_PROCESO);
+							nroNodoAlmacFinal = (int) getNroMasterJobByFD(socketConectado).nodoReduccGlobal;
+
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final ERROR, nodo %d.", nroNodoAlmacFinal);
 							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
 
