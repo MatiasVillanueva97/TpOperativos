@@ -204,6 +204,26 @@ int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int
 }
 
 /*
+ * modifica el estado de N filas de la tabla de estados
+ * recibe el nro de Job, el nro de Master y el estado que se usan para buscar las filas
+ * recibe el estado nuevo al que hay que actualizar las filas correspondientes
+ * devuelve la cantidad de filas que pudo modificar
+ */
+int modificarEstadoFilasTablaEstadosByJMEs(int nroJob, int nroMaster, int estadoActual, int estadoNuevo) {
+	int cantFilasModificadas = 0;
+	struct filaTablaEstados *auxiliar;
+	auxiliar = primeroTablaEstados;
+	while (auxiliar != NULL) {
+		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->estado == estadoActual) {
+			auxiliar->estado = estadoNuevo;
+			cantFilasModificadas++;
+		}
+		auxiliar = auxiliar->siguiente;
+	}
+	return cantFilasModificadas;
+}
+
+/*
  * devuelve la cantidad de filas que respondan a los parámetros de búsqueda
  */
 int getCantFilasByJMNEtEs(int nroJob, int nroMaster, int nroNodo, int etapa, int estado) {
