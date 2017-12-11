@@ -3,14 +3,12 @@
  Name        : yama.c
  Author      : Grupo 1234
  Description : Proceso YAMA
+ Resume      : YAMA coordina con Master donde correr los jobs.
+ Se conecta a FileSystem. Única instancia.
+ Solo hay un YAMA corriendo al mismo tiempo.
  ============================================================================
  */
 
-// ================================================================ //
-// YAMA coordina con Master donde correr los jobs.
-// Se conecta a FileSystem. Única instancia.
-// Solo hay un YAMA corriendo al mismo tiempo.
-// ================================================================ //
 #define CANT_MAX_FD	50
 
 #include <stdio.h>
@@ -20,6 +18,7 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <commons/log.h>
+#include <errno.h>
 #include "../../utils/constantes.h"
 #include "../../utils/utils.h"
 #include "../../utils/conexionesSocket.h"
@@ -56,12 +55,24 @@ datosPropiosNodo listaGlobalNodos[50];
 #include "planificacion.h"
 #include "nroMasterJob.c"
 #include "inicializacion.c"
+#include <signal.h>
 #include "comunicacionesFS.c"
 
 //para el select
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+int recargarConfig = 0;
+
+// mover a utils.h o alguna libreria
+void sig_handler(int signal) {
+
+	if (signal == SIGUSR1) {
+		printf("Recieved SIGUSR1");
+		recargarConfig = 1;
+	}
+}
 
 char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, int cantPartesArchivo) {
 	int i, j, k, cantStringsASerializar, largoStringDestinoCopia;
@@ -187,16 +198,16 @@ char* serializarMensajeReduccLocal(int nroNodoRecibido, nroMasterJob masterJobAc
 		j++;
 	}
 
-	///////////////mensaje serializado
+	//mensaje serializado
 	char *mensajeSerializadoReduccLocal = serializarMensaje(TIPO_MSJ_TABLA_REDUCCION_LOCAL, arrayMensajesSerializarReduccLocal, cantStrings);
 	for (j = 0; j < cantStrings; j++) {
 		free(arrayMensajesSerializarReduccLocal[j]);
 	}
 	free(arrayMensajesSerializarReduccLocal);
 
-//	for (h = 0; h < cantidadTemporales; h++) {
-//		free(temporales[j]); //TODO: revisar que no rompa
-//	}
+	//	for (h = 0; h < cantidadTemporales; h++) {
+	//		free(temporales[j]); //TODO: revisar que no rompa
+	//	}
 	free(temporales);
 	return mensajeSerializadoReduccLocal;
 }
@@ -296,6 +307,15 @@ char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalAlmFinal)
 }
 
 int main(int argc, char *argv[]) {
+
+	sigset_t new_set, old_set;
+	sigemptyset(&new_set);
+	sigaddset(&new_set, SIGINT);
+	sigaddset(&new_set, SIGUSR1);
+	sigprocmask(SIG_BLOCK, &new_set, &old_set);
+
+	signal(SIGINT, sig_handler);
+
 	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int h, i, j, k;
 	char mensajeHeaderSolo[4];
@@ -319,28 +339,34 @@ int main(int argc, char *argv[]) {
 	//para la planificación
 	disponibBase = atoi(datosConfigYama[DISPONIBILIDAD_BASE]);
 	strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
+
 	/* ************** conexión como cliente al FS *************** */
 	int socketFS, preparadoFs = 0;
-	if ((socketFS = conexionAFileSystem()) < 0) {
-		//preparadoEnviarFs = 0;
-		log_error(logYAMA, "No se pudo conectar al FileSystem. Se aborta la ejecución");
-		log_info(logYAMA, "Server cerrado");
-		log_destroy(logYAMA);
-		puts("Abortar ejecución");
-		return EXIT_FAILURE;
-	}
+
 	int modulo = yama;
+
 	while (preparadoFs == 0) {
+		if ((socketFS = conexionAFileSystem()) < 0) {
+			log_error(logYAMA, "No se pudo conectar al FileSystem. Se aborta la ejecución");
+			log_info(logYAMA, "Server cerrado");
+			log_destroy(logYAMA);
+
+			puts("Abortar ejecución");
+			return EXIT_FAILURE;
+		}
 		send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 		headerId = deserializarHeader(socketFS);
 		if (headerId == TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
-			log_info(logYAMA, "El Filesystem está estable. Se puede continuar la ejecución");
 			preparadoFs = 1;
+			log_info(logYAMA, "El Filesystem está estable. Se puede continuar la ejecución");
+			puts("Conectado a FileSystem");
 		} else {
 			log_info(logYAMA, "Se está esperando que el Filesystem esté estable");
-			puts("Sigo esperando que el Filesystem esté estable");
+			puts("Esperando que el Filesystem esté estable");
+			sleep(5);
 		}
 	}
+
 	// add the socketFs to the master set
 	//FD_SET(socketFS, &socketsLecturaMaster);
 	// keep track of the biggest file descriptor
@@ -369,8 +395,18 @@ int main(int argc, char *argv[]) {
 		listaGlobalNodos[i].carga = 0;
 	}
 	for (;;) {
+		//if(recargarConfig){
+		//recargar config
+		//if (!getDatosConfiguracion()) {
+		//	return EXIT_FAILURE;
+		//}
+		//para la planificación
+		//disponibBase = atoi(datosConfigYama[DISPONIBILIDAD_BASE]);
+		//strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
+
+		//}
 		socketsLecturaTemp = socketsLecturaMaster;
-		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
+		if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &old_set) != -1) {
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
 					if (nroSocket == listenningSocket) {	//conexión nueva
@@ -416,6 +452,7 @@ int main(int argc, char *argv[]) {
 						int cantidadMensajes = protocoloCantidadMensajes[headerId];
 						char **arrayMensajes = deserializarMensaje(socketConectado, cantidadMensajes);
 						switch (headerId) {
+
 						case TIPO_MSJ_PATH_ARCHIVO_TRANSFORMAR:
 							;
 							char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
@@ -460,8 +497,7 @@ int main(int argc, char *argv[]) {
 								/* ***************************************************************** */
 
 								/* ************* inicio planificación *************** */
-								//le paso el vector donde debe ir guardando las asignaciones de nodos planificados
-								//indexado por partes del archivo
+								//le paso el vector donde debe ir guardando las asignaciones de nodos planificados, indexado por partes del archivo
 								nodoParaAsignar asignacionesNodos[cantPartesArchivo];
 								planificar(socketConectado, bloques, asignacionesNodos, cantPartesArchivo, cantNodosArchivo, nodosParaPlanificar);
 								printf("\n ---------- Lista de nodos para planificación ---------- \n");
@@ -496,23 +532,19 @@ int main(int argc, char *argv[]) {
 									//en la tabla de transformación para el master
 									strcpy(asignacionesNodos[i].temporal, temporal);
 								}
-								//puts("\nlista de elementos asignados a transformación");
-								//mostrarTablaEstados();
 								/* ************** fin agregado en tabla de estados *************** */
 
 								/* ****** envío de nodos para la transformación ******************* */
 								//envía al master la lista de nodos donde trabajar cada bloque
 								char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantPartesArchivo);
-								//printf("\n ---------- Mensaje serializado ---------- \n%s\n", mensajeSerializado);
 								enviarMensaje(socketConectado, mensajeSerializado);
 								/* **************************************************************** */
-								//puts("\nlista de elementos luego de enviar la tabla de transformación");
 								mostrarTablaEstados();
 							} else {
 								perror("No se pudo pedir el archivo al FS");
 							}
-
 							break;
+
 						case TIPO_MSJ_TRANSFORMACION_OK:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
@@ -559,8 +591,8 @@ int main(int argc, char *argv[]) {
 								puts("\nlista de elementos luego de enviar la tabla de reducción local");
 								mostrarTablaEstados();
 							}
-
 							break;
+
 						case TIPO_MSJ_TRANSFORMACION_ERROR:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
@@ -628,6 +660,7 @@ int main(int argc, char *argv[]) {
 								enviarMensaje(socketConectado, mensajeSerializado);
 							}
 							break;
+
 						case TIPO_MSJ_REDUCC_LOCAL_OK:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
@@ -714,6 +747,7 @@ int main(int argc, char *argv[]) {
 								}
 							}
 							break;
+
 						case TIPO_MSJ_REDUCC_LOCAL_ERROR:
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
@@ -733,6 +767,7 @@ int main(int argc, char *argv[]) {
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_info(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
+
 						case TIPO_MSJ_REDUCC_GLOBAL_OK:
 							;
 							free(arrayMensajes);
@@ -770,8 +805,8 @@ int main(int argc, char *argv[]) {
 							printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoAlmFinal);
 							enviarMensaje(socketConectado, mensajeSerializadoAlmFinal);
 							log_info(logYAMA, "Se da inicio al Almacenamiento Final en el nodo %d", nroNodoReduccGlobal);
-
 							break;
+
 						case TIPO_MSJ_REDUCC_GLOBAL_ERROR:
 							;
 							free(arrayMensajes);
@@ -791,6 +826,7 @@ int main(int argc, char *argv[]) {
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
+
 						case TIPO_MSJ_ALM_FINAL_OK:
 							;
 							free(arrayMensajes);
@@ -810,6 +846,7 @@ int main(int argc, char *argv[]) {
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se da por finalizado correctamente el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
+
 						case TIPO_MSJ_ALM_FINAL_ERROR:
 							;
 							free(arrayMensajes);
@@ -831,7 +868,6 @@ int main(int argc, char *argv[]) {
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual.nroJob, masterJobActual.nroMaster, socketConectado);
 							break;
-
 						default:
 							;
 							free(arrayMensajes);
@@ -841,18 +877,27 @@ int main(int argc, char *argv[]) {
 					// END handle data from client
 				} //if (FD_ISSET(i, &socketsLecturaTemp)) END got new incoming connection
 			} //for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) END looping through file descriptors
-		} else {
-			log_error(logYAMA, "Ocurrió un error en el select() principal");
-			perror("Error en select()");
+
+			//		} else {
+			//			log_error(logYAMA, "Ocurrió un error en el select() principal");
+			//			perror("Error en select()");
 		}
+
 	}
-// END for(;;)
+	if (errno == EINTR) {
+		puts("interrupted by SIGINT");
+	} else {
+		perror("pselect()");
+	}
+	//sigprocmask()
 
-//cerrarServer(listenningSocket);
-//cerrarServer(socketCliente);
+	// END for(;;)
+
+	sigprocmask(SIG_SETMASK, &old_set, NULL);
+
+	//cerrarServer(listenningSocket);
+	//cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
-
 	log_destroy(logYAMA);
 	return EXIT_SUCCESS;
 }
-

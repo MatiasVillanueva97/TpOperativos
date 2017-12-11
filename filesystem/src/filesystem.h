@@ -8,6 +8,7 @@
 #ifndef SRC_FILESYSTEM_H_
 #define SRC_FILESYSTEM_H_
 
+//bibliotecas
 #include "../../utils/includes.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,12 +27,15 @@
 #include <math.h>
 #include <commons/collections/list.h>
 
+
+//File System
+
 //Tabla de Directorios
-typedef struct {
-	int index;
-	char * nombre;
-	int padre;
-} tablaDeDirectorios;
+typedef struct{
+  int index;
+  char * nombre;
+  int padre;
+}tablaDeDirectorios;
 
 //Tabla de Nodos
 typedef struct {
@@ -42,75 +46,83 @@ typedef struct {
 	uint32_t libre;
 	uint32_t socket;
 } ContenidoXNodo;
+typedef struct{
+	uint32_t a ;
+	uint32_t b ;
+}bloqueVector;
 
 typedef struct {
 	uint32_t tamanio;
 	uint32_t libres;
 	t_list * nodo;
 	t_list * contenidoXNodo;
-} tablaDeNodos;
+}tablaDeNodos;
 
 //Tabla de Archivos
+
 typedef struct {
 	char* nodo;
 	uint32_t bloque;
 	uint32_t bytes;
-} BloqueCopia;
+}BloqueCopia;
 
-typedef struct {
+typedef struct{
 	char * nombre;
-	uint32_t directorioPadre;
+	int directorioPadre;
 	int tamanio;
 	int tipo;
-	int cantBloques;
+	int cantidadDeBLoquesaMandar;
 	t_list* bloqueCopias;
-} tablaArchivo;
+}tablaArchivo;
 
-//Info para YAMA
+//info para yama---------------------
 typedef struct {
 	char * nodo;
 	int bloque;
 	int bytes;
-} ContenidoBloque;
+}ContenidoBloque;
 
 typedef struct {
 	t_list * bloqueNodo;
 	int bytesBloque;
-} Bloque;
+}Bloque;
 
-typedef struct {
+typedef struct{
+	//char * nombre;
 	uint32_t tamaniobytes;
 	uint32_t tipo;
 	uint32_t directorioPadre;
 	uint32_t estado;
 	Bloque bloque;
-} archivoEnFileSystem;
-
+}archivoEnFileSystem;
+//----------
 //Bitmap por Nodo
-typedef struct {
+typedef struct  {
 	char* nodo;
-	t_bitarray * bitarray;
+	t_bitarray 	* bitarray;
 	uint32_t cantidadBloques;
 } tablaBitmapXNodos;
 
 //Variables
-int formateado;
-int estadoAnterior;
-int estadoEstable;
-t_log * logFs;
+
 t_list * tablaArchivos;
 t_list * tablaNodos;
 t_list * tabaBitmapXNodo;
 t_list * listaDeBitMap;
+tablaDeNodos * tablaNodosGlobal;
+
+t_log * logFs;
+t_config * configFs;
 t_list * listaDeNodosDeEstadoAnterior;
 t_list * listaDeNodosDeFormateo;
 t_list * listaDirectorios;
 t_list * registroArchivos;
-tablaDeNodos * tablaNodosGlobal;
-t_config * configFs;
 t_config * persistirNodos;
 t_config * persistirArchivo;
 t_config *directorios;
 t_config * registroArchivo;
-
+int formateado;
+int estadoAnterior;
+int	estadoEstable;
+bool estadoEstableFuncion();
 #endif /* SRC_FILESYSTEM_H_ */
