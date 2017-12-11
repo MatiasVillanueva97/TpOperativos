@@ -580,6 +580,11 @@ int main(int argc, char *argv[]) {
 							//replanificar: envía el nodo y bloque de la copia del bloque
 							//de archivo que no se pudo transformar
 							//TODO: hacer de nuevo la replanificación !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+							/*
+							 * tengo que pedir de nuevo los bloques del archivo
+							 * replanificar el bloque que falló
+							 */
+
 							int cantBloquesArchivo = listaNrosMasterJob[socketConectado].cantBloquesArchivo;
 							nodosUsadobloqueArchivo nodoSuplente;
 							int nodoSuplenteEncontrado = 0;
