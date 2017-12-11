@@ -33,12 +33,12 @@ struct stat buff;
 int fd;
 
 int conexionAFileSystem() {
-	log_info(logDataNode, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigDataNode[FS_IP], datosConfigDataNode[FS_PUERTO]);
+	log_trace(logDataNode, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigDataNode[FS_IP], datosConfigDataNode[FS_PUERTO]);
 	int socketFS = conectarA(datosConfigDataNode[FS_IP], datosConfigDataNode[FS_PUERTO]);
 	if (socketFS >= 0) {
-		puts("Conectado a FileSystem");
+		log_trace(logDataNode, "Conectado a FileSystem");
 	}else{
-		puts("Filesystem not ready\n");
+		log_error(logDataNode, "Filesystem not ready");
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 	}
 	return socketFS;
@@ -136,16 +136,16 @@ void pruebas2(int socket, char **datosConfigDataNode) {
 }
 int main(int argc, char *argv[]) {
 
-	logDataNode = log_create("logDataNode.log", "DataNode", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
-	log_info(logDataNode, "Iniciando proceso DataNode");
+	logDataNode = log_create("logDataNode.log", "DataNode", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
+	log_trace(logDataNode, "Iniciando proceso DataNode");
 	printf("\n*** Proceso DataNode ***\n");
 	int preparadoEnviarFs = 1, i;
 
 	// 1º) leo archivo de config.
 	char *nameArchivoConfig = "configNodo.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigDataNode, datosConfigDataNode)) { //leerArchivoConfig devuelve 1 si hay error
-		printf("Hubo un error al leer el archivo de configuración");
-		return 0;
+		log_error(logDataNode, "Hubo un error al leer el archivo de configuracion");
+		return EXIT_FAILURE;
 	}
 
 	//TODO revisar esto!
@@ -189,12 +189,9 @@ int main(int argc, char *argv[]) {
 
 		case TIPO_MSJ_ARCHIVO: {
 			int cantMensajes = protocoloCantidadMensajes[header];
-			char ** arrayMensajesRecibidos = deserializarMensaje(socketFS, cantMensajes);
+			char** arrayMensajesRecibidos = deserializarMensaje(socketFS, cantMensajes);
 			setBloque(atoi(arrayMensajesRecibidos[1]), arrayMensajesRecibidos[0]);
-			printf("setie bloque \n");
-			printf("numero de bloque %s\n", arrayMensajesRecibidos[1]);
-			printf("tipo archivo %s\n", arrayMensajesRecibidos[2]);
-			printf("recibi mensaje %d \n", j);
+			log_trace(logDataNode, "Setie bloque. Numero de bloque %s, Tipo archivo %s, Recibi mensaje %d", arrayMensajesRecibidos[1], arrayMensajesRecibidos[2], j);
 			j++;
 		}
 			break;
@@ -202,36 +199,38 @@ int main(int argc, char *argv[]) {
 		case TIPO_MSJ_PEDIR_BLOQUES: {
 			//piden bloques y los mando
 			int cantMensajes = protocoloCantidadMensajes[header];
-			char ** arrayMensajesRecibidos = deserializarMensaje(socketFS, cantMensajes);
-			printf("bloque %d\n", atoi(arrayMensajesRecibidos[0]));
+			char** arrayMensajesRecibidos = deserializarMensaje(socketFS, cantMensajes);
+			log_trace(logDataNode, "bloque %d", atoi(arrayMensajesRecibidos[0]));
 			char * buffer = getBloque(atoi(arrayMensajesRecibidos[0]));
 			munmap(mapArchivo, 1048576);
 
-			printf("paso get bloque\n");
+			log_info(logDataNode, "Paso getBloque");
 
 			//SEND
 			int cantStrings1 = 1;
-			char **arrayMensajesSerializarEnviar = malloc(sizeof(char*) * cantStrings1);
-			if (!arrayMensajesSerializarEnviar)
-				perror("error de malloc 1");
+			char** arrayMensajesSerializarEnviar = malloc(sizeof(char*) * cantStrings1);
+			if (!arrayMensajesSerializarEnviar) {
+				log_error(logDataNode, "error de malloc 1");
+			}
 
 			int i = 0;
 
 			arrayMensajesSerializarEnviar[i] = malloc(string_length(buffer) + 1);
-			if (!arrayMensajesSerializarEnviar[i])
-				perror("error de malloc 1");
+			if (!arrayMensajesSerializarEnviar[i]) {
+				log_error(logDataNode, "error de malloc 1");
+			}
 			strcpy(arrayMensajesSerializarEnviar[i], buffer);
 			i++;
 
 			char *mensajeSerializado = serializarMensaje(TIPO_MSJ_BLOQUE_DESDE_DATANODE, arrayMensajesSerializarEnviar, cantStrings1);
 			//printf("mensajeSerializado : %s\n", mensajeSerializado);
 			int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);
-			printf("bytes enviados: %d\n", bytesEnviados);
+			log_trace(logDataNode, "Bytes enviados: %d", bytesEnviados);
 		}
 			break;
 
 		default: {
-			printf("Se cayo FileSystem\n");
+			log_error(logDataNode, "Se cayo FileSystem");
 			exit(0);
 			break;
 
