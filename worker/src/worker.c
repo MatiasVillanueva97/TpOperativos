@@ -494,6 +494,13 @@ int main(int argc, char *argv[]) {
 	}
 	log_trace(logWorker, "Se inicio worker como server. IP: %s, Puerto: %s", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 
+	/*
+	//prueba almacenamiento final, comentar todo el while de abajo
+	char* rutaArchivo = "/home/utnso/Escritorio/nombres1k.csv";
+	char* rutaFinal = "lalala";
+	almacenamientoFinal(rutaArchivo, rutaFinal);
+	 */
+
 	while (1) {	//inicio bucle para recibir conexiones y forkear
 		puts("\nYa estoy preparado para recibir conexiones\n-----------------------------------------\n");
 

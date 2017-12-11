@@ -2058,7 +2058,9 @@ void soyServidor(char * puerto) {
 							//int cantidadMensajes = protocoloCantidadMensajes[headerId];	//averigua la cantidad de mensajes que le van a llegar
 							char** mensajes = deserializarMensaje(SocketWorker, 2);
 							printf("largo mensaje 1: %d\n",string_length(mensajes[0]));
+							printf("%s\n", mensajes[0]);
 							printf("largo mensaje 2: %d\n",string_length(mensajes[1]));
+							printf("%s\n", mensajes[1]);
 							*/
 						}
 							break;
