@@ -422,13 +422,15 @@ int conexionAFileSystem() {
 void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	FILE* archivo = fopen(rutaArchivo, "r");
 	int fd = fileno(archivo);
+	//printf("fd: %d\n", fd);
 	struct stat buff;
 	fstat(fd, &buff);
 	int	tamano = buff.st_size;
+	//printf("tamanio: %d\n", tamano);
 	char* buffer = malloc(tamano);
-	fseek(archivo, 0, SEEK_SET);
+	//fseek(archivo, 0, SEEK_SET);
 	fread(buffer,tamano,1,archivo);
-	//	printf("%s\n",buffer);
+	//printf("%s\n",buffer);
 	int socketFS = conexionAFileSystem(); //= conectarA("127.0.0.1","5000");
 	int preparadoEnviarFs = 1;
 	if (socketFS < 0) {
