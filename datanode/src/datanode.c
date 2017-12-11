@@ -58,14 +58,14 @@ void setBloque(int idBloque, char* datos) {
 		strncpy(mapArchivo, datos, bytesEscritos);
 		munmap(mapArchivo, buff.st_size);
 	} else {
-		printf("El bloque %i no existe en este nodo\n", idBloque);
+		log_error(logDataNode, "El bloque %i no existe en este nodo", idBloque);
 	}
 }
 
 //leer los datos del bloque
 char* getBloque(int idBloque) {
 	if (idBloque >= tamanoArchivo) {
-		printf("El bloque %i no existe en este nodo\n", idBloque);
+		log_info(logDataNode, "El bloque %i no existe en este nodo", idBloque);
 		return 0;
 	}
 	char *buffer = malloc(unMega);
@@ -77,8 +77,7 @@ char* getBloque(int idBloque) {
 		exit(1);
 	}
 	strncpy(buffer, mapArchivo, unMega);
-	log_info(logDataNode, "bytes leidos en el bloque %i\n", idBloque);
-	printf("bytes leidos en el bloque %i\n", idBloque);
+	log_info(logDataNode, "bytes leidos en el bloque %i", idBloque);
 	//printf("%s\n",buffer);
 	return buffer;
 }

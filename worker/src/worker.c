@@ -413,7 +413,7 @@ int conexionAFileSystem() {
 	log_info(logWorker, "Conexión a FileSystem, IP: %s, Puerto: %s", datosConfigWorker[FS_IP], datosConfigWorker[FS_PUERTO]);
 	int socketFS = conectarA(datosConfigWorker[FS_IP], datosConfigWorker[FS_PUERTO]);
 	if (socketFS < 0) {
-		puts("Filesystem not ready\n");
+		log_error(logWorker, "Filesystem not ready");
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 	}
 	return socketFS;
@@ -422,24 +422,22 @@ int conexionAFileSystem() {
 void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	FILE* archivo = fopen(rutaArchivo, "r");
 	int fd = fileno(archivo);
-	int tamano;
 	struct stat buff;
 	fstat(fd, &buff);
-	tamano = buff.st_size;
+	int	tamano = buff.st_size;
 	char* buffer = malloc(tamano);
 	fseek(archivo, 0, SEEK_SET);
 	fread(buffer,tamano,1,archivo);
 	//	printf("%s\n",buffer);
-	int socketFS; //= conectarA("127.0.0.1","5000");
-	int preparadoEnviarFs = 1, i;
-	if ((socketFS = conexionAFileSystem()) < 0) {
+	int socketFS = conexionAFileSystem(); //= conectarA("127.0.0.1","5000");
+	int preparadoEnviarFs = 1;
+	if (socketFS < 0) {
 		preparadoEnviarFs = 0;
 	}
 	int modulo = worker;
 	//se identifica con el FS
 	send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 	//arma el array de strings para serializar
-	int bytesEnviados;
 	char **arrayMensajes = malloc(sizeof(char*) * 2);
 	arrayMensajes[0] = malloc(string_length(rutaFinal) + 1);
 	strcpy(arrayMensajes[0], rutaFinal);
@@ -447,14 +445,12 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	strcpy(arrayMensajes[1], buffer);
 	//serializa los mensajes y los envía
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, 2);
-	bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);//envio el mensaje serializado a FS
+	int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);//envio el mensaje serializado a FS
 	printf("%s\n",mensajeSerializado);
 	//libera todos los pedidos de malloc
-	for (i = 0; i < 2; i++) {
-		free(arrayMensajes[i]);
-	}
-	free(arrayMensajes);
+	liberar_array(arrayMensajes, 2);
 	free(buffer);
+	free(mensajeSerializado);
 }
 
 
@@ -546,7 +542,7 @@ int main(int argc, char *argv[]) {
 					 * Almacenam final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
 					 */
 
-					int resultado;
+					//int resultado;
 
 					if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
 
