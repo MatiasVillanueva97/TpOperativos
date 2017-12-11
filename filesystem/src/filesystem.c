@@ -2055,10 +2055,13 @@ void soyServidor(char * puerto) {
 						case worker: {
 							SocketWorker = nuevoSocket;
 							//atender a worker,supongo que almacenar el archivo
-							/*	char** mensajes = deserializarMensaje(SocketWorker, 2);
-							 printf("%s\n",mensajes[0]);
-							 printf("%s\n",mensajes[1]);
-							 */
+							/*
+							int32_t headerId = deserializarHeader(SocketWorker);	//recibe el id del header para saber qué esperar
+							//int cantidadMensajes = protocoloCantidadMensajes[headerId];	//averigua la cantidad de mensajes que le van a llegar
+							char** mensajes = deserializarMensaje(SocketWorker, 2);
+							printf("largo mensaje 1: %d\n",string_length(mensajes[0]));
+							printf("largo mensaje 2: %d\n",string_length(mensajes[1]));
+							*/
 						}
 							break;
 
