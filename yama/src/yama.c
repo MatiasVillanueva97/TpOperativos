@@ -143,7 +143,7 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 
 }
 
-char* serializarMensajeReduccLocal(int nroNodoRecibido, nroMasterJob *masterJobActual, char *temporalReduccLocal) {
+char* serializarMensajeReduccLocal(int nroNodoRecibido, datosMasterJob *masterJobActual, char *temporalReduccLocal) {
 	int j, k, h;
 	int cantidadTemporalesTransformacion = getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
 	char **temporales = malloc(sizeof(char*) * cantidadTemporalesTransformacion);
@@ -314,7 +314,7 @@ char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalAlmFinal)
 }
 
 liberarCargaJob(int socketConectado) {
-	nroMasterJob *masterJobActual = getNroMasterJobByFD(socketConectado);
+	datosMasterJob *masterJobActual = getDatosMasterJobByFD(socketConectado);
 
 	int cantNodosUsados = (int) masterJobActual->cantNodosUsados;
 	int i, j, k;
@@ -406,7 +406,7 @@ int main(int argc, char *argv[]) {
 	int socketCliente, socketConectado, cantStrings, bytesRecibidos = 0,
 			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido,
 			nroNodoAlmacFinal, cantNodosArchivo, cantNodosUsados;
-	nroMasterJob *masterJobActual;
+	datosMasterJob *masterJobActual;
 	//pongo la carga de cada nodo en 0 al iniciar
 	int largoListaGlobalNodos = sizeof(listaGlobalNodos) / sizeof(datosPropiosNodo);
 	for (i = 0; i < largoListaGlobalNodos; i++) {
@@ -442,7 +442,8 @@ int main(int argc, char *argv[]) {
 									if (socketCliente > maxFD) { // keep track of the max
 										maxFD = socketCliente;
 									}
-									asignarNroMasterJob(getNuevoNroMaster(), getNuevoNroJob(), socketCliente);
+									//se crea el elemento en la lista de datosMasterJob
+									asignarDatosMasterJob(getNuevoNroMaster(), getNuevoNroJob(), socketCliente);
 									enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
 									log_info(logYAMA, "Handshake verificado. Se acepta una nueva conexión de un Master y se la comienza a escuchar");
 
@@ -456,7 +457,7 @@ int main(int argc, char *argv[]) {
 						/* *************************** recepción de un mensaje ****************************/
 						socketConectado = nroSocket;
 						log_info(logYAMA, "Se recibió un mensaje de proceso conectado por FD %d", socketConectado);
-						masterJobActual = getNroMasterJobByFD(socketConectado);
+						masterJobActual = getDatosMasterJobByFD(socketConectado);
 						printf("\nSocket conectado: %d\n", socketConectado);
 						printf("Master actual: %d\n", masterJobActual->nroMaster);
 						printf("Job actual: %d\n", masterJobActual->nroJob);
@@ -482,6 +483,7 @@ int main(int argc, char *argv[]) {
 							//a las tareas que están en proceso las pone como ERROR
 							modificarEstadoFilasTablaEstadosByJMEs(masterJobActual->nroJob, masterJobActual->nroMaster, EN_PROCESO, ERROR);
 							mostrarTablaEstados();
+							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 						}
@@ -509,6 +511,7 @@ int main(int argc, char *argv[]) {
 								printf("Header Id: %d\n", headerId);
 								printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
 								masterJobActual->cantBloquesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
+								printf("masterJobActual->cantBloquesArchivo: %d\n", masterJobActual->cantBloquesArchivo);
 								bloqueArchivo *bloques = recibirMetadataArchivoFS(socketFS, masterJobActual->cantBloquesArchivo);
 								printf("\n ---------- Lista de bloques del archivo devuelto por FS ---------- \n");
 								for (i = 0;
@@ -550,7 +553,7 @@ int main(int argc, char *argv[]) {
 								nodoParaAsignar asignacionesNodos[masterJobActual->cantBloquesArchivo];
 								printf("\n ---------- Lista de nodos para planificación ---------- \n");
 								for (i = 0; i < cantNodosArchivo; i++) {
-									printf("Nro nodo %d - Carga %d\n", nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
+									printf("Nro nodo %d - Carga %d\n", nodosParaPlanificar[i].numero,listaGlobalNodos[nodosParaPlanificar[i].numero].carga);
 								}
 
 								planificar(socketConectado, bloques, asignacionesNodos, masterJobActual->cantBloquesArchivo, cantNodosArchivo, nodosParaPlanificar);
@@ -681,7 +684,7 @@ int main(int argc, char *argv[]) {
 							;
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							nroBloqueRecibido = atoi(arrayMensajes[1]);
-							nroNodoReduccGlobal = (int) getNroMasterJobByFD(socketConectado)->nodoReduccGlobal;
+							nroNodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 							if (nroNodoRecibido == nroNodoReduccGlobal) {
 								//elegir otro nodo para reducción global
 							}
@@ -723,6 +726,8 @@ int main(int argc, char *argv[]) {
 								for (i = 0; i < cantNodosArchivo; i++) {
 									printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga);
 								}
+								//elimino el elemento con el socketConectado de la lista de datosMasterJob
+								eliminarElemDatosMasterJobByFD(socketConectado);
 								cerrarCliente(socketConectado);
 								FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							} else {
@@ -790,7 +795,7 @@ int main(int argc, char *argv[]) {
 							//verificar que todos los nodos del job y master hayan terminado la reducción local
 							if (getCantFilasByJMEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, REDUCC_LOCAL, EN_PROCESO) == 0) {
 								/* ************** agregado de la fila de reducción global en tabla de estados *************** */
-								int nodoReduccGlobal = (int) getNroMasterJobByFD(socketConectado)->nodoReduccGlobal;
+								int nodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 								struct filaTablaEstados fila;
 								fila.job = masterJobActual->nroJob;
@@ -889,6 +894,7 @@ int main(int argc, char *argv[]) {
 							for (i = 0; i < cantNodosArchivo; i++) {
 								printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga);
 							}
+							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_info(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
@@ -899,7 +905,7 @@ int main(int argc, char *argv[]) {
 							free(arrayMensajes);
 							//obtengo el nodo donde se hizo la reducción global
 //							int nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual->nroJob, masterJobActual->nroMaster, REDUCC_GLOBAL, EN_PROCESO);
-							nroNodoReduccGlobal = (int) getNroMasterJobByFD(socketConectado)->nodoReduccGlobal;
+							nroNodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global OK, nodo %d.", nroNodoReduccGlobal);
 							//disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
@@ -939,7 +945,7 @@ int main(int argc, char *argv[]) {
 							;
 							free(arrayMensajes);
 //							nroNodoReduccGlobal = getNodoReduccGlobal(masterJobActual->nroJob, masterJobActual->nroMaster, REDUCC_GLOBAL, EN_PROCESO);
-							nroNodoReduccGlobal = (int) getNroMasterJobByFD(socketConectado)->nodoReduccGlobal;
+							nroNodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global ERROR, nodo %d.", nroNodoReduccGlobal);
 							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
@@ -952,6 +958,7 @@ int main(int argc, char *argv[]) {
 							}
 							//abortar el job
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
@@ -961,7 +968,7 @@ int main(int argc, char *argv[]) {
 							;
 							free(arrayMensajes);
 //							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual->nroJob, masterJobActual->nroMaster, ALMAC_FINAL, EN_PROCESO);
-							nroNodoAlmacFinal = (int) getNroMasterJobByFD(socketConectado)->nodoReduccGlobal;
+							nroNodoAlmacFinal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final OK, nodo %d.", nroNodoAlmacFinal);
 							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
@@ -974,6 +981,7 @@ int main(int argc, char *argv[]) {
 								log_info(logYAMA, "Se modificó la tabla de estados en el fin del Almacenamiento Final OK");
 							}
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_FINALIZAR_JOB);
+							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se da por finalizado correctamente el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
@@ -983,7 +991,7 @@ int main(int argc, char *argv[]) {
 							;
 							free(arrayMensajes);
 //							nroNodoAlmacFinal = getNodoReduccGlobal(masterJobActual->nroJob, masterJobActual->nroMaster, ALMAC_FINAL, EN_PROCESO);
-							nroNodoAlmacFinal = (int) getNroMasterJobByFD(socketConectado)->nodoReduccGlobal;
+							nroNodoAlmacFinal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final ERROR, nodo %d.", nroNodoAlmacFinal);
 							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
@@ -998,6 +1006,7 @@ int main(int argc, char *argv[]) {
 
 							//abortar el job
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
