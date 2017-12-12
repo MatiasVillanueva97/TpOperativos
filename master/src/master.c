@@ -221,60 +221,72 @@ void conectarAWorkerReduccionLocal(void *arg) {
 	//se conecta a worker
 	int socketWorker = conectarA(datos->ip, string_itoa(datos->puerto));
 
-	//envio de mensajes: reductor.py | cantidad de temporales transformacion | temp tranf 1 | .... | temp transf N | temp reduccLocal
-	int cantStringsASerializar = 1 + 1 + cantTemporalesTransformacion + 1;
-	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
+	int32_t headerIdWorker = handshakeWorker(socketWorker);
+	if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
+		puts("Error de handshake con el worker");
+	} else {
+		puts("Conectado al worker");
 
-	//serializo reductor
-	j = 0;
-	arrayMensajes[j] = malloc(lengthArchivoReductor);
-	strcpy(arrayMensajes[j], reductorString);
-	free(reductorString);
+		//envio de mensajes: reductor.py | cantidad de temporales transformacion | temp tranf 1 | .... | temp transf N | temp reduccLocal
+		// el protocolo son 2 porq solo recibe el script reductor y la cant de temporales, recien ahi sabe cuanto leer despues
+		int cantStringsASerializar = 1 + 1 + cantTemporalesTransformacion + 1;
+		char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 
-	//serializo cantidad de temporales transformacion
-	j++;
-	char* cantTemporalesTransformacionString = intToArrayZerosLeft(cantTemporalesTransformacion, 4);
-	arrayMensajes[j] = malloc(string_length(cantTemporalesTransformacionString) + 1);
-	strcpy(arrayMensajes[j], cantTemporalesTransformacionString);
+		//serializo reductor
+		j = 0;
+		arrayMensajes[j] = malloc(lengthArchivoReductor);
+		strcpy(arrayMensajes[j], reductorString);
+		free(reductorString);
 
-	//serializo temporales transformacion
-	j++;
-	for (i = 0; i < cantTemporalesTransformacion; i++) {
-		arrayMensajes[j] = malloc(string_length(datos->temporalesTransformacion[i]) + 1);
-		strcpy(arrayMensajes[j], datos->temporalesTransformacion[i]);
+		//serializo cantidad de temporales transformacion
 		j++;
+		char* cantTemporalesTransformacionString = intToArrayZerosLeft(cantTemporalesTransformacion, 4);
+		arrayMensajes[j] = malloc(string_length(cantTemporalesTransformacionString) + 1);
+		strcpy(arrayMensajes[j], cantTemporalesTransformacionString);
+
+		//serializo temporales transformacion
+		j++;
+		for (i = 0; i < cantTemporalesTransformacion; i++) {
+			arrayMensajes[j] = malloc(string_length(datos->temporalesTransformacion[i]) + 1);
+			strcpy(arrayMensajes[j], datos->temporalesTransformacion[i]);
+			j++;
+		}
+
+		//0030 0000 0592
+
+		//serializo temporal reduccion local
+		arrayMensajes[j] = malloc(string_length(datos->temporalReduccionLocal) + 1);
+		strcpy(arrayMensajes[j], datos->temporalReduccionLocal);
+
+		//TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER: 1 MENSAJE
+		char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER, arrayMensajes, cantStringsASerializar);
+
+		for (j = 0; j < cantStringsASerializar; j++) {
+			free(arrayMensajes[j]);
+		}
+		free(arrayMensajes);
+
+		// envio mensaje serializado
+		printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
+		int temp = enviarMensaje(socketWorker, mensajeSerializado);
+		printf ("bytes enviados a worker msje serializado %d", temp);
+
+		// recibo rta. del worker
+		int32_t headerIdWorker = deserializarHeader(socketWorker);
+		printf ("header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
+		int nroNodoFinalizado = datos->nodo;
+
+
+		// Avisar a YAMA
+		int bytesEnviadosMensaje = envioFinReduccionLocal(headerIdWorker, nroNodoFinalizado);
+
+		pthread_t idHilo = pthread_self();
+
+		//printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
+		printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, nroNodoFinalizado, datos->ip, datos->puerto);
+		//printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
+		puts("");
 	}
-
-	//serializo temporal reduccion local
-	arrayMensajes[j] = malloc(string_length(datos->temporalReduccionLocal) + 1);
-	strcpy(arrayMensajes[j], datos->temporalReduccionLocal);
-
-	//TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER: 1 MENSAJE
-	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER, arrayMensajes, cantStringsASerializar);
-	for (j = 0; j < cantStringsASerializar; j++) {
-		free(arrayMensajes[j]);
-	}
-	free(arrayMensajes);
-
-	// envio mensaje serializado
-	printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
-	int temp = enviarMensaje(socketWorker, mensajeSerializado);
-	printf ("bytes enviados a worker msje serializado %d", temp);
-
-	// recibo rta. del worker
-	int32_t headerIdWorker = deserializarHeader(socketWorker);
-	printf ("header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
-	int nroNodoFinalizado = datos->nodo;
-
-	// Avisar a YAMA
-	int bytesEnviadosMensaje = envioFinReduccionLocal(headerIdWorker, nroNodoFinalizado);
-
-	pthread_t idHilo = pthread_self();
-
-	//printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
-	printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, nroNodoFinalizado, datos->ip, datos->puerto);
-	//printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
-	puts("");
 }
 
 int envioFinReduccionLocal(int headerId, int nroNodo) {
@@ -426,7 +438,7 @@ void conectarAWorkerTransformacion(void *arg) {
 	} else {
 		puts("Conectado al worker");
 
-		int cantStringsASerializar = 4;	//código de transformación, bloque, bytes y temporal
+		int cantStringsASerializar = 4;	//script de transformación, bloque, bytes y temporal
 		char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 		j = 0;
 		arrayMensajes[j] = malloc(string_length(transformadorString) + 1);
