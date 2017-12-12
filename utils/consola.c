@@ -14,7 +14,7 @@ typedef struct {
   char *nombre;     /* Nombre de la funcion */
 } command;
 pthread_mutex_t mutex1;
-
+pthread_mutex_t mutex2;
 command comandos[] = {
  { 1,"format"},
  { 2,"rm"},
@@ -214,7 +214,13 @@ void analizarComando(char * linea){
     	  char * nombreArchivoViejofs = comandoDesarmado[1];
     	  char * nombreArchivoNuevolocal = comandoDesarmado[2];
     	  if(nombreArchivoViejofs != NULL && nombreArchivoNuevolocal != NULL){
-    	      leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal);
+    			pthread_mutex_lock(&mutex1);
+    		  leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal);
+    		  printf("holi :D\n");
+    			 pthread_mutex_unlock(&mutex1);
+    			 ContenidoXNodo * elemento = list_get(tablaNodos,0);
+    			 printf("%s\n",elemento->nodo);
+    			 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
     	      		   printf("El archivo ha sido copiado exitosamente.\n");
     	      	   }else{
     	      		   printf("Faltan parametros para ejecutar el comando cpto\n");
@@ -316,7 +322,6 @@ void analizarComando(char * linea){
 }
 
 void IniciarConsola(){
-
   char * linea;
   char * barraDeComando = string_from_format("%s>", getlogin());
 

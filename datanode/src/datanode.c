@@ -197,7 +197,6 @@ int main(int argc, char *argv[]) {
 			j++;
 		}
 		break;
-
 		case TIPO_MSJ_PEDIR_BLOQUES: {
 			//piden bloques y los mando
 			int cantMensajes = protocoloCantidadMensajes[header];
@@ -233,6 +232,14 @@ int main(int argc, char *argv[]) {
 			log_trace(logDataNode, "Bytes enviados: %d", bytesEnviados);
 		}
 		break;
+		case TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO:{
+			printf("FileSystem no permitio que me conectarara\n");
+			exit(0);
+			break;
+		}break;
+		case TIPO_MSJ_OK:{
+			enviarHeaderSolo(socketFS,TIPO_MSJ_OK);
+		}break;
 
 		default: {
 			log_error(logDataNode, "Se cayo FileSystem");
