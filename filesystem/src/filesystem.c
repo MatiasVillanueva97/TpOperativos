@@ -211,7 +211,6 @@ void cargarTablaArchivo(char* pathArchivo){
 	t_config* archivo=config_create(pathArchivo);
 	tablaArchivo * entradaArchivo=malloc(sizeof(tablaArchivo));
 	entradaArchivo->nombre=string_new();
-	entradaArchivo->tipo=string_new();
 	entradaArchivo->bloqueCopias=list_create();
 	entradaArchivo->nombre=nombreArchivo;
 
@@ -1734,7 +1733,7 @@ if(estadoEstablePorArchivo()){
 				perror("error de malloc 1");
 				strcpy(arrayMensajesSerializar[i], NumeroDeBloqueDondeGuardarString);
 					i++;
-					char *mensajeSerializado = serializarMensaje(TIPO_MSJ_BLOQUE_DESDE_DATANODE, arrayMensajesSerializar, cantStrings);
+					char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PEDIR_BLOQUES, arrayMensajesSerializar, cantStrings);
 					//printf("%s\n",mensajeSerializado);
 					int bytesEnviados = enviarMensaje(nodoEncontrado->socket, mensajeSerializado);
 					printf("bytes enviados: %d\n", bytesEnviados);
@@ -1805,15 +1804,15 @@ if(estadoEstablePorArchivo()){
 
 		tengomuchasJ++;
 		}
-		 pthread_mutex_lock(&mutex1);
 		 list_iterate(archivoABuscar->bloqueCopias, (void*) buscar);
-		 pthread_mutex_unlock(&mutex1);
 }
 
 else {
 	printf("Archivo No Recuperable\n");
 }
 }
+
+
 void enviarInfoBloques(int socketCliente, int headerId) {
 	printf("id: %d\n", headerId);
 	printf("mensaje predefinido: %s\n", protocoloMensajesPredefinidos[headerId]);
@@ -1925,6 +1924,9 @@ void enviarInfoNodos(int socketCliente) {
 	int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);
 	printf("bytes enviados: %d\n", bytesEnviados);
 }
+
+
+
 bool estadoEstableFuncion(){
 	int countGeneral =0 ;
 void	porArchivo(	tablaArchivo * elemento){
@@ -2058,9 +2060,7 @@ void soyServidor(char * puerto) {
 							//int cantidadMensajes = protocoloCantidadMensajes[headerId];	//averigua la cantidad de mensajes que le van a llegar
 							char** mensajes = deserializarMensaje(SocketWorker, 2);
 							printf("largo mensaje 1: %d\n",string_length(mensajes[0]));
-							printf("%s\n", mensajes[0]);
 							printf("largo mensaje 2: %d\n",string_length(mensajes[1]));
-							printf("%s\n", mensajes[1]);
 							*/
 						}
 							break;
@@ -2079,7 +2079,11 @@ void soyServidor(char * puerto) {
 					pthread_mutex_lock(&mutex1);
 					int32_t headerId = deserializarHeader(i); // funciona cuando solo recibe 0?
 					pthread_mutex_unlock(&mutex1);
+					if(headerId==TIPO_MSJ_OK){
+						printf("no hago nada pero desbloqueo\n");
+					}
 					if (headerId <= 0) { //error o desconexión de un cliente
+						printf("cayo nodo\n");
 						printf("header id %d", headerId);
 						eliminarDeLasListas(i);
 						cerrarCliente(i); // bye!
