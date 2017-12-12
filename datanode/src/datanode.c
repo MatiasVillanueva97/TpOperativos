@@ -26,6 +26,7 @@ char* keysConfigDataNode[] = { "IP_PROPIA", "PUERTO_PROPIO", "FS_IP", "FS_PUERTO
 
 //FILE* archivo;
 char* datosConfigDataNode[6];
+char *nameArchivoConfig = "configNodo.txt";
 int tamanoArchivo;
 t_log* logDataNode;
 void *mapArchivo;
@@ -47,6 +48,7 @@ int conexionAFileSystem() {
 
 void setBloque(int idBloque, char* datos) {
 	if (idBloque < tamanoArchivo) {
+		log_info(logDataNode, "Escribiendo en bloque: %d", idBloque);
 		int bytesEscritos = sizeof(char*) * strlen(datos) + 1;
 		int posicion = idBloque * unMega;
 		mapArchivo = mmap(0, buff.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, posicion);
@@ -65,7 +67,7 @@ void setBloque(int idBloque, char* datos) {
 //leer los datos del bloque
 char* getBloque(int idBloque) {
 	if (idBloque >= tamanoArchivo) {
-		log_info(logDataNode, "El bloque %i no existe en este nodo", idBloque);
+		log_error(logDataNode, "El bloque %i no existe en este nodo", idBloque);
 		return 0;
 	}
 	char *buffer = malloc(unMega);
@@ -77,7 +79,7 @@ char* getBloque(int idBloque) {
 		exit(1);
 	}
 	strncpy(buffer, mapArchivo, unMega);
-	log_info(logDataNode, "bytes leidos en el bloque %i", idBloque);
+	log_info(logDataNode, "Bytes leidos en el bloque %i", idBloque);
 	//printf("%s\n",buffer);
 	return buffer;
 }
@@ -143,7 +145,6 @@ int main(int argc, char *argv[]) {
 	int preparadoEnviarFs = 1, i;
 
 	// 1º) leo archivo de config.
-	char *nameArchivoConfig = "configNodo.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigDataNode, datosConfigDataNode)) { //leerArchivoConfig devuelve 1 si hay error
 		log_error(logDataNode, "Hubo un error al leer el archivo de configuracion");
 		return EXIT_FAILURE;
@@ -173,8 +174,8 @@ int main(int argc, char *argv[]) {
 	tamanoArchivo = buff.st_size / unMega;
 
 	//3°) me conecto al FS y espero solicitudes
-	int socketFS; //= conectarA("127.0.0.1","5000");
-	if ((socketFS = conexionAFileSystem()) < 0) {
+	int socketFS = conexionAFileSystem();
+	if (socketFS < 0) {
 		preparadoEnviarFs = 0;
 	}
 
@@ -201,7 +202,7 @@ int main(int argc, char *argv[]) {
 			//piden bloques y los mando
 			int cantMensajes = protocoloCantidadMensajes[header];
 			char** arrayMensajesRecibidos = deserializarMensaje(socketFS, cantMensajes);
-			log_trace(logDataNode, "bloque %d", atoi(arrayMensajesRecibidos[0]));
+			log_trace(logDataNode, "Bloque %d", atoi(arrayMensajesRecibidos[0]));
 			char* buffer = getBloque(atoi(arrayMensajesRecibidos[0]));
 			liberar_array(arrayMensajesRecibidos, cantMensajes);
 			munmap(mapArchivo, unMega);
@@ -233,7 +234,7 @@ int main(int argc, char *argv[]) {
 		}
 		break;
 		case TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO:{
-			printf("FileSystem no permitio que me conectarara\n");
+			log_error(logDataNode, "FileSystem no permitio que me conectarara");
 			exit(0);
 			break;
 		}break;
