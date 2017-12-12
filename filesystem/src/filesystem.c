@@ -211,7 +211,6 @@ void cargarTablaArchivo(char* pathArchivo){
 	t_config* archivo=config_create(pathArchivo);
 	tablaArchivo * entradaArchivo=malloc(sizeof(tablaArchivo));
 	entradaArchivo->nombre=string_new();
-	entradaArchivo->tipo=string_new();
 	entradaArchivo->bloqueCopias=list_create();
 	entradaArchivo->nombre=nombreArchivo;
 
@@ -2168,7 +2167,6 @@ void eliminarListas() {
 int main(int argc, char *argv[]) {
 	//signal
 	pthread_mutex_init(&mutex1, NULL);
-	pthread_mutex_init(&mutex2, NULL);
 	tablaNodos = list_create();
 	tablaArchivos = list_create();
 	listaDeBitMap = list_create();

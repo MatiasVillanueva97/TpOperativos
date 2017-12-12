@@ -14,7 +14,6 @@ typedef struct {
   char *nombre;     /* Nombre de la funcion */
 } command;
 pthread_mutex_t mutex1;
-pthread_mutex_t mutex2;
 command comandos[] = {
  { 1,"format"},
  { 2,"rm"},
@@ -57,8 +56,8 @@ void analizarComando(char * linea){
 
       case 1:{
 
-        printf("Formateando FileSystem.\n");
-
+        printf("Formateando FileSystem..\n");
+		printf("\n");
         if(estadoAnterior==0){
         	uint cantidadNodosSistemas=list_size(tablaNodos);
         	if(cantidadNodosSistemas>=2){
@@ -69,12 +68,13 @@ void analizarComando(char * linea){
         		config_save(configFs);
         		formateado=config_get_int_value(configFs,"FORMATEADO");
         		printf("FileSystem Formateado\n");
+        		printf("\n");
         	}else{
         		printf("No hay suficientes DataNode para dejar el FS en un estado Estable\n");
         	}
         }else{
 
-        	if(estadoEstableFuncion()){//hayUnEstadoEstable()
+        	if(estadoEstableFuncion()){
         		config_set_value(configFs,"ESTADO_ESTABLE","1");
         		config_save(configFs);
         		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
@@ -82,8 +82,9 @@ void analizarComando(char * linea){
         		config_save(configFs);
         		formateado=config_get_int_value(configFs,"FORMATEADO");
         		printf("FileSystem Formateado\n");
+        		printf("\n");
         	}else{
-        		printf("No hay al menos una copia de cada archivo. Estado no estable\n");
+        		printf("No hay al menos una copia de cada archivo , Estado no estable\n");
         	}
         }
 
@@ -119,55 +120,13 @@ void analizarComando(char * linea){
 
 
       case 3:{
-    	  char * comandoNuevo = string_new();
-
-    	  char * nombreArchivoViejo = comandoDesarmado[1];
-    	  char * nombreArchivoNuevo = comandoDesarmado[2];
-
-    	  if(nombreArchivoViejo == NULL || nombreArchivoNuevo == NULL){
-    	  	  printf("Faltan parametros para ejecutar el comando rename\n");
-    	  } else {
-
-    		  renameDirectory(nombreArchivoViejo,nombreArchivoNuevo);
-
-    		  string_append(&comandoNuevo,"rename ");
-    		  string_append(&comandoNuevo,nombreArchivoViejo);
-    		  string_append(&comandoNuevo," ");
-    		  string_append(&comandoNuevo,nombreArchivoNuevo);
-
-    		  system(comandoNuevo);
-        	  printf("\n");
-
-    	  }
-
-    	  free(comandoNuevo);
+    	  printf("Comando en proceso! Todavia no se puede ejecutar! (rename)\n");
 
       }
       break;
 
       case 4:{
-    	  char * comandoNuevo = string_new();
-
-    	  char * pathOriginal = comandoDesarmado[1];
-    	  char * pathFinal = comandoDesarmado[2];
-
-    	  if(pathOriginal == NULL || pathFinal == NULL){
-    		  printf("Faltan parametros para ejecutar el comando mv\n");
-    	  } else {
-
-        	  moveDirectory(pathOriginal,pathFinal);
-
-        	  string_append(&comandoNuevo,"mv ");
-        	  string_append(&comandoNuevo,pathOriginal);
-        	  string_append(&comandoNuevo," ");
-        	  string_append(&comandoNuevo,pathFinal);
-
-        	  system(comandoNuevo);
-        	  printf("\n");
-
-    	  }
-
-    	  free(comandoNuevo);
+    	  printf("Comando en proceso! Todavia no se puede ejecutar! (mv)\n");
 
       }
       break;
@@ -202,7 +161,7 @@ void analizarComando(char * linea){
     	   char * flag = comandoDesarmado[3];
     	   if(nombreArchivoViejo != NULL && nombreArchivoNuevo != NULL && flag != NULL){
     		  almacenarArchivo(nombreArchivoViejo,nombreArchivoNuevo,atoi(flag));
-    		   printf("El archivo ha sido copiado exitosamente.\n");
+    		  //chequear rutas por adentro y flag .solo 0/1
     	   }else{
     		   printf("Faltan parametros para ejecutar el comando cpfrom\n");
     	   }
@@ -216,12 +175,10 @@ void analizarComando(char * linea){
     	  if(nombreArchivoViejofs != NULL && nombreArchivoNuevolocal != NULL){
     			pthread_mutex_lock(&mutex1);
     		  leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal);
-    		  printf("holi :D\n");
     			 pthread_mutex_unlock(&mutex1);
     			 ContenidoXNodo * elemento = list_get(tablaNodos,0);
     			 printf("%s\n",elemento->nodo);
     			 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
-    	      		   printf("El archivo ha sido copiado exitosamente.\n");
     	      	   }else{
     	      		   printf("Faltan parametros para ejecutar el comando cpto\n");
     	      	   }
@@ -259,23 +216,67 @@ void analizarComando(char * linea){
       break;
 
       case 12:{
-        char * comandoNuevo = string_new();
         char * nombreArchivoViejo = string_new();
 
         string_append(&nombreArchivoViejo, comandoDesarmado[1]);
         if(nombreArchivoViejo == NULL){
         	printf("Faltan parametros para ejecutar el comando info.\n");
         } else {
+        	tablaArchivo * archivo = buscarArchivoPorNombre(nombreArchivoViejo);
 
-            string_append(&comandoNuevo,"ls -l -h ");
-            string_append(&comandoNuevo,nombreArchivoViejo);
-            system(comandoNuevo);
+        	printf("Nombre = %s\n",archivo->nombre);
+        	printf("Tamaño = %d\n",archivo->tamanio);
+        	int i=0;
+        	int j=0;
+        	int k=0;
+        	void printear(ContenidoBloque * bloquesArchivo){
+        		if(j>=1){
+        			j=0;
+        		}
+        		if(k%2==0){
+        			char * bloque_copia =string_new();
+        			char * bloque_bytes = string_new();
+        			string_append(&bloque_copia,"BLOQUE");
+        			string_append(&bloque_copia,string_itoa(i));
+        			string_append(&bloque_copia,"COPIA");
+        			string_append(&bloque_copia,string_itoa(j));
+        			string_append(&bloque_bytes,"BLOQUE");
+        			string_append(&bloque_bytes,string_itoa(i));
+        			string_append(&bloque_bytes,"BYTES");
+        			char * array =string_duplicate("[");
+        			string_append(&array,bloquesArchivo->nodo);
+        			string_append(&array,",");
+        			string_append(&array,string_itoa(bloquesArchivo->bloque));
+        			string_append(&array,"]");
+        			printf("%s = %s \n",bloque_copia,array);
+        		}
+
+        		else{
+        			j++;
+        			char * bloque_copia =string_new();
+        						char * bloque_bytes = string_new();
+        						string_append(&bloque_copia,"BLOQUE");
+        						string_append(&bloque_copia,string_itoa(i));
+        						string_append(&bloque_copia,"COPIA");
+        						string_append(&bloque_copia,string_itoa(j));
+        						string_append(&bloque_bytes,"BLOQUE");
+        						string_append(&bloque_bytes,string_itoa(i));
+        						string_append(&bloque_bytes,"BYTES");
+        						char * array =string_duplicate("[");
+        						string_append(&array,bloquesArchivo->nodo);
+        						string_append(&array,",");
+        						string_append(&array,string_itoa(bloquesArchivo->bloque));
+        						string_append(&array,"]");
+        						i++;
+        						printf("%s = %s \n",bloque_copia,array);
+
+        		}
+        	k++;}list_iterate(archivo->bloqueCopias,(void*)printear);
             printf("\n");
 
         }
 
-        free(comandoNuevo);
-        free(nombreArchivoViejo);
+      //  free(nombreArchivoViejo);
 
       }
       break;
@@ -298,7 +299,7 @@ void analizarComando(char * linea){
     	  		printf("\n");
     	  		printf("mkdir [path_dir] //Crea un directorio. Si el directorio ya existe\n");
     	  		printf("\n");
-    	  		printf("cpfrom [path_archivo_origen] [directorio_yamafs] //Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
+    	  		printf("cpfrom [path_archivo_origen] [directorio_yamafs] [tipo_de_archivo] //Copiar un archivo local al yamafs, siguiendo los lineamientos en la operaciòn Almacenar Archivo, de la Interfaz del FileSystem.\n");
     	  		printf("\n");
     	  		printf("cpto [path_archivo_yamafs] [directorio_filesystem] //Copiar un archivo local al yamafs\n");
     	  		printf("\n");
