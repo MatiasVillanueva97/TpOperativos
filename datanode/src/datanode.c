@@ -94,7 +94,7 @@ int cantidadBloquesAMandar(char * PATH) {
 	return cantidadBloques;
 }
 
-void pruebas2(int socket, char **datosConfigDataNode) {
+void mandarInfoAFilesystem(int socket, char **datosConfigDataNode) {
 	char* nombre = datosConfigDataNode[5];
 	char* ip = datosConfigDataNode[0];
 	char* puerto = datosConfigDataNode[1];
@@ -103,37 +103,39 @@ void pruebas2(int socket, char **datosConfigDataNode) {
 	int cantStrings = 4;
 	char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
 	if (!arrayMensajesSerializar)
-		perror("error de malloc 1");
+		log_error(logDataNode, "error de malloc 1");
 
 	int i = 0;
 
 	arrayMensajesSerializar[i] = malloc(string_length(nombre) + 1);
 	if (!arrayMensajesSerializar[i])
-		perror("error de malloc 1");
+		log_error(logDataNode, "error de malloc 1");
 	strcpy(arrayMensajesSerializar[i], nombre);
 	i++;
 
 	char *cantidadBloqString = intToArrayZerosLeft(cantidadBloq, 4);
 	arrayMensajesSerializar[i] = malloc(string_length(cantidadBloqString) + 1);
 	if (!arrayMensajesSerializar[i])
-		perror("error de malloc 1");
+		log_error(logDataNode, "error de malloc 1");
 	strcpy(arrayMensajesSerializar[i], cantidadBloqString);
 	i++;
 
 	arrayMensajesSerializar[i] = malloc(string_length(ip) + 1);
 	if (!arrayMensajesSerializar[i])
-		perror("error de malloc 1");
+		log_error(logDataNode, "error de malloc 1");
 	strcpy(arrayMensajesSerializar[i], ip);
 	i++;
 
 	arrayMensajesSerializar[i] = malloc(string_length(puerto) + 1);
 	if (!arrayMensajesSerializar[i])
-		perror("error de malloc 1");
+		log_error(logDataNode, "error de malloc 1");
 	strcpy(arrayMensajesSerializar[i], puerto);
 	i++;
 
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATANODE, arrayMensajesSerializar, cantStrings);
 	int bytesEnviados = enviarMensaje(socket, mensajeSerializado);
+
+	liberar_array(arrayMensajesSerializar, cantStrings);
 
 }
 
@@ -181,7 +183,7 @@ int main(int argc, char *argv[]) {
 
 	int modulo = datanode;
 	send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
-	pruebas2(socketFS, datosConfigDataNode);
+	mandarInfoAFilesystem(socketFS, datosConfigDataNode);
 	int j = 1;
 
 	while (1) {
