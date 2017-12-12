@@ -224,6 +224,9 @@ char* serializarMensajeReduccGlobal(int cantNodosReduccGlobal, struct filaTablaE
 	int nroNodo;
 	for (i = 0; i < cantNodosReduccGlobal; i++) {
 		nroNodo = filasReduccGlobal[i].nodo;
+		printf("Nodo a serializar\nnroNodo %d\n", nroNodo);
+		printf("nombre %s - número %d - ip %s - puerto %d\n", getDatosGlobalesNodo(nroNodo)->nombre, getDatosGlobalesNodo(nroNodo)->numero, getDatosGlobalesNodo(nroNodo)->ip, getDatosGlobalesNodo(nroNodo)->puerto);
+
 		//nro de nodo
 		arrayMensajesSerializarRedGlobal[j] = malloc(4 + 1);
 		if (!arrayMensajesSerializarRedGlobal[j])
@@ -462,6 +465,8 @@ int main(int argc, char *argv[]) {
 						socketConectado = nroSocket;
 						log_info(logYAMA, "Se recibió un mensaje de proceso conectado por FD %d", socketConectado);
 						masterJobActual = getDatosMasterJobByFD(socketConectado);
+						cantNodosArchivo = masterJobActual->cantNodosUsados;
+
 						printf("\nSocket conectado: %d\n", socketConectado);
 						printf("Master actual: %d\n", masterJobActual->nroMaster);
 						printf("Job actual: %d\n", masterJobActual->nroJob);
@@ -635,7 +640,6 @@ int main(int argc, char *argv[]) {
 							free(arrayMensajes);
 							disminuirCargaGlobalNodo(nroNodoRecibido, 1);
 							//
-							cantNodosArchivo = masterJobActual->cantNodosUsados;
 							for (k = 0; k < cantNodosArchivo; k++) {
 								if (masterJobActual->nodosUsados[k].numero == nroNodoRecibido) {
 									masterJobActual->nodosUsados[k].cantidadVecesUsados--;
@@ -831,6 +835,14 @@ int main(int argc, char *argv[]) {
 								filaBusqueda.estado = FIN_OK;
 								filaBusqueda.siguiente = NULL;
 								int cantFilasEncontradas = buscarMuchosElemTablaEstados(filasReduccGlobal, filaBusqueda);
+//								printf("cantFilasEncontradas: %d\n", cantFilasEncontradas);
+//								printf("job %d\n", filasReduccGlobal[0].job);
+//								printf("master %d\n", filasReduccGlobal[0].master);
+//								printf("nodo %d\n", filasReduccGlobal[0].nodo);
+//								printf("bloque %d\n", filasReduccGlobal[0].bloque);
+//								printf("etapa %d\n", filasReduccGlobal[0].etapa);
+//								printf("temporal %s\n", filasReduccGlobal[0].temporal);
+//								printf("estado %d\n", filasReduccGlobal[0].estado);
 								if (cantFilasEncontradas == 0) {
 									puts("no se encontró ninguna fila de la tabla de estados para hacer la reducción global");
 								}
@@ -843,19 +855,21 @@ int main(int argc, char *argv[]) {
 									//pone la fila 0  en la fila i donde estaba la del nodo buscado
 									//pone la del temporal en la fila 0
 									struct filaTablaEstados temporal;
-									for (k = 0; k < cantNodosReduccGlobal;
-											k++) {
-										printf("k %d - nodo %d - temporal %s\n", k, filasReduccGlobal[k].nodo, filasReduccGlobal[k].temporal);
-										if (filasReduccGlobal[k].nodo == nodoReduccGlobal) {
-											temporal = filasReduccGlobal[k];
-											filasReduccGlobal[k] = filasReduccGlobal[0];
-											filasReduccGlobal[0] = temporal;
-											break;
+//									if (cantNodosReduccGlobal > 1) {
+										for (k = 0; k < cantNodosReduccGlobal;
+												k++) {
+											printf("k %d - nodoReduccGlobal %d - nodo fila encontrada %d - temporal %s\n", k, nodoReduccGlobal, filasReduccGlobal[k].nodo, filasReduccGlobal[k].temporal);
+											if (filasReduccGlobal[k].nodo == nodoReduccGlobal) {
+												temporal = filasReduccGlobal[k];
+												filasReduccGlobal[k] = filasReduccGlobal[0];
+												filasReduccGlobal[0] = temporal;
+												break;
+											}
 										}
-									}
+//									}
 									for (k = 0; k < cantNodosReduccGlobal;
 											k++) {
-										printf("k %d - nodo %d - temporal %s\n", k, filasReduccGlobal[k].nodo, filasReduccGlobal[k].temporal);
+										printf("k %d - nodoReduccGlobal %d - nodo fila encontrada %d - temporal %s\n", k, nodoReduccGlobal, filasReduccGlobal[k].nodo, filasReduccGlobal[k].temporal);
 									}
 
 									/* ******* envío de la tabla para reducción global ****** */

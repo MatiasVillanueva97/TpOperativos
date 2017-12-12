@@ -11,18 +11,13 @@
 enum etapasTablaEstados {
 	TRANSFORMACION, REDUCC_LOCAL, REDUCC_GLOBAL, ALMAC_FINAL
 };
-const char* etapasMensajesPredefinidos[4] = {
-		"Transformación",
-		"Reducción Local",
-		"Reducción Global",
-		"Alamcentamiento Final" };
+const char* etapasMensajesPredefinidos[4] = { "Transformación",
+		"Reducción Local", "Reducción Global", "Alamcentamiento Final" };
 
 enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK
 };
-const char* estadosMensajesPredefinidos[3] = {
-		"En proceso",
-		"Error",
+const char* estadosMensajesPredefinidos[3] = { "En proceso", "Error",
 		"Finalizó OK" };
 
 struct filaTablaEstados {
@@ -104,28 +99,28 @@ int buscarMuchosElemTablaEstados(struct filaTablaEstados *arrayFilasEncontradas,
 //		printf("etapa %d - %d\n", busqueda.etapa, auxiliar->etapa);
 //		printf("temporal %s - %s\n", busqueda.temporal, auxiliar->temporal);
 //		printf("estado %d - %d\n", busqueda.estado, auxiliar->estado);
-		if (busqueda.job && busqueda.job != auxiliar->job) {
+		if (busqueda.job != 0 && busqueda.job != auxiliar->job) {
 			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.master && busqueda.master != auxiliar->master) {
+		} else if (busqueda.master != 0 && busqueda.master != auxiliar->master) {
 			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.nodo && busqueda.nodo != auxiliar->nodo) {
+		} else if (busqueda.nodo != 0 && busqueda.nodo != auxiliar->nodo) {
 			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.bloque && busqueda.bloque != auxiliar->bloque) {
+		} else if (busqueda.bloque != 0 && busqueda.bloque != auxiliar->bloque) {
 			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.etapa && busqueda.etapa != auxiliar->etapa) {
+		} else if (busqueda.etapa != 0 && busqueda.etapa != auxiliar->etapa) {
 			auxiliar = auxiliar->siguiente;
 		} else if (strcmp(busqueda.temporal, "") != 0 && !strcmp(busqueda.temporal, auxiliar->temporal)) {
 			auxiliar = auxiliar->siguiente;
-		} else if (busqueda.estado && busqueda.estado != auxiliar->estado) {
+		} else if (busqueda.estado != 0 && busqueda.estado != auxiliar->estado) {
 			auxiliar = auxiliar->siguiente;
 		} else {
-			arrayFilasEncontradas[i].job = busqueda.job;
-			arrayFilasEncontradas[i].master = busqueda.master;
-			arrayFilasEncontradas[i].nodo = busqueda.nodo;
-			arrayFilasEncontradas[i].bloque = busqueda.bloque;
-			arrayFilasEncontradas[i].etapa = busqueda.etapa;
-			strcpy(arrayFilasEncontradas[i].temporal, busqueda.temporal);
-			arrayFilasEncontradas[i].estado = busqueda.estado;
+			arrayFilasEncontradas[i].job = auxiliar->job;
+			arrayFilasEncontradas[i].master = auxiliar->master;
+			arrayFilasEncontradas[i].nodo = auxiliar->nodo;
+			arrayFilasEncontradas[i].bloque = auxiliar->bloque;
+			arrayFilasEncontradas[i].etapa = auxiliar->etapa;
+			strcpy(arrayFilasEncontradas[i].temporal, auxiliar->temporal);
+			arrayFilasEncontradas[i].estado = auxiliar->estado;
 			arrayFilasEncontradas[i].siguiente = NULL;
 			i++;
 			auxiliar = auxiliar->siguiente;
