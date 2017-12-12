@@ -55,16 +55,16 @@ int getCargaGlobalNodo(datosPropiosNodo nodo) {
 	return listaGlobalNodos[nodo.numero].carga;
 }
 
-void actualizarCargaGlobalNodo(datosPropiosNodo nodo, int carga) {
-	listaGlobalNodos[nodo.numero].carga = carga;
+void actualizarCargaGlobalNodo(int nroNodo, int carga) {
+	listaGlobalNodos[nroNodo].carga = carga;
 }
 
-void disminuirCargaGlobalNodo(datosPropiosNodo nodo, int cantidadRestar) {
-	listaGlobalNodos[nodo.numero].carga -= cantidadRestar;
+void disminuirCargaGlobalNodo(int nroNodo, int cantidadRestar) {
+	listaGlobalNodos[nroNodo].carga -= cantidadRestar;
 }
 
-void aumentarCargaGlobalNodo(datosPropiosNodo nodo, int cantidadSumar) {
-	listaGlobalNodos[nodo.numero].carga += cantidadSumar;
+void aumentarCargaGlobalNodo(int nroNodo, int cantidadSumar) {
+	listaGlobalNodos[nroNodo].carga += cantidadSumar;
 }
 
 /*
@@ -205,7 +205,7 @@ void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoPa
 
 	//actualiza la carga en cada nodo usado de la listaGlobalNodos[]
 	for (i = 0; i < cantNodosArchivo; i++) {
-		actualizarCargaGlobalNodo(nodosParaPlanificar[i], nodosParaPlanificar[i].carga);
+		actualizarCargaGlobalNodo(nodosParaPlanificar[i].numero, nodosParaPlanificar[i].carga);
 	}
 
 	//ordeno los nodos de menor a mayor por carga
@@ -220,9 +220,6 @@ void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoPa
 	}
 	return;
 }
-
-
-
 
 /*	in_array para c
  * typedef int (*cmpfunc)(void *, void *);

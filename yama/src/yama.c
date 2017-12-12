@@ -50,6 +50,13 @@ typedef struct {
 } datosPropiosNodo;
 //indexada por número de nodo
 datosPropiosNodo listaGlobalNodos[50];
+datosPropiosNodo* getDatosGlobalesNodo(int nodoBuscado) {
+	return &listaGlobalNodos[nodoBuscado];
+}
+
+int getLargoListaGlobalNodos() {
+	return sizeof(listaGlobalNodos) / sizeof(datosPropiosNodo);
+}
 
 #include "../../utils/protocolo.c"
 #include "tablaEstados.h"
@@ -95,7 +102,7 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 	printf("\tNodo\tIP\t\tPuerto\tBloque\tBytes\t\tTemporal\n");
 	printf("---------------------------------------------------------------------------------------------\n");
 	for (i = 0; i < cantPartesArchivo; i++) {
-		printf("\t%d\t%s\t%d\t%d\t%d\t\t%s\n", datosParaTransformacion[i].nroNodo, listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip, listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
+		printf("\t%d\t%s\t%d\t%d\t%d\t\t%s\n", datosParaTransformacion[i].nroNodo, getDatosGlobalesNodo(datosParaTransformacion[i].nroNodo)->ip, getDatosGlobalesNodo(datosParaTransformacion[i].nroNodo)->puerto, datosParaTransformacion[i].bloque, datosParaTransformacion[i].bytesOcupados, datosParaTransformacion[i].temporal);
 
 		//número de nodo
 		largoStringDestinoCopia = 4 + 1;
@@ -104,15 +111,15 @@ char* serializarMensajeTransformacion(nodoParaAsignar *datosParaTransformacion, 
 		j++;
 
 		//IP
-		largoStringDestinoCopia = string_length(listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip) + 1;
+		largoStringDestinoCopia = string_length(getDatosGlobalesNodo(datosParaTransformacion[i].nroNodo)->ip) + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], listaGlobalNodos[datosParaTransformacion[i].nroNodo].ip);
+		strcpy(arrayMensajes[j], getDatosGlobalesNodo(datosParaTransformacion[i].nroNodo)->ip);
 		j++;
 
 		//puerto
 		largoStringDestinoCopia = LARGO_PUERTO + 1;
 		arrayMensajes[j] = malloc(largoStringDestinoCopia);
-		strcpy(arrayMensajes[j], intToArrayZerosLeft(listaGlobalNodos[datosParaTransformacion[i].nroNodo].puerto, LARGO_PUERTO));
+		strcpy(arrayMensajes[j], intToArrayZerosLeft(getDatosGlobalesNodo(datosParaTransformacion[i].nroNodo)->puerto, LARGO_PUERTO));
 		j++;
 
 		//bloque
@@ -171,16 +178,16 @@ char* serializarMensajeReduccLocal(int nroNodoRecibido, datosMasterJob *masterJo
 		strcpy(arrayMensajesSerializarReduccLocal[j], intToArrayZerosLeft(nroNodoRecibido, 4));
 		j++;
 		//IP del nodo
-		arrayMensajesSerializarReduccLocal[j] = malloc(string_length(listaGlobalNodos[nroNodoRecibido].ip) + 1);
+		arrayMensajesSerializarReduccLocal[j] = malloc(string_length(getDatosGlobalesNodo(nroNodoRecibido)->ip) + 1);
 		if (!arrayMensajesSerializarReduccLocal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarReduccLocal[j], listaGlobalNodos[nroNodoRecibido].ip);
+		strcpy(arrayMensajesSerializarReduccLocal[j], getDatosGlobalesNodo(nroNodoRecibido)->ip);
 		j++;
 		//puerto del nodo
 		arrayMensajesSerializarReduccLocal[j] = malloc(LARGO_PUERTO + 1);
 		if (!arrayMensajesSerializarReduccLocal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarReduccLocal[j], intToArrayZerosLeft(listaGlobalNodos[nroNodoRecibido].puerto, LARGO_PUERTO));
+		strcpy(arrayMensajesSerializarReduccLocal[j], intToArrayZerosLeft(getDatosGlobalesNodo(nroNodoRecibido)->puerto, LARGO_PUERTO));
 		j++;
 		//cantidad de temporales
 		arrayMensajesSerializarReduccLocal[j] = malloc(4 + 1);
@@ -241,16 +248,16 @@ char* serializarMensajeReduccGlobal(int cantNodosReduccGlobal, struct filaTablaE
 		strcpy(arrayMensajesSerializarRedGlobal[j], intToArrayZerosLeft(nroNodo, 4));
 		j++;
 		//IP del nodo
-		arrayMensajesSerializarRedGlobal[j] = malloc(string_length(listaGlobalNodos[nroNodo].ip) + 1);
+		arrayMensajesSerializarRedGlobal[j] = malloc(string_length(getDatosGlobalesNodo(nroNodo)->ip) + 1);
 		if (!arrayMensajesSerializarRedGlobal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarRedGlobal[j], listaGlobalNodos[nroNodo].ip);
+		strcpy(arrayMensajesSerializarRedGlobal[j], getDatosGlobalesNodo(nroNodo)->ip);
 		j++;
 		//puerto del nodo
 		arrayMensajesSerializarRedGlobal[j] = malloc(LARGO_PUERTO + 1);
 		if (!arrayMensajesSerializarRedGlobal[j])
 			perror("error de malloc");
-		strcpy(arrayMensajesSerializarRedGlobal[j], intToArrayZerosLeft(listaGlobalNodos[nroNodo].puerto, LARGO_PUERTO));
+		strcpy(arrayMensajesSerializarRedGlobal[j], intToArrayZerosLeft(getDatosGlobalesNodo(nroNodo)->puerto, LARGO_PUERTO));
 		j++;
 		//temporal de la fila
 		arrayMensajesSerializarRedGlobal[j] = malloc(string_length(filasReduccGlobal[i].temporal) + 1);
@@ -287,16 +294,16 @@ char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalAlmFinal)
 	strcpy(arrayMensajesSerializar[j], intToArrayZerosLeft(nroNodoReduccGlobal, 4));
 	j++;
 	//IP del nodo
-	arrayMensajesSerializar[j] = malloc(string_length(listaGlobalNodos[nroNodoReduccGlobal].ip) + 1);
+	arrayMensajesSerializar[j] = malloc(string_length(getDatosGlobalesNodo(nroNodoReduccGlobal)->ip) + 1);
 	if (!arrayMensajesSerializar[j])
 		perror("error de malloc");
-	strcpy(arrayMensajesSerializar[j], listaGlobalNodos[nroNodoReduccGlobal].ip);
+	strcpy(arrayMensajesSerializar[j], getDatosGlobalesNodo(nroNodoReduccGlobal)->ip);
 	j++;
 	//puerto del nodo
 	arrayMensajesSerializar[j] = malloc(LARGO_PUERTO + 1);
 	if (!arrayMensajesSerializar[j])
 		perror("error de malloc");
-	strcpy(arrayMensajesSerializar[j], intToArrayZerosLeft(listaGlobalNodos[nroNodoReduccGlobal].puerto, LARGO_PUERTO));
+	strcpy(arrayMensajesSerializar[j], intToArrayZerosLeft(getDatosGlobalesNodo(nroNodoReduccGlobal)->puerto, LARGO_PUERTO));
 	j++;
 	//temporal de la fila
 	arrayMensajesSerializar[j] = malloc(string_length(temporalAlmFinal) + 1);
@@ -319,9 +326,9 @@ liberarCargaJob(int socketConectado) {
 	int cantNodosUsados = (int) masterJobActual->cantNodosUsados;
 	int i, j, k;
 	for (i = 0; i < cantNodosUsados; i++) {
-//		printf("carga antes de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga);
-		listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga -= masterJobActual->nodosUsados[i].cantidadVecesUsados;
-//		printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga);
+//		printf("carga antes de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
+		getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga -= masterJobActual->nodosUsados[i].cantidadVecesUsados;
+//		printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
 	}
 }
 
@@ -408,9 +415,9 @@ int main(int argc, char *argv[]) {
 			nroNodoAlmacFinal, cantNodosArchivo, cantNodosUsados;
 	datosMasterJob *masterJobActual;
 	//pongo la carga de cada nodo en 0 al iniciar
-	int largoListaGlobalNodos = sizeof(listaGlobalNodos) / sizeof(datosPropiosNodo);
+	int largoListaGlobalNodos = getLargoListaGlobalNodos();
 	for (i = 0; i < largoListaGlobalNodos; i++) {
-		listaGlobalNodos[i].carga = 0;
+		actualizarCargaGlobalNodo(i, 0);
 	}
 	for (;;) {
 		//if(recargarConfig){
@@ -475,8 +482,8 @@ int main(int argc, char *argv[]) {
 //							for (i = 0; i < cantNodosUsados; i++) {
 //								puts("pasó");
 //								printf("carga después de restar, nodo master actual %d\n", masterJobActual->nodosUsados[i].numero);
-//								printf("carga después de restar, nodo lista global %d\n", listaGlobalNodos[masterJobActual->nodosUsados[i].numero].numero);
-//								printf("carga después de restar, carga %d\n", listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga);
+//								printf("carga después de restar, nodo lista global %d\n", getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero);
+//								printf("carga después de restar, carga %d\n", getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
 //							}
 
 							//actualiza el estado en la tabla de estados de las tareas asociadas al master que falló
@@ -553,13 +560,13 @@ int main(int argc, char *argv[]) {
 								nodoParaAsignar asignacionesNodos[masterJobActual->cantBloquesArchivo];
 								printf("\n ---------- Lista de nodos para planificación ---------- \n");
 								for (i = 0; i < cantNodosArchivo; i++) {
-									printf("Nro nodo %d - Carga %d\n", nodosParaPlanificar[i].numero,listaGlobalNodos[nodosParaPlanificar[i].numero].carga);
+									printf("Nro nodo %d - Carga %d\n", nodosParaPlanificar[i].numero, getDatosGlobalesNodo(nodosParaPlanificar[i].numero)->carga);
 								}
 
 								planificar(socketConectado, bloques, asignacionesNodos, masterJobActual->cantBloquesArchivo, cantNodosArchivo, nodosParaPlanificar);
 
 								for (i = 0; i < cantNodosArchivo; i++) {
-									printf("Carga global: Nro nodo %d - Carga %d\n", listaGlobalNodos[nodosParaPlanificar[i].numero].numero, listaGlobalNodos[nodosParaPlanificar[i].numero].carga);
+									printf("Carga global: Nro nodo %d - Carga %d\n", getDatosGlobalesNodo(nodosParaPlanificar[i].numero)->numero, getDatosGlobalesNodo(nodosParaPlanificar[i].numero)->carga);
 								}
 								//guardo el nodo donde se va a hacer la reducción global de ese master y job
 								asignarNodoReduccGlobal((uint16_t) nodosParaPlanificar[0].numero, socketConectado);
@@ -627,7 +634,7 @@ int main(int argc, char *argv[]) {
 							printf("Nodo recibido: %d\n", nroNodoRecibido);
 							printf("Bloque recibido: %d\n", nroBloqueRecibido);
 							free(arrayMensajes);
-							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+							disminuirCargaGlobalNodo(nroNodoRecibido, 1);
 							//
 							cantNodosArchivo = masterJobActual->cantNodosUsados;
 							for (k = 0; k < cantNodosArchivo; k++) {
@@ -668,7 +675,7 @@ int main(int argc, char *argv[]) {
 								char *mensajeSerializadoRedLocal = serializarMensajeReduccLocal(nroNodoRecibido, masterJobActual, temporalRedLocal);
 								printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoRedLocal);
 								enviarMensaje(socketConectado, mensajeSerializadoRedLocal);
-								aumentarCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+								aumentarCargaGlobalNodo(nroNodoRecibido, 1);
 								for (k = 0; k < cantNodosArchivo; k++) {
 									if (masterJobActual->nodosUsados[k].numero == nroNodoRecibido) {
 										masterJobActual->nodosUsados[k].cantidadVecesUsados++;
@@ -724,14 +731,14 @@ int main(int argc, char *argv[]) {
 								liberarCargaJob(socketConectado);
 								puts("\ncarga de cada nodo luego de un abort\n-----------------------------------------\n");
 								for (i = 0; i < cantNodosArchivo; i++) {
-									printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga);
+									printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
 								}
 								//elimino el elemento con el socketConectado de la lista de datosMasterJob
 								eliminarElemDatosMasterJobByFD(socketConectado);
 								cerrarCliente(socketConectado);
 								FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							} else {
-								disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+								disminuirCargaGlobalNodo(nroNodoRecibido, 1);
 								for (k = 0; k < cantNodosArchivo; k++) {
 									if (masterJobActual->nodosUsados[k].numero == nroNodoRecibido) {
 										masterJobActual->nodosUsados[k].cantidadVecesUsados--;
@@ -762,7 +769,7 @@ int main(int argc, char *argv[]) {
 								char *mensajeSerializado = serializarMensajeTransformacion(dataReplanificacion, 1);
 								printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
 								enviarMensaje(socketConectado, mensajeSerializado);
-								aumentarCargaGlobalNodo(listaGlobalNodos[nodoSuplente.nodoSuplente], 1);
+								aumentarCargaGlobalNodo(nodoSuplente.nodoSuplente, 1);
 								for (k = 0; k < cantNodosArchivo; k++) {
 									if (masterJobActual->nodosUsados[k].numero == nodoSuplente.nodoSuplente) {
 										masterJobActual->nodosUsados[k].cantidadVecesUsados++;
@@ -777,7 +784,7 @@ int main(int argc, char *argv[]) {
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Local OK, nodo %d.", nroNodoRecibido);
 							printf("nroNodoRecibido: %d\n", nroNodoRecibido);
 							free(arrayMensajes);
-							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+							disminuirCargaGlobalNodo(nroNodoRecibido, 1);
 							for (k = 0; k < cantNodosArchivo; k++) {
 								if (masterJobActual->nodosUsados[k].numero == nroNodoRecibido) {
 									masterJobActual->nodosUsados[k].cantidadVecesUsados--;
@@ -856,7 +863,7 @@ int main(int argc, char *argv[]) {
 									char *mensajeSerializadoRedGlobal = serializarMensajeReduccGlobal(cantNodosReduccGlobal, filasReduccGlobal, temporalRedGlobal);
 									printf("\nmensaje serializado para reducción global: %s\n", mensajeSerializadoRedGlobal);
 									enviarMensaje(socketConectado, mensajeSerializadoRedGlobal);
-									aumentarCargaGlobalNodo(listaGlobalNodos[nodoReduccGlobal], 1);
+									aumentarCargaGlobalNodo(nodoReduccGlobal, 1);
 									for (k = 0; k < cantNodosArchivo; k++) {
 										if (masterJobActual->nodosUsados[k].numero == nodoReduccGlobal) {
 											masterJobActual->nodosUsados[k].cantidadVecesUsados++;
@@ -874,7 +881,7 @@ int main(int argc, char *argv[]) {
 							nroNodoRecibido = atoi(arrayMensajes[0]);
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Local ERROR, nodo %d.", nroNodoRecibido);
 							free(arrayMensajes);
-							/*disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoRecibido], 1);
+							/*disminuirCargaGlobalNodo(nroNodoRecibido, 1);
 							 for (k = 0; k < cantNodosArchivo; k++) {
 							 if (masterJobActual->nodosUsados[k].numero == nroNodoRecibido) {
 							 masterJobActual->nodosUsados[k].cantidadVecesUsados--;
@@ -892,7 +899,7 @@ int main(int argc, char *argv[]) {
 							liberarCargaJob(socketConectado);
 							puts("\ncarga de cada nodo luego de un abort\n-----------------------------------------\n");
 							for (i = 0; i < cantNodosArchivo; i++) {
-								printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].numero, listaGlobalNodos[masterJobActual->nodosUsados[i].numero].carga);
+								printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
 							}
 							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado);
@@ -908,7 +915,7 @@ int main(int argc, char *argv[]) {
 							nroNodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global OK, nodo %d.", nroNodoReduccGlobal);
-							//disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
+							//disminuirCargaGlobalNodo(nroNodoReduccGlobal, 1);
 
 							//modifica el estado de la fila
 							if (modificarEstadoFilasTablaEstados(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, FIN_OK) == 0) {
@@ -948,7 +955,7 @@ int main(int argc, char *argv[]) {
 							nroNodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Reducción Global ERROR, nodo %d.", nroNodoReduccGlobal);
-							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoReduccGlobal], 1);
+							disminuirCargaGlobalNodo(nroNodoReduccGlobal, 1);
 
 							if (modificarEstadoFilasTablaEstados(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoReduccGlobal, 0, REDUCC_GLOBAL, EN_PROCESO, ERROR) == 0) {
 								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la Reducción Global ERROR");
@@ -971,7 +978,7 @@ int main(int argc, char *argv[]) {
 							nroNodoAlmacFinal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final OK, nodo %d.", nroNodoAlmacFinal);
-							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
+							disminuirCargaGlobalNodo(nroNodoAlmacFinal, 1);
 
 							//modifica el estado de la fila
 							if (modificarEstadoFilasTablaEstados(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoAlmacFinal, 0, ALMAC_FINAL, EN_PROCESO, FIN_OK) == 0) {
@@ -994,7 +1001,7 @@ int main(int argc, char *argv[]) {
 							nroNodoAlmacFinal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
 
 							log_info(logYAMA, "Se recibió mensaje de fin de Almacenamiento Final ERROR, nodo %d.", nroNodoAlmacFinal);
-							disminuirCargaGlobalNodo(listaGlobalNodos[nroNodoAlmacFinal], 1);
+							disminuirCargaGlobalNodo(nroNodoAlmacFinal, 1);
 
 							//modifica el estado de la fila
 							if (modificarEstadoFilasTablaEstados(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoAlmacFinal, 0, ALMAC_FINAL, EN_PROCESO, ERROR) == 0) {
