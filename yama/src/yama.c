@@ -40,24 +40,7 @@ typedef struct {
 	int bytesBloque;
 } bloqueArchivo;
 
-typedef struct {
-	int numero;
-	char ip[LARGO_IP];
-	int puerto;
-	int carga;
-	int disponibilidad;
-	char nombre[LARGO_NOMBRE_NODO];
-} datosPropiosNodo;
-//indexada por número de nodo
-datosPropiosNodo listaGlobalNodos[50];
-datosPropiosNodo* getDatosGlobalesNodo(int nodoBuscado) {
-	return &listaGlobalNodos[nodoBuscado];
-}
-
-int getLargoListaGlobalNodos() {
-	return sizeof(listaGlobalNodos) / sizeof(datosPropiosNodo);
-}
-
+#include "globalNodos.c"
 #include "../../utils/protocolo.c"
 #include "tablaEstados.h"
 #include "planificacion.h"
@@ -327,7 +310,8 @@ liberarCargaJob(int socketConectado) {
 	int i, j, k;
 	for (i = 0; i < cantNodosUsados; i++) {
 //		printf("carga antes de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
-		getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga -= masterJobActual->nodosUsados[i].cantidadVecesUsados;
+		disminuirCargaGlobalNodo(masterJobActual->nodosUsados[i].numero, masterJobActual->nodosUsados[i].cantidadVecesUsados);
+		//getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga -= masterJobActual->nodosUsados[i].cantidadVecesUsados;
 //		printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
 	}
 }
@@ -414,11 +398,24 @@ int main(int argc, char *argv[]) {
 			nroSocket, nroNodoReduccGlobal, nroNodoRecibido, nroBloqueRecibido,
 			nroNodoAlmacFinal, cantNodosArchivo, cantNodosUsados;
 	datosMasterJob *masterJobActual;
+
+	//  *****************************************************************************************************
+	//  *****************************************************************************************************
+	//  *****************************************************************************************************
+	//  *****************************************************************************************************
 	//pongo la carga de cada nodo en 0 al iniciar
+	//TODO: tengo que mover esto de lugar pero no se cuándo debería hacerlo
+	//  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//  *****************************************************************************************************
 	int largoListaGlobalNodos = getLargoListaGlobalNodos();
 	for (i = 0; i < largoListaGlobalNodos; i++) {
 		actualizarCargaGlobalNodo(i, 0);
 	}
+	//  *****************************************************************************************************
+	//  *****************************************************************************************************
+	//  *****************************************************************************************************
+	//  *****************************************************************************************************
+
 	for (;;) {
 		//if(recargarConfig){
 		//recargar config
@@ -539,6 +536,8 @@ int main(int argc, char *argv[]) {
 									break;
 								}
 								cantNodosArchivo = getCantidadNodosFS(socketFS, protocoloCantidadMensajes[headerId]);
+								setSizeListaGlobalNodos(cantNodosArchivo);
+								printf(" largo lista global de nodos: %d\n", getLargoListaGlobalNodos());
 								//guardar los nodos en la listaGlobal
 								datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
 								masterJobActual->cantNodosUsados = cantNodosArchivo;

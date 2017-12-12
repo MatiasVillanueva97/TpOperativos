@@ -51,22 +51,6 @@ int calcularDisponibilidadNodo(datosPropiosNodo nodosParaPlanificar) {
 	}
 }
 
-int getCargaGlobalNodo(datosPropiosNodo nodo) {
-	return listaGlobalNodos[nodo.numero].carga;
-}
-
-void actualizarCargaGlobalNodo(int nroNodo, int carga) {
-	listaGlobalNodos[nroNodo].carga = carga;
-}
-
-void disminuirCargaGlobalNodo(int nroNodo, int cantidadRestar) {
-	listaGlobalNodos[nroNodo].carga -= cantidadRestar;
-}
-
-void aumentarCargaGlobalNodo(int nroNodo, int cantidadSumar) {
-	listaGlobalNodos[nroNodo].carga += cantidadSumar;
-}
-
 /*
  * busca el nodo con mayor disponibilidad
  * recibe un puntero a la lista de nodos
@@ -97,7 +81,7 @@ void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoPa
 //	printf("\n");
 
 	for (i = 0; i < cantNodosArchivo; i++) {
-		nodosParaPlanificar[i].carga = getCargaGlobalNodo(nodosParaPlanificar[i]);
+		nodosParaPlanificar[i].carga = getCargaGlobalNodo(nodosParaPlanificar[i].numero);
 		nodosParaPlanificar[i].disponibilidad = calcularDisponibilidadNodo(nodosParaPlanificar[i]);
 	}
 	int indexNodoMaxCarga = nodoConMayorCarga(cantNodosArchivo, nodosParaPlanificar);

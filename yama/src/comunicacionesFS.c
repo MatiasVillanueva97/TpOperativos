@@ -127,15 +127,15 @@ void recibirNodosArchivoFS(int socketFS, int cantNodosArchivo, datosPropiosNodo 
 	for (i = 0; i < cantNodosArchivo; i++) {
 		char **nodo = string_split(arrayMensajes[j], "_");
 		nroNodo = atoi(nodo[1]);
-		strcpy(listaGlobalNodos[nroNodo].nombre, arrayMensajes[j]);
-		listaGlobalNodos[nroNodo].numero = nroNodo;
+		strcpy(getDatosGlobalesNodo(nroNodo)->nombre, arrayMensajes[j]);
+		getDatosGlobalesNodo(nroNodo)->numero = nroNodo;
 		nodosParaPlanificar[i].numero = nroNodo;
 		printf("nodo: %d\n", nroNodo);
 		j++;
-		strcpy(listaGlobalNodos[nroNodo].ip, arrayMensajes[j]);
+		strcpy(getDatosGlobalesNodo(nroNodo)->ip, arrayMensajes[j]);
 		strcpy(nodosParaPlanificar[i].ip, arrayMensajes[j]);
 		j++;
-		listaGlobalNodos[nroNodo].puerto = atoi(arrayMensajes[j]);
+		getDatosGlobalesNodo(nroNodo)->puerto = atoi(arrayMensajes[j]);
 		nodosParaPlanificar[i].puerto = atoi(arrayMensajes[j]);
 		j++;
 	}

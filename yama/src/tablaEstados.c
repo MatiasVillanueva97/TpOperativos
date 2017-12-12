@@ -80,7 +80,7 @@ void mostrarTablaEstados() {
 	printf("\tJob\tMaster\tNodo\tBloque\tEtapa\t\tTemporal\tEstado\n");
 	printf("---------------------------------------------------------------------------------------------\n");
 	while (auxiliar != NULL) {
-		printf("\t%d\t%d\t%s\t%d\t%s\t\t%s\t%s\n", auxiliar->job, auxiliar->master, listaGlobalNodos[auxiliar->nodo].nombre, auxiliar->bloque, etapasMensajesPredefinidos[auxiliar->etapa], auxiliar->temporal, estadosMensajesPredefinidos[auxiliar->estado]);
+		printf("\t%d\t%d\t%s\t%d\t%s\t\t%s\t%s\n", auxiliar->job, auxiliar->master, getDatosGlobalesNodo(auxiliar->nodo)->nombre, auxiliar->bloque, etapasMensajesPredefinidos[auxiliar->etapa], auxiliar->temporal, estadosMensajesPredefinidos[auxiliar->estado]);
 		auxiliar = auxiliar->siguiente;
 	}
 }
