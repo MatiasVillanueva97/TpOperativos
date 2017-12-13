@@ -14,6 +14,7 @@
 #include "../../utils/consola.c"
 
 t_log* logFs;
+char* carpeta_log = "../log";
 
 char* obtenerNombreDirectorio(char** rutaDesmembrada) {
 	int posicion = 0;
@@ -2202,7 +2203,7 @@ int main(int argc, char *argv[]) {
 	listaDirectorios = list_create();
 	registroArchivos = list_create();
 	char * PUERTO;
-	mkdir("../log", 0775);
+	crearCarpetaDeLog(carpeta_log);
 	logFs = log_create("../log/FileSystem.log", "FileSystem", 0, 0);
 	configFs = config_create("../../config/configFilesystem.txt");
 	persistirNodos = config_create("../metadata/nodos.bin");

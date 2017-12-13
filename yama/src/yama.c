@@ -25,6 +25,9 @@
 #include "../../utils/archivoConfig.h"
 #include "../../utils/comunicacion.h"
 
+char* carpeta_log = "../log";
+t_log* logYAMA;
+
 typedef struct {
 	int nroNodo;
 	int bloque;
@@ -333,7 +336,8 @@ int main(int argc, char *argv[]) {
 	//sigprocmask(SIG_BLOCK, &new_set, &old_set);
 	signal(SIGINT, sig_handler);
 
-	logYAMA = log_create("logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
+	crearCarpetaDeLog(carpeta_log);
+	logYAMA = log_create("../logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int h, i, j, k;
 	char mensajeHeaderSolo[4];
 	int32_t headerId;

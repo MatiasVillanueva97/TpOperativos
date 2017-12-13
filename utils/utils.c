@@ -13,6 +13,15 @@ char* intToArrayZerosLeft(int valor, int largoStringDesado) {
 	strcpy(sz + string_length(sz) - string_length(a), a);
 	return sz;
 }
+/*
+ * para crear carpeta de log solamente
+ */
+void crearCarpetaDeLog(char* carpeta) {
+	struct stat st = {0};
+	if (stat(carpeta, &st) == -1) {
+		mkdir(carpeta, 0775);
+	}
+}
 
 /*
  * recibe el nombre de la carpeta a crear y el logger para poder loguear la creacion
