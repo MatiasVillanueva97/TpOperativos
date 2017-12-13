@@ -9,17 +9,24 @@
 // enum y vectores para los datos de configuración levantados del archivo config
 // ================================================================ //
 enum keys {
-	IP_PROPIA, PUERTO_PROPIO, FS_IP, FS_PUERTO, DISPONIBILIDAD_BASE,ALGORITMO_BALANCEO
+	IP_PROPIA,
+	PUERTO_PROPIO,
+	FS_IP,
+	FS_PUERTO,
+	RETARDO_PLANIFICACION,
+	DISPONIBILIDAD_BASE,
+	ALGORITMO_BALANCEO
 };
 char* keysConfigYama[] = {
 		"IP_PROPIA",
 		"PUERTO_PROPIO",
 		"FS_IP",
 		"FS_PUERTO",
+		"RETARDO_PLANIFICACION",
 		"DISPONIBILIDAD_BASE",
 		"ALGORITMO_BALANCEO",
 		NULL };
-char* datosConfigYama[6];
+char* datosConfigYama[7];
 
 t_log* logYAMA;
 
