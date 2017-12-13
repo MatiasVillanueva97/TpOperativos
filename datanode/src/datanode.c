@@ -232,6 +232,7 @@ int main(int argc, char *argv[]) {
 			//printf("mensajeSerializado : %s\n", mensajeSerializado);
 			int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);
 			liberar_array(arrayMensajesSerializarEnviar, cantStrings1);
+			free(mensajeSerializado);
 			log_trace(logDataNode, "Bytes enviados: %d", bytesEnviados);
 		}
 		break;

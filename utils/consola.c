@@ -35,7 +35,7 @@ command comandos[] = {
 void analizarComando(char * linea){
 
   int i;
-  int comandoNativo;
+  int comandoNativo = 47;
   int limite = (sizeof(comandos)/sizeof(comandos[0]));
   command comandoAux;
 
@@ -174,11 +174,16 @@ void analizarComando(char * linea){
     	  char * nombreArchivoNuevolocal = comandoDesarmado[2];
     	  if(nombreArchivoViejofs != NULL && nombreArchivoNuevolocal != NULL){
     			pthread_mutex_lock(&mutex1);
-    		  leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal);
+    			int a = leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal);
     			 pthread_mutex_unlock(&mutex1);
+    			 if(a==0){
+
     			 ContenidoXNodo * elemento = list_get(tablaNodos,0);
     			 printf("%s\n",elemento->nodo);
     			 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
+    			 }else {
+
+    			 }
     	      	   }else{
     	      		   printf("Faltan parametros para ejecutar el comando cpto\n");
     	      	   }
@@ -200,8 +205,8 @@ void analizarComando(char * linea){
         } else {
         	string_append(&comandoNuevo,"md5sum ");
         	string_append(&comandoNuevo,nombreArchivoViejo);
+        	string_append(&comandoNuevo," | awk '{print $1}'");
         	system(comandoNuevo);
-        	printf("\n");
         }
 
     	free(comandoNuevo);
@@ -222,7 +227,12 @@ void analizarComando(char * linea){
         if(nombreArchivoViejo == NULL){
         	printf("Faltan parametros para ejecutar el comando info.\n");
         } else {
-        	tablaArchivo * archivo = buscarArchivoPorNombre(nombreArchivoViejo);
+        	printf("%s\n comandoDesarmado[1]",comandoDesarmado[1]);
+        	printf("%s\n nombreArchivoViejo[1]",nombreArchivoViejo);
+        	tablaArchivo * archivo = buscarArchivoPorNombre(comandoDesarmado[1]);
+        	if(archivo==NULL){
+        		printf("puta te cabe \n");
+        	}
 
         	printf("Nombre = %s\n",archivo->nombre);
         	printf("Tamaño = %d\n",archivo->tamanio);

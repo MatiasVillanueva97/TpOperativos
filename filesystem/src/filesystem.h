@@ -130,6 +130,6 @@ void liberarArrayComando(char** comandoDesarmado);
 void moveDirectory(char* oldPath, char* newPath);
 void renameDirectory(char* oldName, char* newName);
 void almacenarArchivo(char * PATH,char*pathDirectorio, int TipoArchivo);
-void leerArchivo(char * nombreArchivo,char * PATH);
+int leerArchivo(char * nombreArchivo,char * PATH);
 tablaArchivo * buscarArchivoPorNombre(char * nombreArchivo);
 #endif /* SRC_FILESYSTEM_H_ */
