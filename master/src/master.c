@@ -129,7 +129,7 @@ char * leerArchivo(char * ubicacionArchivo) {
 	fseek(fp, 0, SEEK_END);
 	long lengthArchivo = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	char *archivoString = malloc(lengthArchivo+1);
+	char *archivoString = malloc(sizeof(char) * (lengthArchivo + 1));
 	if (archivoString) {
 		fread(archivoString, 1, lengthArchivo, fp);
 	} else {
@@ -171,10 +171,53 @@ void recibirTablaTransformacion(struct filaTransformacion *datosTransformacion, 
 	liberar_array(arrayTablaTransformacion, cantMensajes);
 }
 
-void recibirTablaReduccionGlobal(struct filaReduccionGlobal *datosReduccionGlobal, int socketYama, int cantNodos) {
+//LISTO
+void recibirTablaReduccionLocal(struct filaReduccionLocal *datosReduccionLocal, int socketYama, int cantNodos) {
+	int cantStrings, bytesEnviados, i, j, k, h, cantTemporales;
+
+	// Recibir la tabla de reduccion local
+	printf("\n ---------- Tabla de reducción local ---------- \n");
+	printf("\tNodo\tIP\t\t\tPuerto\t\tTemporales Transf.\t\tTemporal Red. Local\n");
+	printf("---------------------------------------------------------------------------------------------\n");
+	for (i = 0, j = 0; i < cantNodos; i++) {
+		// Leo los primeros 4 campos, hasta cant. de temporales
+		cantStrings = 4;
+		char **arrayTablaReduccionLocal = deserializarMensaje(socketYama, cantStrings);
+
+		datosReduccionLocal[i].nodo = atoi(arrayTablaReduccionLocal[j]);
+		j++;
+
+		strcpy(datosReduccionLocal[i].ip, arrayTablaReduccionLocal[j]);
+		j++;
+
+		datosReduccionLocal[i].puerto = atoi(arrayTablaReduccionLocal[j]);
+		j++;
+
+		cantTemporales = atoi(arrayTablaReduccionLocal[j]);
+		j++;
+
+		printf("\t%d\t%s\t%d\t\t", datosReduccionLocal[i].nodo, datosReduccionLocal[i].ip, datosReduccionLocal[i].puerto);
+		// Leo los temporales de transformación
+		char **arrayTemporalesTransformacion = deserializarMensaje(socketYama, cantTemporales);
+		for (k = 0; k < cantTemporales; k++) {
+			printf("%s - ", arrayTemporalesTransformacion[k]);
+			datosReduccionLocal[i].temporalesTransformacion[k] = malloc(string_length(arrayTemporalesTransformacion[k]) + 1);
+			strcpy(datosReduccionLocal[i].temporalesTransformacion[k], arrayTemporalesTransformacion[k]);
+		}
+
+		// Leo el temporal de reducción local
+		char **arrayTemporalReduccionLocal = deserializarMensaje(socketYama, 1);
+		printf("\t\t%s\n", arrayTemporalReduccionLocal[0]);
+		strcpy(datosReduccionLocal[i].temporalReduccionLocal, arrayTemporalReduccionLocal[0]);
+
+	}
+}
+
+//LISTO
+void recibirTablaReduccionGlobal(struct filaReduccionGlobal *datosReduccionGlobal, int socketYama, int cantFilas) {
 	int bytesEnviados, i, j, k, h;
 	int cantMensajesXFila = 4;
-	int cantStrings = cantMensajesXFila * cantNodos;
+	int cantStrings = cantMensajesXFila * cantFilas;
 	char **arrayTablaReduccionGlobal = deserializarMensaje(socketYama, cantStrings);
 	printf("\nmensaje recibido %s\n", *arrayTablaReduccionGlobal);
 
@@ -182,27 +225,31 @@ void recibirTablaReduccionGlobal(struct filaReduccionGlobal *datosReduccionGloba
 	printf("\n ---------- Tabla de reduccion global ---------- \n");
 	printf("\tNodo\tIP\tPuerto\t\tTemporal\n");
 	printf("---------------------------------------------------------------------------------------------\n");
-	for (i = 0, j = 0; i < cantNodos; i++) {
+	for (i = 0, j = 0; i < cantFilas; i++) {
+
 		// Por cada fila de la tabla reduccion global guardo los msjes
 		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[j]);
 		j++;
+
 		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[j]);
 		j++;
+
 		datosReduccionGlobal[i].puerto = atoi(arrayTablaReduccionGlobal[j]);
 		j++;
+
 		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[j]);
 		j++;
+
 		printf("\t%d\t%s\t%d\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionLocal);
 	}
+
 	printf("\n");
 
-	//return arrayTablaReduccionGlobal;
 	liberar_array(arrayTablaReduccionGlobal, cantStrings);
 }
 
 //LISTO
 void recibirTablaAlmacenamientoFinal(struct filaAlmacenamientoFinal *datosAlmacenamientoFinal, int socket, int cantFilas) {
-	//int bytesEnviados, i, j, k, h;
 	int cantMensajesXFila = 4;
 	int cantMensajes = cantMensajesXFila * cantFilas;
 	char **arrayTablaAlmacenamientoFinal = deserializarMensaje(socket, cantMensajes);
@@ -282,48 +329,6 @@ void conectarAWorkerTransformacion(void *arg) {
 }
 
 //LISTO
-void recibirTablaReduccionLocal(struct filaReduccionLocal *datosReduccionLocal, int socketYama, int cantNodos) {
-	int cantStrings, bytesEnviados, i, j, k, h, cantTemporales;
-
-	// Recibir la tabla de reduccion local
-	printf("\n ---------- Tabla de reducción local ---------- \n");
-	printf("\tNodo\tIP\t\t\tPuerto\t\tTemporales Transf.\t\tTemporal Red. Local\n");
-	printf("---------------------------------------------------------------------------------------------\n");
-	for (i = 0, j = 0; i < cantNodos; i++) {
-		// Leo los primeros 4 campos, hasta cant. de temporales
-		cantStrings = 4;
-		char **arrayTablaReduccionLocal = deserializarMensaje(socketYama, cantStrings);
-
-		datosReduccionLocal[i].nodo = atoi(arrayTablaReduccionLocal[j]);
-		j++;
-
-		strcpy(datosReduccionLocal[i].ip, arrayTablaReduccionLocal[j]);
-		j++;
-
-		datosReduccionLocal[i].puerto = atoi(arrayTablaReduccionLocal[j]);
-		j++;
-
-		cantTemporales = atoi(arrayTablaReduccionLocal[j]);
-		j++;
-
-		printf("\t%d\t%s\t%d\t\t", datosReduccionLocal[i].nodo, datosReduccionLocal[i].ip, datosReduccionLocal[i].puerto);
-		// Leo los temporales de transformación
-		char **arrayTemporalesTransformacion = deserializarMensaje(socketYama, cantTemporales);
-		for (k = 0; k < cantTemporales; k++) {
-			printf("%s - ", arrayTemporalesTransformacion[k]);
-			datosReduccionLocal[i].temporalesTransformacion[k] = malloc(string_length(arrayTemporalesTransformacion[k]) + 1);
-			strcpy(datosReduccionLocal[i].temporalesTransformacion[k], arrayTemporalesTransformacion[k]);
-		}
-
-		// Leo el temporal de reducción local
-		char **arrayTemporalReduccionLocal = deserializarMensaje(socketYama, 1);
-		printf("\t\t%s\n", arrayTemporalReduccionLocal[0]);
-		strcpy(datosReduccionLocal[i].temporalReduccionLocal, arrayTemporalReduccionLocal[0]);
-
-	}
-}
-
-//LISTO
 void conectarAWorkerReduccionLocal(void *arg) {
 	int i, j;
 	pthread_t idHilo = pthread_self();
@@ -392,12 +397,9 @@ void conectarAWorkerReduccionLocal(void *arg) {
 
 char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReduccionGlobal, int cantNodos, char* temporalGlobal){
 	int i, j;
-
 	// Leo el archivo reductor
 	char * reductorString = leerArchivo(archivoReductor);
-
-	//envio de mensajes: reductor.py | cantidad de temporales transformacion | temp tranf 1 | .... | temp transf N | temp reduccLocal
-	// el protocolo son 2 porq solo recibe el script reductor y la cant de temporales, recien ahi sabe cuanto leer despues
+	printf("\nScript Reductor leido: %s\n", reductorString);
 
 	int cantStringsASerializar = 1 + 1 + cantNodos + 1;
 	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
@@ -407,12 +409,14 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	arrayMensajes[j] = malloc(string_length(reductorString) + 1);
 	strcpy(arrayMensajes[j], reductorString);
 	free(reductorString);
+	printf("\nScript reductor serializado: %s\n", arrayMensajes[j]);
 	j++;
 
 	// Serializo cantidad de nodos
 	char* cantNodosReduccionGlobalString = intToArrayZerosLeft(cantNodos, 4);
 	arrayMensajes[j] = malloc(string_length(cantNodosReduccionGlobalString) + 1);
 	strcpy(arrayMensajes[j], cantNodosReduccionGlobalString);
+	printf("Cantidad de nodos serializado: %s\n", arrayMensajes[j]);
 	j++;
 
 	// Por cada nodo serializo nro/ip/puerto/temporal
@@ -420,27 +424,33 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 		// Serializo nro de nodo
 		arrayMensajes[j] = malloc(4 + 1);
 		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosReduccionGlobal[i].nodo, 4));
+		printf("Nro de nodo serializado: %s\n", arrayMensajes[j]);
 		j++;
 
 		// Serializo IP
 		arrayMensajes[j] = malloc(string_length(datosReduccionGlobal[i].ip) + 1);
-		strcpy(arrayMensajes[j], datosReduccionGlobal[j].ip);
+		strcpy(arrayMensajes[j], datosReduccionGlobal[i].ip);
+		printf("IP de nodo serializado: %s\n", arrayMensajes[j]);
 		j++;
 
 		// Serializo Puerto
 		arrayMensajes[j] = malloc(LARGO_PUERTO + 1);
 		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosReduccionGlobal[i].puerto, LARGO_PUERTO));
+		printf("Puerto de nodo serializado: %s\n", arrayMensajes[j]);
 		j++;
 
 		// Serializo temporal reduccion
 		arrayMensajes[j] = malloc(string_length(datosReduccionGlobal[i].temporalReduccionLocal) + 1);
-		strcpy(arrayMensajes[j], datosReduccionGlobal[j].temporalReduccionLocal);
+		strcpy(arrayMensajes[j], datosReduccionGlobal[i].temporalReduccionLocal);
+		printf("Temporal reduccion serializado: %s\n", arrayMensajes[j]);
 		j++;
+
 	}
 
 	// Serializo temporal reduccion global
 	arrayMensajes[j] = malloc(string_length(temporalGlobal) + 1);
 	strcpy(arrayMensajes[j], temporalGlobal);
+	printf("Temporal reduccion global serializado: %s\n", arrayMensajes[j]);
 
 	//TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER: 1 MENSAJE
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER, arrayMensajes, cantStringsASerializar);
@@ -451,10 +461,11 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 
 void conectarAWorkerReduccionGlobal(void *arg) {
 	int i, j;
-	struct datosReduccionGlobal *datosHilo = (struct datosReduccionGlobal *) arg;
+	//struct datosReduccionGlobal *datosHilo = (struct datosReduccionGlobal *) arg;
+	char * mensaje = (char *) arg;
 
 	// Abrir conexión a Worker
-	int socketWorker = conectarA(datosHilo->ip, string_itoa(datosHilo->puerto));
+	int socketWorker = conectarA("127.0.0.1", "5781");
 	if (socketWorker < 0) {
 		puts("No se pudo conectar al worker");
 	}
@@ -467,15 +478,19 @@ void conectarAWorkerReduccionGlobal(void *arg) {
 		puts("Conectado al worker");
 
 		// Envio mensaje serializado
-		printf("\nmensaje serializado: \n%s\n", datosHilo->mensajeSerializado);
-		int cantBytesEnviados = enviarMensaje(socketWorker, datosHilo->mensajeSerializado);
+		//printf("\nmensaje serializado: \n%s\n", datosHilo->mensajeSerializado);
+		//int cantBytesEnviados = enviarMensaje(socketWorker, datosHilo->mensajeSerializado);
+
+		printf("\nmensaje serializado: \n%s\n", mensaje);
+		int cantBytesEnviados = enviarMensaje(socketWorker, mensaje);
+
 
 		// recibo rta. del worker
 		//int32_t headerIdWorker = deserializarHeader(socketWorker);
 		printf("header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
 
 		// Avisar a YAMA
-		int bytesEnviadosMensaje = envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_OK, datosHilo->nodo);
+		int bytesEnviadosMensaje = envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_OK, 1);
 		pthread_t idHilo = pthread_self();
 
 		//printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
@@ -653,19 +668,19 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	// 3º) Inicia comunicación con YAMA enviando el HANDSHAKE
+	// 2º) a) Inicia comunicación con YAMA enviando el HANDSHAKE
 	headerIdYama = handshake(socketYama);
 	if (headerIdYama != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		puts("Error de handshake con YAMA");
 	} else {
 		puts("Conectado a YAMA");
 
-		// Envía a Yama el archivo con el que quiere trabajar
+		// 2º) b) Envía a Yama el archivo con el que quiere trabajar
 		enviarArchivoYama(socketYama, archivoRequerido);
 		char idString[LARGO_STRING_HEADER_ID + 1];
 		int cantBytesRecibidos, cantBloquesTransformacion, cantNodosReduccionLocal, cantNodosReduccionGlobal, cantNodosAlmacenamientoFinal;
 
-		// Escucha respuestas de Yama
+		// 2º) c) Escucha respuestas de Yama
 		while (masterCorriendo == 0) {
 			headerIdYama = deserializarHeader(socketYama);
 			printf("\nHeaderId recibido: %d - ", headerIdYama);
@@ -673,6 +688,7 @@ int main(int argc, char *argv[]) {
 
 			switch (headerIdYama) {
 
+			// 3º) Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
 			case TIPO_MSJ_TABLA_TRANSFORMACION: {
 				// Leo cantidad de filas (bloques) que voy a recibir
 				cantBloquesTransformacion = getCantFilas(socketYama, protocoloCantidadMensajes[headerIdYama]);
@@ -733,15 +749,25 @@ int main(int argc, char *argv[]) {
 				char **arrayDatosReduccionGlobal = deserializarMensaje(socketYama, 1);
 				char temporalGlobal[LARGO_TEMPORAL];
 				strcpy(temporalGlobal, arrayDatosReduccionGlobal[0]);
+				printf("Temporal Global: %s\n", temporalGlobal);
 
-				// Serializo tooodo el struct para enviar al Worker Encargado
-				struct datosReduccionGlobal datosHiloReduccionGlobal;
-				datosHiloReduccionGlobal.nodo = tablaReduccionGlobal[0].nodo;
-				datosHiloReduccionGlobal.ip = tablaReduccionGlobal[0].ip;
-				datosHiloReduccionGlobal.puerto = tablaReduccionGlobal[0].puerto;
-				datosHiloReduccionGlobal.mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+				// Serializo tooodo el struct para enviar al Worker Encargado por medio del hilo
+//				struct datosReduccionGlobal datosHiloReduccionGlobal;
+//				datosHiloReduccionGlobal.nodo = tablaReduccionGlobal[0].nodo;
+//				datosHiloReduccionGlobal.ip = tablaReduccionGlobal[0].ip;
+//				datosHiloReduccionGlobal.puerto = tablaReduccionGlobal[0].puerto;
+//				datosHiloReduccionGlobal.mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
 
-				pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, &datosHiloReduccionGlobal);
+//				struct datosReduccionGlobal *datosHiloReduccionGlobal;
+//				int nodo = tablaReduccionGlobal[0].nodo;
+//				datosHiloReduccionGlobal->nodo = tablaReduccionGlobal[0].nodo;
+//				datosHiloReduccionGlobal->ip = tablaReduccionGlobal[0].ip;
+//				datosHiloReduccionGlobal->puerto = tablaReduccionGlobal[0].puerto;
+//				datosHiloReduccionGlobal->mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+
+				char * mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+
+				pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, mensajeSerializado);
 				pthread_join(hiloWorkerReduccionGlobal, NULL);
 			}
 			break;
@@ -769,7 +795,7 @@ int main(int argc, char *argv[]) {
 
 	} // fin if
 
-	// 6º) Calcular métricas, finalizar Master y desconectar Yama
+	// 7º) Calcular métricas, finalizar Master y desconectar Yama
 	clock_t end = clock();
 	float tiempoTranscurrido = (float) (end - start) / CLOCKS_PER_SEC;
 	calcularMetricas(tiempoTranscurrido);
