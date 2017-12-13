@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <math.h>
 #include <commons/collections/list.h>
+#include <signal.h>
 
 
 //File System
@@ -68,6 +69,7 @@ typedef struct {
 
 typedef struct{
 	char * nombre;
+	char * rutafs;
 	int directorioPadre;
 	int tamanio;
 	int tipo;
@@ -130,6 +132,9 @@ void liberarArrayComando(char** comandoDesarmado);
 void moveDirectory(char* oldPath, char* newPath);
 void renameDirectory(char* oldName, char* newName);
 void almacenarArchivo(char * PATH,char*pathDirectorio, int TipoArchivo);
-int leerArchivo(char * nombreArchivo,char * PATH);
+int leerArchivo(char * nombreArchivo,char * PATH,int tipo);
 tablaArchivo * buscarArchivoPorNombre(char * nombreArchivo);
+void matarTodo();
+char * conseguirNombreDePath(char * PATH);
+tablaArchivo * buscarArchivoPorNombreYRuta (char * nombreArchivo,char * ruta,int tipo);
 #endif /* SRC_FILESYSTEM_H_ */

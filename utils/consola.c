@@ -150,8 +150,8 @@ void analizarComando(char * linea){
     	  char * nombreArchivoViejofs = comandoDesarmado[1];
     	  char * nombreArchivoNuevolocal = comandoDesarmado[2];
     	  if(nombreArchivoViejofs != NULL && nombreArchivoNuevolocal != NULL){
-    			pthread_mutex_lock(&mutex1);
-    			int a = leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal);
+    			 pthread_mutex_lock(&mutex1);
+    			 int a = leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal,0);
     			 pthread_mutex_unlock(&mutex1);
     			 if(a==0){
 
@@ -174,16 +174,38 @@ void analizarComando(char * linea){
 
       case 10:{
         char * comandoNuevo = string_new();
+        char * comandoNuevoRm = string_new();
 
-        char * nombreArchivoViejo = comandoDesarmado[1];
+        char * path_yafs = comandoDesarmado[1];
 
-        if(nombreArchivoViejo == NULL){
+        if(path_yafs == NULL){
         	printf("Faltan parametros para ejecutar el comando md5sum\n");
         } else {
-        	string_append(&comandoNuevo,"md5sum ");
-        	string_append(&comandoNuevo,nombreArchivoViejo);
-        	string_append(&comandoNuevo," | awk '{print $1}'");
-        	system(comandoNuevo);
+        	char * nombre = conseguirNombreDePath(path_yafs);
+        	char * pathArchivo = string_duplicate("../metadata/");
+
+			 pthread_mutex_lock(&mutex1);
+			 int a = leerArchivo(path_yafs,pathArchivo,1);
+			 pthread_mutex_unlock(&mutex1);
+			 if(a==0){
+			 ContenidoXNodo * elemento = list_get(tablaNodos,0);
+			 printf("%s\n",elemento->nodo);
+			 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
+			 string_append(&comandoNuevo,"md5sum ");
+			 string_append(&comandoNuevo,pathArchivo);
+			 string_append(&comandoNuevo,nombre);
+			 string_append(&comandoNuevo," | awk '{print $1}'");
+			 system(comandoNuevo);
+			 string_append(&comandoNuevoRm,"rm -f ");
+			 string_append(&comandoNuevoRm,pathArchivo);
+			 string_append(&comandoNuevoRm,nombre);
+			 system(comandoNuevoRm);
+
+
+			 }
+			 else {
+
+			 }
         }
 
     	free(comandoNuevo);
@@ -204,64 +226,64 @@ void analizarComando(char * linea){
         if(nombreArchivoViejo == NULL){
         	printf("Faltan parametros para ejecutar el comando info.\n");
         } else {
-        	printf("%s\n comandoDesarmado[1]",comandoDesarmado[1]);
-        	printf("%s\n nombreArchivoViejo[1]",nombreArchivoViejo);
-        	tablaArchivo * archivo = buscarArchivoPorNombre(comandoDesarmado[1]);
+
+        	tablaArchivo * archivo =buscarArchivoPorNombreYRuta(conseguirNombreDePath(comandoDesarmado[1]),comandoDesarmado[1],0);
         	if(archivo==NULL){
-        		printf("puta te cabe \n");
+        		printf("No existe el archivo %s el directorio %s \n",conseguirNombreDePath(comandoDesarmado[1]),comandoDesarmado[1]);
+        	}else {
+        		printf("\n");
+            	printf("Nombre = %s\n",archivo->nombre);
+            	printf("Tamaño = %d\n",archivo->tamanio);
+            	int i=0;
+            	int j=0;
+            	int k=0;
+            	void printear(ContenidoBloque * bloquesArchivo){
+            		if(j>=1){
+            			j=0;
+            		}
+            		if(k%2==0){
+            			char * bloque_copia =string_new();
+            			char * bloque_bytes = string_new();
+            			string_append(&bloque_copia,"BLOQUE");
+            			string_append(&bloque_copia,string_itoa(i));
+            			string_append(&bloque_copia,"COPIA");
+            			string_append(&bloque_copia,string_itoa(j));
+            			string_append(&bloque_bytes,"BLOQUE");
+            			string_append(&bloque_bytes,string_itoa(i));
+            			string_append(&bloque_bytes,"BYTES");
+            			char * array =string_duplicate("[");
+            			string_append(&array,bloquesArchivo->nodo);
+            			string_append(&array,",");
+            			string_append(&array,string_itoa(bloquesArchivo->bloque));
+            			string_append(&array,"]");
+            			printf("%s = %s \n",bloque_copia,array);
+            		}
+
+            		else{
+            			j++;
+            			char * bloque_copia =string_new();
+            						char * bloque_bytes = string_new();
+            						string_append(&bloque_copia,"BLOQUE");
+            						string_append(&bloque_copia,string_itoa(i));
+            						string_append(&bloque_copia,"COPIA");
+            						string_append(&bloque_copia,string_itoa(j));
+            						string_append(&bloque_bytes,"BLOQUE");
+            						string_append(&bloque_bytes,string_itoa(i));
+            						string_append(&bloque_bytes,"BYTES");
+            						char * array =string_duplicate("[");
+            						string_append(&array,bloquesArchivo->nodo);
+            						string_append(&array,",");
+            						string_append(&array,string_itoa(bloquesArchivo->bloque));
+            						string_append(&array,"]");
+            						i++;
+            						printf("%s = %s \n",bloque_copia,array);
+
+            		}
+            	k++;}list_iterate(archivo->bloqueCopias,(void*)printear);
+                printf("\n");
+
+            }
         	}
-
-        	printf("Nombre = %s\n",archivo->nombre);
-        	printf("Tamaño = %d\n",archivo->tamanio);
-        	int i=0;
-        	int j=0;
-        	int k=0;
-        	void printear(ContenidoBloque * bloquesArchivo){
-        		if(j>=1){
-        			j=0;
-        		}
-        		if(k%2==0){
-        			char * bloque_copia =string_new();
-        			char * bloque_bytes = string_new();
-        			string_append(&bloque_copia,"BLOQUE");
-        			string_append(&bloque_copia,string_itoa(i));
-        			string_append(&bloque_copia,"COPIA");
-        			string_append(&bloque_copia,string_itoa(j));
-        			string_append(&bloque_bytes,"BLOQUE");
-        			string_append(&bloque_bytes,string_itoa(i));
-        			string_append(&bloque_bytes,"BYTES");
-        			char * array =string_duplicate("[");
-        			string_append(&array,bloquesArchivo->nodo);
-        			string_append(&array,",");
-        			string_append(&array,string_itoa(bloquesArchivo->bloque));
-        			string_append(&array,"]");
-        			printf("%s = %s \n",bloque_copia,array);
-        		}
-
-        		else{
-        			j++;
-        			char * bloque_copia =string_new();
-        						char * bloque_bytes = string_new();
-        						string_append(&bloque_copia,"BLOQUE");
-        						string_append(&bloque_copia,string_itoa(i));
-        						string_append(&bloque_copia,"COPIA");
-        						string_append(&bloque_copia,string_itoa(j));
-        						string_append(&bloque_bytes,"BLOQUE");
-        						string_append(&bloque_bytes,string_itoa(i));
-        						string_append(&bloque_bytes,"BYTES");
-        						char * array =string_duplicate("[");
-        						string_append(&array,bloquesArchivo->nodo);
-        						string_append(&array,",");
-        						string_append(&array,string_itoa(bloquesArchivo->bloque));
-        						string_append(&array,"]");
-        						i++;
-        						printf("%s = %s \n",bloque_copia,array);
-
-        		}
-        	k++;}list_iterate(archivo->bloqueCopias,(void*)printear);
-            printf("\n");
-
-        }
 
       //  free(nombreArchivoViejo);
 
@@ -310,6 +332,7 @@ void analizarComando(char * linea){
 }
 
 void IniciarConsola(){
+	signal(SIGINT,matarTodo);
   char * linea;
   char * barraDeComando = string_from_format("%s>", getlogin());
 
