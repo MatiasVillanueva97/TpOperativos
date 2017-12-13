@@ -22,13 +22,13 @@ char* keysConfigMaster[] = { "YAMA_IP", "YAMA_PUERTO", "NODO_IP", "NODO_PUERTO",
 		NULL };
 
 struct datosWorker {
-	char ip[16];
+	char ip[LARGO_IP];
 	char puerto[5];
 };
 
 struct datosReduccionGlobal {
 	int nodo;
-	char *ip;
+	char ip[LARGO_IP];
 	int puerto;
 	char *mensajeSerializado;
 };
@@ -401,7 +401,7 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	char * reductorString = leerArchivo(archivoReductor);
 	printf("\nScript Reductor leido: %s\n", reductorString);
 
-	int cantStringsASerializar = 1 + 1 + cantNodos + 1;
+	int cantStringsASerializar = 1 + 1 + (cantNodos * 4) + 1;
 	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 	j = 0;
 
@@ -461,11 +461,11 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 
 void conectarAWorkerReduccionGlobal(void *arg) {
 	int i, j;
-	//struct datosReduccionGlobal *datosHilo = (struct datosReduccionGlobal *) arg;
-	char * mensaje = (char *) arg;
+	struct datosReduccionGlobal *datosHilo = (struct datosReduccionGlobal *) arg;
+	//char * mensaje = (char *) arg;
 
 	// Abrir conexión a Worker
-	int socketWorker = conectarA("127.0.0.1", "5781");
+	int socketWorker = conectarA(datosHilo->ip, string_itoa(datosHilo->puerto));
 	if (socketWorker < 0) {
 		puts("No se pudo conectar al worker");
 	}
@@ -481,13 +481,13 @@ void conectarAWorkerReduccionGlobal(void *arg) {
 		//printf("\nmensaje serializado: \n%s\n", datosHilo->mensajeSerializado);
 		//int cantBytesEnviados = enviarMensaje(socketWorker, datosHilo->mensajeSerializado);
 
-		printf("\nmensaje serializado: \n%s\n", mensaje);
-		int cantBytesEnviados = enviarMensaje(socketWorker, mensaje);
+		printf("\nmensaje serializado: \n%s\n", datosHilo->mensajeSerializado);
+		int cantBytesEnviados = enviarMensaje(socketWorker, datosHilo->mensajeSerializado);
 
 
 		// recibo rta. del worker
 		//int32_t headerIdWorker = deserializarHeader(socketWorker);
-		printf("header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
+		printf("Header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
 
 		// Avisar a YAMA
 		int bytesEnviadosMensaje = envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_OK, 1);
@@ -525,9 +525,10 @@ void conectarAWorkerAlmacenamientoFinal(void *arg) {
 		// Serializo path reduccion global
 		arrayMensajes[j] = malloc(string_length(datosEnHilo->temporalReduccionGlobal) + 1);
 		strcpy(arrayMensajes[j], datosEnHilo->temporalReduccionGlobal);
+		j++;
 
 		// Serializo path almacenado final
-		arrayMensajes[j] = malloc(string_length(archivoDestino));
+		arrayMensajes[j] = malloc(string_length(archivoDestino) + 1);
 		strcpy(arrayMensajes[j], archivoDestino);
 		j++;
 
@@ -542,7 +543,7 @@ void conectarAWorkerAlmacenamientoFinal(void *arg) {
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		int bytesEnviadosMensaje = envioFinAlmacenamientoFinal(headerIdWorker);
+		int bytesEnviadosMensaje = envioFinAlmacenamientoFinal(TIPO_MSJ_ALM_FINAL_OK);
 		printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporalReduccionGlobal);
 	}
 }
@@ -752,22 +753,22 @@ int main(int argc, char *argv[]) {
 				printf("Temporal Global: %s\n", temporalGlobal);
 
 				// Serializo tooodo el struct para enviar al Worker Encargado por medio del hilo
-//				struct datosReduccionGlobal datosHiloReduccionGlobal;
-//				datosHiloReduccionGlobal.nodo = tablaReduccionGlobal[0].nodo;
-//				datosHiloReduccionGlobal.ip = tablaReduccionGlobal[0].ip;
-//				datosHiloReduccionGlobal.puerto = tablaReduccionGlobal[0].puerto;
-//				datosHiloReduccionGlobal.mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+				struct datosReduccionGlobal datosHiloReduccionGlobal;
+				datosHiloReduccionGlobal.nodo = tablaReduccionGlobal[0].nodo;
+				strcpy(datosHiloReduccionGlobal.ip, tablaReduccionGlobal[0].ip);
+				datosHiloReduccionGlobal.puerto = tablaReduccionGlobal[0].puerto;
 
-//				struct datosReduccionGlobal *datosHiloReduccionGlobal;
-//				int nodo = tablaReduccionGlobal[0].nodo;
-//				datosHiloReduccionGlobal->nodo = tablaReduccionGlobal[0].nodo;
-//				datosHiloReduccionGlobal->ip = tablaReduccionGlobal[0].ip;
-//				datosHiloReduccionGlobal->puerto = tablaReduccionGlobal[0].puerto;
-//				datosHiloReduccionGlobal->mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+				char * aux = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+				datosHiloReduccionGlobal.mensajeSerializado = malloc (string_length(aux) + 1);
+				strcpy(datosHiloReduccionGlobal.mensajeSerializado, aux);
+				free (aux);
 
-				char * mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+				//datosHilosReduccionGlobal.mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
 
-				pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, mensajeSerializado);
+				pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, &datosHiloReduccionGlobal);
+
+				//char * mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
+				//pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, mensajeSerializado);
 				pthread_join(hiloWorkerReduccionGlobal, NULL);
 			}
 			break;
