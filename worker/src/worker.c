@@ -99,7 +99,8 @@ int ejecutar_system(char* comando) {
 	int status;
 	system(comando);
 	wait(&status); //pausa hasta que termina el hijo (system) y guarda el resultado en status
-	if (WIFEXITED(status) == 0) {
+	//if (WIFEXITED(status) == 0) {
+	if (WIFEXITED(status) != -1) {
 		int exit_status = WEXITSTATUS(status);
 		log_trace(logWorker, "System termino OK, el exit status del comando fue %d\n", exit_status);
 		return 0;
@@ -600,8 +601,11 @@ void almacenamiento_final_worker(int headerId, int socketCliente) {
 	log_trace(logWorker, "Entrando en almacenamiento final");
 	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
-	char* archivoReducGlobal = malloc(string_length(arrayMensajes[0]) + 1);
-	strcpy(archivoReducGlobal, arrayMensajes[0]);
+	//char* archivoReducGlobal = malloc(string_length(arrayMensajes[0]) + 1);
+	char* archivoReducGlobal = string_new();
+	//strcpy(archivoReducGlobal, arrayMensajes[0]);
+	string_append_with_format(&archivoReducGlobal, "%s/%s", carpeta_temporales_reduccionGlob, arrayMensajes[0]);
+
 	char* archivoFinal = malloc(string_length(arrayMensajes[1]) + 1);
 	strcpy(archivoFinal, arrayMensajes[1]);
 
