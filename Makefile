@@ -38,7 +38,7 @@ run-filesystem: compile-filesystem
 
 debug-filesystem: compile-filesystem
 	@echo "Ejecutando FILESYSTEM en modo DEBUG..."
-	cd $(FILESYSTEM)/$(BIN_PATH) && valgrind ./$(FILESYSTEM)
+	cd $(FILESYSTEM)/$(BIN_PATH) && valgrind --leak-check=full --show-leak-kinds=all ./$(FILESYSTEM)
 
 # DATANODE #
 clean-datanode:
@@ -54,10 +54,9 @@ run-datanode: compile-datanode
 	@clear
 	@cd $(DATANODE)/$(BIN_PATH) && ./$(DATANODE)
 
-
 debug-datanode: compile-datanode
 	@echo "Ejecutando DATANODE en modo DEBUG..."
-	@cd $(DATANODE)/$(BIN_PATH) && valgrind ./$(DATANODE)
+	@cd $(DATANODE)/$(BIN_PATH) && valgrind --leak-check=full --show-leak-kinds=all ./$(DATANODE)
 
 # YAMA #
 clean-yama:
@@ -75,7 +74,7 @@ run-yama: compile-yama
 
 debug-yama: compile-yama
 	@echo "Ejecutando YAMA en modo DEBUG..."
-	@cd $(YAMA)/$(BIN_PATH) && valgrind ./$(YAMA)
+	@cd $(YAMA)/$(BIN_PATH) && valgrind --leak-check=full --show-leak-kinds=all ./$(YAMA)
 
 # WORKER #
 clean-worker:
@@ -93,7 +92,7 @@ run-worker: compile-worker
 
 debug-worker: compile-worker
 	@echo "Ejecutando WORKER en modo DEBUG..."
-	@cd $(WORKER)/$(BIN_PATH) && valgrind ./$(WORKER)
+	@cd $(WORKER)/$(BIN_PATH) && valgrind --leak-check=full --show-leak-kinds=all ./$(WORKER)
 
 # MASTER #
 clean-master:
@@ -115,7 +114,7 @@ run-master-arg: compile-master
 
 debug-master: compile-master
 	@echo "Ejecutando MASTER en modo DEBUG..."
-	@cd $(MASTER)/$(BIN_PATH) &&  valgrind ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
+	@cd $(MASTER)/$(BIN_PATH) &&  valgrind --leak-check=full --show-leak-kinds=all ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
 
 all: compile-filesystem compile-datanode compile-worker compile-yama compile-master
 

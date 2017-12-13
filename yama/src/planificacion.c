@@ -18,7 +18,7 @@ nodosUsadobloqueArchivo *bloquesArchivoXFD[CANT_MAX_FD];
 
 char algoritmoPlanificacion[10];
 
-int cargaMaxima, disponibBase, nodoReduccGlobal;
+int cargaMaxima = 0, disponibBase, nodoReduccGlobal, retardoPlanificacion;
 
 /*
  * se fija si existe un bloque determinado en un nodo determinado
@@ -44,6 +44,7 @@ int nodoConDisponibilidad(datosPropiosNodo nodo) {
  * devuelve el valor de disponibilidad (A)
  */
 int calcularDisponibilidadNodo(datosPropiosNodo nodosParaPlanificar) {
+	string_to_upper(algoritmoPlanificacion);
 	if (strcmp(algoritmoPlanificacion, "CLOCK") == 0) {
 		return disponibBase;
 	} else {
@@ -68,6 +69,7 @@ int nodoConMayorCarga(int cantNodos, datosPropiosNodo *nodosParaPlanificar) {
 }
 
 void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacionesNodos, int cantPartesArchivo, int cantNodosArchivo, datosPropiosNodo *nodosParaPlanificar) {
+	usleep(retardoPlanificacion * 100);
 //	printf("cantPartesArchivo recibido: %d\n", cantPartesArchivo);
 //	printf("cantNodosArchivo recibido: %d\n", cantNodosArchivo);
 
@@ -80,10 +82,12 @@ void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoPa
 //	}
 //	printf("\n");
 
+	//actualiza los nodos que se usan en la planificación con la carga y disponibilidad histórica
 	for (i = 0; i < cantNodosArchivo; i++) {
 		nodosParaPlanificar[i].carga = getCargaGlobalNodo(nodosParaPlanificar[i].numero);
 		nodosParaPlanificar[i].disponibilidad = calcularDisponibilidadNodo(nodosParaPlanificar[i]);
 	}
+	//obtiene el nro del nodo con mayor carga y actualiza la variable global cargaMaxima
 	int indexNodoMaxCarga = nodoConMayorCarga(cantNodosArchivo, nodosParaPlanificar);
 	cargaMaxima = nodosParaPlanificar[indexNodoMaxCarga].carga;
 
