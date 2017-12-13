@@ -662,18 +662,14 @@ int main(int argc, char *argv[]) {
 					 * Almacenam final (2): archivo reduc global (origen), nombre y ruta archivo final (destino)
 					 */
 
-					//int resultado;
-
 					if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
 
-						//resultado = transformacion_worker(headerId, socketCliente);
 						transformacion_worker(headerId, socketCliente);
 
 					}
 
 					if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
 
-						//resultado = reduccion_local_worker(headerId, socketCliente);
 						reduccion_local_worker(headerId, socketCliente);
 
 
@@ -688,14 +684,6 @@ int main(int argc, char *argv[]) {
 					if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
 						almacenamiento_final_worker(headerId, socketCliente);
 					}
-
-					//TODO: ??????????????????????? esto está bien???
-					//porque lo único que hace es mandar un header=0............. raro....
-					/*
-								if (resultado == 0) {
-									enviarHeaderSolo(socketCliente, resultado);
-								}
-					 */
 				}
 
 				if (idEmisorMensaje == NUM_PROCESO_WORKER) {
