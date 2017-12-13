@@ -114,15 +114,20 @@ void asignarDatosMasterJob(int nroMaster, int nroJob, int fileDescriptor) {
 //	listaNrosMasterJob[fileDescriptor].nroMaster = nroMaster;
 }
 
+
+
 void asignarNodoReduccGlobal(int nodoReduccGlobal, int fileDescriptorBuscado) {
 	datosMasterJob *masterJobBuscado;
 	masterJobBuscado = getDatosMasterJobByFD(fileDescriptorBuscado);
 	masterJobBuscado->nodoReduccGlobal = nodoReduccGlobal;
 //	listaNrosMasterJob[fileDescriptor].nodoReduccGlobal = nodoReduccGlobal;
-}
 
-int eliminarElementoByFd(int fileDescriptorBuscado) {
-
+	//aumenta la carga del nodo encargado de la reducción global
+	int cargaNodoReduccGlobal = masterJobBuscado->cantBloquesArchivo;
+	if (cargaNodoReduccGlobal % 2 != 0)
+		cargaNodoReduccGlobal++;
+	int cantidadSumar = cargaNodoReduccGlobal / 2;
+	aumentarCargaGlobalNodo(nodoReduccGlobal, cantidadSumar);
 }
 
 int getNuevoNroMaster() {
