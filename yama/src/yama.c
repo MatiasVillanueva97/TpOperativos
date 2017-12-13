@@ -982,6 +982,7 @@ int main(int argc, char *argv[]) {
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_info(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
+							mostrarTablaEstados();
 							break;
 
 						case TIPO_MSJ_REDUCC_GLOBAL_OK:
@@ -1020,9 +1021,10 @@ int main(int argc, char *argv[]) {
 							}
 							/* ******* envío de la tabla para reducción global ****** */
 							char *mensajeSerializadoAlmFinal = serializarMensajeAlmFinal(nroNodoReduccGlobal, temporalAlmFinal);
-							printf("\nmensaje serializado para reducción local: %s\n", mensajeSerializadoAlmFinal);
+							printf("\nmensaje serializado para almacenamiento final: %s\n", mensajeSerializadoAlmFinal);
 							enviarMensaje(socketConectado, mensajeSerializadoAlmFinal);
 							log_info(logYAMA, "Se da inicio al Almacenamiento Final en el nodo %d", nroNodoReduccGlobal);
+							mostrarTablaEstados();
 							break;
 
 						case TIPO_MSJ_REDUCC_GLOBAL_ERROR:
@@ -1046,6 +1048,7 @@ int main(int argc, char *argv[]) {
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
+							mostrarTablaEstados();
 							break;
 
 						case TIPO_MSJ_ALM_FINAL_OK:
@@ -1069,6 +1072,7 @@ int main(int argc, char *argv[]) {
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se da por finalizado correctamente el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
+							mostrarTablaEstados();
 							break;
 
 						case TIPO_MSJ_ALM_FINAL_ERROR:
@@ -1094,6 +1098,7 @@ int main(int argc, char *argv[]) {
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 							log_trace(logYAMA, "Se aborta el Job %d del master %d conectado por FD %d", masterJobActual->nroJob, masterJobActual->nroMaster, socketConectado);
+							mostrarTablaEstados();
 							break;
 						default:
 							;
