@@ -514,7 +514,7 @@ char* leerArchivo(char* pathArchivo) {
 	return contenido;
 }
 
-void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
+int almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	char* buffer = leerArchivo(rutaArchivo);
 	//printf("%s\n",buffer);
 	int socketFS = conexionAFileSystem();
@@ -533,11 +533,46 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	strcpy(arrayMensajes[1], buffer);
 	//serializa los mensajes y los envía
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, 2);
-	int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);//envio el mensaje serializado a FS
-	log_info(logWorker, "Mensaje serializado: %s",mensajeSerializado);
-	//libera todos los pedidos de malloc
 	liberar_array(arrayMensajes, 2);
+
+	int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);//envio el mensaje serializado a FS
+	//log_info(logWorker, "Mensaje almacenamiento final serializado: %s",mensajeSerializado);
+	log_trace(logWorker, "[almacenamiento_final]: Envie contenido del archivo a FS");
+
 	free(mensajeSerializado);
+
+	return bytesEnviados;
+}
+
+void almacenamiento_final_worker(int headerId, int socketCliente) {
+	int resultado;
+
+	log_trace(logWorker, "Entrando en almacenamiento final");
+	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
+	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+	char* archivoReducGlobal = malloc(string_length(arrayMensajes[0]) + 1);
+	strcpy(archivoReducGlobal, arrayMensajes[0]);
+	char* archivoFinal = malloc(string_length(arrayMensajes[1]) + 1);
+	strcpy(archivoFinal, arrayMensajes[1]);
+
+	log_info(logWorker,"Datos recibidos: Archivo Reduccion Global: %s - Archivo final: %s", archivoReducGlobal, archivoFinal);
+	//printf("Datos recibidos\n");
+
+	liberar_array(arrayMensajes, cantidadMensajes);
+
+	resultado = almacenamientoFinal(archivoReducGlobal, archivoFinal);
+
+	free(archivoReducGlobal);
+	free(archivoFinal);
+
+	if (resultado > 0) {
+		log_trace(logWorker, "Enviando header de ALM_FINAL_OK");
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_ALM_FINAL_OK);
+	}
+	else {
+		log_error(logWorker, "Enviando header de ALM_FINAL_ERROR");
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_ALM_FINAL_ERROR);
+	}
 }
 
 
@@ -651,7 +686,7 @@ int main(int argc, char *argv[]) {
 					}
 
 					if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
-
+						almacenamiento_final_worker(headerId, socketCliente);
 					}
 
 					//TODO: ??????????????????????? esto está bien???
