@@ -93,28 +93,7 @@ void analizarComando(char * linea){
       }
 
       case 2:{
-        if(strcmp(comandoDesarmado[1], "-d")==0){
-        	int pudoBorrar = deleteDirectory(comandoDesarmado[2]);
-        	if(pudoBorrar == 0){
-        		printf("El directorio a borrar no existe.\n");
-        	}else if(pudoBorrar == -1){
-        		printf("El directorio a borrar tiene subdirectorios. No se puede borrar.\n");
-        	}else{
-        		char* comandoPConsola = string_new();
-        		string_append(&comandoPConsola, "rmdir ");
-        		string_append(&comandoPConsola, comandoDesarmado[2]);
-        		system(comandoPConsola);
-        		persistirDirectorio();
-        		printf("Directorio borrado exitosamente.\n");
-        		free(comandoPConsola);
-        	}
-        }else if(strcmp(comandoDesarmado[1], "-b")==0){
-        	//BORRO BLOQUE
-        }else if(comandoDesarmado[1]!=NULL){
-        	//BORRO ARCHIVO
-        }else{
-        	//log_error
-        }
+    	  printf("Comando en proceso! Todavia no se puede ejecutar! (rm)\n");
       }
       break;
 
@@ -142,7 +121,6 @@ void analizarComando(char * linea){
     	  if(nuevoDirectorio != NULL){
     		  if(!existeDirectorio(nuevoDirectorio)){
     			  if(crearDirectorio(nuevoDirectorio) == 1){
-    			      printf("\n");
     			  }else{
     			  	  printf("No se pudo crear el directorio. Por favor vuelva a intentarlo\n");
     	  		  }
@@ -161,7 +139,6 @@ void analizarComando(char * linea){
     	   char * flag = comandoDesarmado[3];
     	   if(nombreArchivoViejo != NULL && nombreArchivoNuevo != NULL && flag != NULL){
     		  almacenarArchivo(nombreArchivoViejo,nombreArchivoNuevo,atoi(flag));
-    		  //chequear rutas por adentro y flag .solo 0/1
     	   }else{
     		   printf("Faltan parametros para ejecutar el comando cpfrom\n");
     	   }
