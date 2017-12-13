@@ -34,11 +34,8 @@ char* datosConfigWorker[6];
 
 t_log* logWorker;
 
-//char* carpeta_temporal = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/tmp"
 char* carpeta_temporal = "../tmp";
-//char* carpeta_resultados = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/resultados";
 char* carpeta_resultados = "../resultados";
-//char* carpeta_temporales_reduccion = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/reduccionLocal";
 char* carpeta_temporales_reduccion = "../reduccionLocal";
 char* carpeta_temporales_reduccionGlob = "../reduccionGlobal";
 
@@ -68,10 +65,26 @@ char* guardar_datos(char* datos, char* carpeta, char* nombre) {
 		fclose(archivo);
 	}
 	else {
-		log_error(logWorker, "Hubo un error al abrir el archivo: %s", path);
+		log_error(logWorker, "[guardar_datos] Hubo un error al abrir el archivo: %s", path);
 	}
 	log_info(logWorker, "[guardar_datos]: Path archivo guardado: %s", path);
 	return path;
+}
+
+char* leerArchivo(char* pathArchivo) {
+	char caracter;
+	char* contenido = string_new();
+	FILE* archivo = fopen(pathArchivo, "r");
+	while(1) {
+
+		caracter = fgetc(archivo);
+		if( feof(archivo) ) {
+			break ;
+		}
+		string_append_with_format(&contenido, "%c", caracter);
+	}
+	fclose(archivo);
+	return contenido;
 }
 
 
@@ -334,7 +347,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 		apareo_archivos(path_apareado,arrayTemporales[i]);
 	}
 
-	resultado = reduccion(path_script,path_apareado,path_temporal_destino);
+	resultado = reduccion(path_script, path_apareado, path_temporal_destino);
 
 	free(reductorString);
 	free(temporalDestino);
@@ -352,7 +365,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 //---------------------- FUNCIONES REDUCCION GLOBAL ----------------------
 
 typedef struct filaReduccionGlobal {
-	int nodo;
+	//int nodo;
 	char ip[LARGO_IP];
 	char puerto[LARGO_PUERTO];
 	char temporalReduccionLocal[LARGO_TEMPORAL];
@@ -386,7 +399,7 @@ int32_t handshakeWorker(int socketWorker) {
 
 void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int socketMaster, int cantNodos) {
 	int bytesEnviados, i;
-	int cantMensajesXFila = 4;
+	int cantMensajesXFila = 3;
 	int cantStrings = cantMensajesXFila * cantNodos;
 	char **arrayTablaReduccionGlobal = deserializarMensaje(socketMaster, cantStrings);
 	/*
@@ -397,10 +410,10 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 	*/
 	for (i = 0; i < cantNodos; i++) {
 		// cada msje es una fila de la tabla reduccion global
-		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
-		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[1]);
-		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[2]);
-		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[3]);
+		//datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
+		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[0]);
+		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[1]);
+		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[2]);
 		//printf("\t%d\t%s\t%d\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionGlobal);
 	}
 	//printf("\n");
@@ -408,11 +421,55 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 	liberar_array(arrayTablaReduccionGlobal, cantStrings);
 }
 
+void enviarPathTemporal(int socketWorker, char* nombreArchivo){
+	//arma el array de strings para serializar
+	char **arrayMensajes = malloc(sizeof(char*));
+	arrayMensajes[0] = malloc(string_length(nombreArchivo) + 1);
+	strcpy(arrayMensajes[0], nombreArchivo);
+	//serializa los mensajes y los envía
+	int cantidadMensajes = protocoloCantidadMensajes[TIPO_MSJ_PATH_ARCHIVO];
+	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_PATH_ARCHIVO, arrayMensajes, cantidadMensajes);
+	liberar_array(arrayMensajes, cantidadMensajes);
+
+	int bytesEnviados = enviarMensaje(socketWorker, mensajeSerializado);//envio el mensaje serializado al worker
+	//log_info(logWorker, "Mensaje almacenamiento final serializado: %s",mensajeSerializado);
+	if (bytesEnviados > 0) {
+		log_trace(logWorker, "[reduccion_global]: Envie path del archivo de reduccion local");
+	}
+	else {
+		log_error(logWorker, "[reduccion_global]: Error al enviar path del archivo de reduccion local");
+	}
+
+	free(mensajeSerializado);
+
+	//return bytesEnviados;
+}
+
 void traer_temporal_worker(int socketWorker, char* nombreArchivo) {
+	enviarPathTemporal(socketWorker, nombreArchivo);
 	char **arrayArchivo = deserializarMensaje(socketWorker, 1);
 	char* path_datos = guardar_datos(arrayArchivo[0], carpeta_temporales_reduccionGlob, nombreArchivo);
 
 	liberar_array(arrayArchivo, 1);
+}
+
+int enviar_contenido_archivo(int socketCliente, char* pathArchivo) {
+	char* contenidoArchivo = leerArchivo(pathArchivo);
+
+	char **arrayArchivo = malloc(sizeof(char*));
+	arrayArchivo[0] = malloc(string_length(contenidoArchivo) + 1);
+	strcpy(arrayArchivo[0], contenidoArchivo);
+
+	//serializa los mensajes y los envía
+	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_CONTENIDO_ARCHIVO_REDUC_GLOBAL, arrayArchivo, 1);
+	liberar_array(arrayArchivo, 1);
+
+	int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);//envio el mensaje serializado al worker
+	log_trace(logWorker, "[reduccion_global]: Envie contenido del archivo al worker encargado");
+
+	free(mensajeSerializado);
+
+	return bytesEnviados;
 }
 
 
@@ -449,6 +506,13 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 
 	char* path_script = guardar_script(reductorString, archivoDestino);
 
+	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporales_reduccionGlob, archivoDestino);
+
+	FILE *apareado = fopen(path_apareado, "w");
+	fclose (apareado);
+
+	char* path_destino = string_from_format("%s/%s", carpeta_temporales_reduccionGlob, archivoDestino);
+
 	for (i = 0; i < cantWorkers; i++) {
 		int socketWorker = conectarAWorker(datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
 		int32_t headerIdWorker = handshakeWorker(socketWorker);
@@ -457,23 +521,11 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 		} else {
 			log_trace(logWorker, "Conectado al worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
 			traer_temporal_worker(socketWorker, datosReduccionGlobal[i].temporalReduccionLocal);
+			apareo_archivos(path_apareado,datosReduccionGlobal[i].temporalReduccionLocal);
 		}
 	}
 
-
-	//TODO
-	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, archivoDestino);
-
-	FILE *apareado = fopen(path_apareado, "w");
-	fclose (apareado);
-
-	char* path_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, archivoDestino);
-
-	for (j = 0; j < cantWorkers; j++) {
-		apareo_archivos(path_apareado,datosReduccionGlobal[j].temporalReduccionLocal);
-	}
-
-	resultado = reduccion(path_script,path_apareado,path_destino);
+	resultado = reduccion(path_script, path_apareado, path_destino);
 
 	free(reductorString);
 	free(archivoDestino);
@@ -496,22 +548,6 @@ int conexionAFileSystem() {
 		//preparadoEnviarFs = handshakeClient(&datosConexionFileSystem, NUM_PROCESO_KERNEL);
 	}
 	return socketFS;
-}
-
-char* leerArchivo(char* pathArchivo) {
-	char caracter;
-	char* contenido = string_new();
-	FILE* archivo = fopen(pathArchivo, "r");
-	while(1) {
-
-		caracter = fgetc(archivo);
-		if( feof(archivo) ) {
-			break ;
-		}
-		string_append_with_format(&contenido, "%c", caracter);
-	}
-	fclose(archivo);
-	return contenido;
 }
 
 int almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
@@ -605,13 +641,6 @@ int main(int argc, char *argv[]) {
 	}
 	log_trace(logWorker, "Se inicio worker como server. IP: %s, Puerto: %s", datosConfigWorker[IP_PROPIA], datosConfigWorker[PUERTO_PROPIO]);
 
-	/*
-	//prueba almacenamiento final, comentar todo el while de abajo
-	char* rutaArchivo = "/home/utnso/Escritorio/nombres1k.csv";
-	char* rutaFinal = "lalala";
-	almacenamientoFinal(rutaArchivo, rutaFinal);
-	 */
-
 	while (1) {	//inicio bucle para recibir conexiones y forkear
 		puts("\nYa estoy preparado para recibir conexiones\n-----------------------------------------\n");
 
@@ -663,22 +692,15 @@ int main(int argc, char *argv[]) {
 					 */
 
 					if (headerId == TIPO_MSJ_DATA_TRANSFORMACION_WORKER) {
-
 						transformacion_worker(headerId, socketCliente);
-
 					}
 
 					if (headerId == TIPO_MSJ_DATA_REDUCCION_LOCAL_WORKER) {
-
 						reduccion_local_worker(headerId, socketCliente);
-
-
 					}
 
 					if (headerId == TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER) {
-
 						reduccion_global_worker(headerId, socketCliente);
-
 					}
 
 					if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
@@ -687,18 +709,20 @@ int main(int argc, char *argv[]) {
 				}
 
 				if (idEmisorMensaje == NUM_PROCESO_WORKER) {
-					enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
+					enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK); //respondo al handshake
 					log_trace(logWorker, "Worker conectado, socket: %d", socketCliente);
 
-					/*TODO
-					char **arrayMensajes = malloc(sizeof(char*));
-					char* archivo = leer_archivo(lalala);
-					arrayMensajes[0] = malloc(string_length(archivo) + 1);
-					*/
-					/*TODO
-					char* mensajeSerializado = serializarMensaje(id, *arrayMensajes[]);
-					enviarMensaje(socketCliente, mensajeSerializado);
-					*/
+					int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
+					int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
+					char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
+					char *pathArchivo = malloc(string_length(arrayMensajes[0]) + 1);
+					strcpy(pathArchivo, arrayMensajes[0]);
+
+					liberar_array(arrayMensajes, cantidadMensajes);
+
+					enviar_contenido_archivo(socketCliente, pathArchivo);
+
+					free(pathArchivo);
 
 				}
 			}
@@ -710,7 +734,7 @@ int main(int argc, char *argv[]) {
 			exit(0);
 			//aca termina el hijo
 		} else {
-			puts("Pasó por el padre");
+			log_info(logWorker, "Pasó por el padre");
 			close(socketCliente);
 			waitpid(pid, &status, 0);
 		}

@@ -41,11 +41,12 @@ enum tiposMensajes {
 	TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER, //31
 	TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER, //32
 	TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, //33
-	TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS	//34
+	TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS, //34
+	TIPO_MSJ_CONTENIDO_ARCHIVO_REDUC_GLOBAL //35
 };
 
 // OJO! Si se agrega algo en el enum de arriba actualizar dejar siempre acá el último valor del array
-const int protocoloCantidadMensajes[TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS + 1] = {
+const int protocoloCantidadMensajes[TIPO_MSJ_CONTENIDO_ARCHIVO_REDUC_GLOBAL + 1] = {
 		0, //00
 		1, //01
 		1, //02
@@ -80,10 +81,11 @@ const int protocoloCantidadMensajes[TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS + 1] = {
 		2, //31
 		2, //32
 		2, //33
-		0	//34
+		0, //34
+		1 //35
 };
 
-const char* protocoloMensajesPredefinidos[TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS + 1] = {
+const char* protocoloMensajesPredefinidos[TIPO_MSJ_CONTENIDO_ARCHIVO_REDUC_GLOBAL + 1] = {
 		"EN_DESUSO",
 		"TABLA_TRANSFORMACION",
 		"TABLA_REDUCCION_LOCAL",
@@ -118,5 +120,6 @@ const char* protocoloMensajesPredefinidos[TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS + 1] 
 		"DATA_REDUCCION_GLOBAL_WORKER",
 		"DATA_ALMACENAMIENTO_FINAL_WORKER",
 		"WORKER_ALMACENAMIENTO_FINAL",
-		"TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS"
+		"NO_EXISTE_ARCHIVO_EN_FS",
+		"CONTENIDO_ARCHIVO_REDUC_GLOBAL"
 };
