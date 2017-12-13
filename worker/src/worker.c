@@ -365,7 +365,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 //---------------------- FUNCIONES REDUCCION GLOBAL ----------------------
 
 typedef struct filaReduccionGlobal {
-	//int nodo;
+	int nodo;
 	char ip[LARGO_IP];
 	char puerto[LARGO_PUERTO];
 	char temporalReduccionLocal[LARGO_TEMPORAL];
@@ -399,7 +399,7 @@ int32_t handshakeWorker(int socketWorker) {
 
 void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int socketMaster, int cantNodos) {
 	int bytesEnviados, i;
-	int cantMensajesXFila = 3;
+	int cantMensajesXFila = 4;
 	int cantStrings = cantMensajesXFila * cantNodos;
 	char **arrayTablaReduccionGlobal = deserializarMensaje(socketMaster, cantStrings);
 	/*
@@ -410,10 +410,10 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 	*/
 	for (i = 0; i < cantNodos; i++) {
 		// cada msje es una fila de la tabla reduccion global
-		//datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
-		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[0]);
-		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[1]);
-		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[2]);
+		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
+		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[1]);
+		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[2]);
+		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[3]);
 		//printf("\t%d\t%s\t%d\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionGlobal);
 	}
 	//printf("\n");
@@ -616,7 +616,8 @@ void almacenamiento_final_worker(int headerId, int socketCliente) {
  * ====================================MAIN====================================
  */
 int main(int argc, char *argv[]) {
-	logWorker = log_create("logFile.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
+	mkdir("../log", 0775);
+	logWorker = log_create("../log/logWorker.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 
 	log_trace(logWorker, "Iniciando Worker");
 	printf("\n*** Proceso worker ***\n");
