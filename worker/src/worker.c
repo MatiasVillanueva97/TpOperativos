@@ -40,6 +40,7 @@ char* carpeta_temporal = "../tmp";
 char* carpeta_resultados = "../resultados";
 //char* carpeta_temporales_reduccion = "/home/utnso/tp-2017-2c-Mi-Grupo-1234/worker/reduccionLocal";
 char* carpeta_temporales_reduccion = "../reduccionLocal";
+char* carpeta_temporales_reduccionGlob = "../reduccionGlobal";
 
 
 //---------------------- FUNCIONES GENERALES ----------------------
@@ -56,6 +57,20 @@ char* guardar_script(char* codigo_script, char* nombre) {
 		fclose(fp);
 	}
 	log_info(logWorker, "[guardar_script]: Path script guardado: %s", path);
+	return path;
+}
+
+char* guardar_datos(char* datos, char* carpeta, char* nombre) {
+	char* path = string_from_format("%s/%s", carpeta, nombre);
+	FILE *archivo = fopen(path, "w");
+	if (archivo != NULL) {
+		fputs(datos, archivo);
+		fclose(archivo);
+	}
+	else {
+		log_error(logWorker, "Hubo un error al abrir el archivo: %s", path);
+	}
+	log_info(logWorker, "[guardar_datos]: Path archivo guardado: %s", path);
 	return path;
 }
 
@@ -340,7 +355,7 @@ typedef struct filaReduccionGlobal {
 	int nodo;
 	char ip[LARGO_IP];
 	char puerto[LARGO_PUERTO];
-	char temporalReduccionGlobal[LARGO_TEMPORAL];
+	char temporalReduccionLocal[LARGO_TEMPORAL];
 } filaReduccionGlobal;
 
 int conectarAWorker(char* ip, char* puerto) {
@@ -385,7 +400,7 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
 		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[1]);
 		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[2]);
-		strcpy(datosReduccionGlobal[i].temporalReduccionGlobal, arrayTablaReduccionGlobal[3]);
+		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[3]);
 		//printf("\t%d\t%s\t%d\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionGlobal);
 	}
 	//printf("\n");
@@ -393,11 +408,21 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 	liberar_array(arrayTablaReduccionGlobal, cantStrings);
 }
 
+void traer_temporal_worker(int socketWorker, char* nombreArchivo) {
+	char **arrayArchivo = deserializarMensaje(socketWorker, 1);
+	char* path_datos = guardar_datos(arrayArchivo[0], carpeta_temporales_reduccionGlob, nombreArchivo);
+
+	liberar_array(arrayArchivo, 1);
+}
+
 
 void reduccion_global_worker(int headerId, int socketCliente) {
+	//recibir archivos temporales de los demas workers
 	//aparear archivos
 	//ejecutar reductor
-	//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
+	//guardar resultado en el temporal que me pasa master
+
+	crear_carpeta(carpeta_temporales_reduccionGlob, logWorker);
 
 	int resultado;
 	int i, j;
@@ -431,11 +456,12 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 			log_error(logWorker, "Error de handshake con el worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
 		} else {
 			log_trace(logWorker, "Conectado al worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
-			// TODO traer archivos de los workers y guardarlos
+			traer_temporal_worker(socketWorker, datosReduccionGlobal[i].temporalReduccionLocal);
 		}
 	}
 
 
+	//TODO
 	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, archivoDestino);
 
 	FILE *apareado = fopen(path_apareado, "w");
@@ -444,7 +470,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	char* path_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, archivoDestino);
 
 	for (j = 0; j < cantWorkers; j++) {
-		apareo_archivos(path_apareado,datosReduccionGlobal[j].temporalReduccionGlobal);
+		apareo_archivos(path_apareado,datosReduccionGlobal[j].temporalReduccionLocal);
 	}
 
 	resultado = reduccion(path_script,path_apareado,path_destino);
@@ -521,6 +547,7 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	//Creo las carpetas
 	crear_carpeta(carpeta_temporal, logWorker);
 	crear_carpeta(carpeta_resultados, logWorker);
 	crear_carpeta(carpeta_temporales_reduccion, logWorker);
@@ -630,6 +657,11 @@ int main(int argc, char *argv[]) {
 				if (idEmisorMensaje == NUM_PROCESO_WORKER) {
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
 					log_trace(logWorker, "Worker conectado, socket: %d", socketCliente);
+
+					/*TODO
+					char* mensajeSerializado = serializarMensaje(id, *arrayMensajes[]);
+					enviarMensaje(socketCliente, mensajeSerializado);
+					*/
 
 				}
 			}
