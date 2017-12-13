@@ -27,6 +27,7 @@ char* keysConfigDataNode[] = { "IP_PROPIA", "PUERTO_PROPIO", "FS_IP", "FS_PUERTO
 //FILE* archivo;
 char* datosConfigDataNode[6];
 char *nameArchivoConfig = "configNodo.txt";
+char* carpeta_log = "../log";
 int tamanoArchivo;
 t_log* logDataNode;
 void *mapArchivo;
@@ -141,7 +142,8 @@ void mandarInfoAFilesystem(int socket, char **datosConfigDataNode) {
 
 int main(int argc, char *argv[]) {
 
-	logDataNode = log_create("logDataNode.log", "DataNode", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
+	crearCarpetaDeLog(carpeta_log);
+	logDataNode = log_create("../logDataNode.log", "DataNode", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 	log_trace(logDataNode, "Iniciando proceso DataNode");
 	printf("\n*** Proceso DataNode ***\n");
 	int preparadoEnviarFs = 1, i;

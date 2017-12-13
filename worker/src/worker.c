@@ -34,6 +34,7 @@ char* datosConfigWorker[6];
 
 t_log* logWorker;
 
+char* carpeta_log = "../log";
 char* carpeta_temporal = "../tmp";
 char* carpeta_resultados = "../resultados";
 char* carpeta_temporales_reduccion = "../reduccionLocal";
@@ -616,7 +617,7 @@ void almacenamiento_final_worker(int headerId, int socketCliente) {
  * ====================================MAIN====================================
  */
 int main(int argc, char *argv[]) {
-	mkdir("../log", 0775);
+	crearCarpetaDeLog(carpeta_log);
 	logWorker = log_create("../log/logWorker.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 
 	log_trace(logWorker, "Iniciando Worker");
