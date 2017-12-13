@@ -3,6 +3,13 @@
  Name        : worker.c
  Author      : Grupo 1234
  Description : Proceso Worker
+ Resume      : Worker es el que realiza las operaciones que le pide el Master.
+ 1) Lee archivo de configuracion del nodo.
+ 2) Espera conexion de Masters.
+ 3) Recibe conexion del Master y se forkea
+ 4) El principal sigue escuchando, el fork ejecuta la orden
+ 5) Termina la orden, aviso a master que terminó y el fork muere
+ Puede haber varios Worker corriendo al mismo tiempo.
  ============================================================================
  */
 
@@ -36,7 +43,10 @@ char* carpeta_temporales_reduccion = "../reduccionLocal";
 
 
 //---------------------- FUNCIONES GENERALES ----------------------
-
+/*
+ * Recibe el codigo a guardar y un string "nombre".
+ * Guarda el codigo en un archivo llamado script_nombre, en la carpeta temporal
+ */
 char* guardar_script(char* codigo_script, char* nombre) {
 	//log_info(logWorker, "[guardar_script]: Codigo recibido: %s", codigo_script);
 	char* path = string_from_format("%s/script_%s", carpeta_temporal, nombre);
@@ -326,6 +336,13 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 //---------------------- FUNCIONES REDUCCION GLOBAL ----------------------
 
+typedef struct filaReduccionGlobal {
+	int nodo;
+	char ip[LARGO_IP];
+	char puerto[LARGO_PUERTO];
+	char temporalReduccionGlobal[LARGO_TEMPORAL];
+} filaReduccionGlobal;
+
 int conectarAWorker(char* ip, char* puerto) {
 	log_trace(logWorker, "Conexión a Worker, IP: %s, Puerto: %s", ip, puerto);
 	int socketWorker = conectarA(ip, puerto);
@@ -352,6 +369,30 @@ int32_t handshakeWorker(int socketWorker) {
 
 }
 
+void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int socketMaster, int cantNodos) {
+	int bytesEnviados, i;
+	int cantMensajesXFila = 4;
+	int cantStrings = cantMensajesXFila * cantNodos;
+	char **arrayTablaReduccionGlobal = deserializarMensaje(socketMaster, cantStrings);
+	/*
+	//recibir la tabla de reduccion global
+	printf("\n ---------- Tabla de reduccion global ---------- \n");
+	printf("\tNodo\tIP\t\tPuerto\t\tTemporal\n");
+	printf("---------------------------------------------------------------------------------------------\n");
+	*/
+	for (i = 0; i < cantNodos; i++) {
+		// cada msje es una fila de la tabla reduccion global
+		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
+		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[1]);
+		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[2]);
+		strcpy(datosReduccionGlobal[i].temporalReduccionGlobal, arrayTablaReduccionGlobal[3]);
+		//printf("\t%d\t%s\t%d\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionGlobal);
+	}
+	//printf("\n");
+
+	liberar_array(arrayTablaReduccionGlobal, cantStrings);
+}
+
 
 void reduccion_global_worker(int headerId, int socketCliente) {
 	//aparear archivos
@@ -359,7 +400,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
 
 	int resultado;
-	int i;
+	int i, j;
 
 	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
@@ -372,8 +413,8 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 
 	liberar_array(arrayMensajes, cantidadMensajes);
 
-	char **arrayIPsYPuertos = deserializarMensaje(socketCliente, cantWorkers);
-	char **arrayNombresTemporalesOrigen = deserializarMensaje(socketCliente, cantWorkers);
+	filaReduccionGlobal datosReduccionGlobal[cantWorkers];
+	recibirTablaReduccionGlobal(datosReduccionGlobal, socketCliente, cantWorkers);
 
 	char **arrayArchDestino = deserializarMensaje(socketCliente, 1);
 	char *archivoDestino = malloc(string_length(arrayArchDestino[0]));
@@ -382,23 +423,35 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	liberar_array(arrayArchDestino, 1);
 
 	char* path_script = guardar_script(reductorString, archivoDestino);
-	/*
-	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
 
-	char* path_temporal_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, temporalDestino);
+	for (i = 0; i < cantWorkers; i++) {
+		int socketWorker = conectarAWorker(datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
+		int32_t headerIdWorker = handshakeWorker(socketWorker);
+		if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
+			log_error(logWorker, "Error de handshake con el worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
+		} else {
+			log_trace(logWorker, "Conectado al worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
+			// TODO traer archivos de los workers y guardarlos
+		}
+	}
+
+
+	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, archivoDestino);
 
 	FILE *apareado = fopen(path_apareado, "w");
 	fclose (apareado);
 
-	for (i = 0; i < cantTemporales; i++) {
-		apareo_archivos(path_apareado,arrayTemporales[i]);
+	char* path_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, archivoDestino);
+
+	for (j = 0; j < cantWorkers; j++) {
+		apareo_archivos(path_apareado,datosReduccionGlobal[j].temporalReduccionGlobal);
 	}
 
-	resultado = reduccion(path_script,path_apareado,path_temporal_destino);
+	resultado = reduccion(path_script,path_apareado,path_destino);
 
 	free(reductorString);
-	free(temporalDestino);
-	 */
+	free(archivoDestino);
+
 	if (resultado >= 0) {
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_GLOBAL_OK);
 	}
@@ -455,19 +508,6 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	free(mensajeSerializado);
 }
 
-
-
-/*
- ================================================================
- Worker es el que realiza las operaciones que le pide el Master.
- 1) Lee archivo de configuracion del nodo.
- 2) Espera conexion de Masters.
- 3) Recibe conexion del Master y se forkea
- 4) El principal sigue escuchando, el fork ejecuta la orden
- 5) Termina la orden, aviso a master que terminó y el fork muere
- Puede haber varios Worker corriendo al mismo tiempo.
- ================================================================
- */
 
 int main(int argc, char *argv[]) {
 	logWorker = log_create("logFile.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
@@ -569,6 +609,8 @@ int main(int argc, char *argv[]) {
 					}
 
 					if (headerId == TIPO_MSJ_DATA_REDUCCION_GLOBAL_WORKER) {
+
+						reduccion_global_worker(headerId, socketCliente);
 
 					}
 
