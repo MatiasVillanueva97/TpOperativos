@@ -498,19 +498,26 @@ int conexionAFileSystem() {
 	return socketFS;
 }
 
+char* leerArchivo(char* pathArchivo) {
+	char caracter;
+	char* contenido = string_new();
+	FILE* archivo = fopen(pathArchivo, "r");
+	while(1) {
+
+		caracter = fgetc(archivo);
+		if( feof(archivo) ) {
+			break ;
+		}
+		string_append_with_format(&contenido, "%c", caracter);
+	}
+	fclose(archivo);
+	return contenido;
+}
+
 void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
-	FILE* archivo = fopen(rutaArchivo, "r");
-	int fd = fileno(archivo);
-	//printf("fd: %d\n", fd);
-	struct stat buff;
-	fstat(fd, &buff);
-	int	tamano = buff.st_size;
-	//printf("tamanio: %d\n", tamano);
-	char* buffer = malloc(tamano);
-	//fseek(archivo, 0, SEEK_SET);
-	fread(buffer,tamano,1,archivo);
+	char* buffer = leerArchivo(rutaArchivo);
 	//printf("%s\n",buffer);
-	int socketFS = conexionAFileSystem(); //= conectarA("127.0.0.1","5000");
+	int socketFS = conexionAFileSystem();
 	int preparadoEnviarFs = 1;
 	if (socketFS < 0) {
 		preparadoEnviarFs = 0;
@@ -527,14 +534,16 @@ void almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
 	//serializa los mensajes y los envía
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, 2);
 	int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado);//envio el mensaje serializado a FS
-	printf("%s\n",mensajeSerializado);
+	log_info(logWorker, "Mensaje serializado: %s",mensajeSerializado);
 	//libera todos los pedidos de malloc
 	liberar_array(arrayMensajes, 2);
-	free(buffer);
 	free(mensajeSerializado);
 }
 
 
+/*
+ * ====================================MAIN====================================
+ */
 int main(int argc, char *argv[]) {
 	logWorker = log_create("logFile.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 
@@ -658,6 +667,11 @@ int main(int argc, char *argv[]) {
 					enviarHeaderSolo(socketCliente, TIPO_MSJ_HANDSHAKE_RESPUESTA_OK);
 					log_trace(logWorker, "Worker conectado, socket: %d", socketCliente);
 
+					/*TODO
+					char **arrayMensajes = malloc(sizeof(char*));
+					char* archivo = leer_archivo(lalala);
+					arrayMensajes[0] = malloc(string_length(archivo) + 1);
+					*/
 					/*TODO
 					char* mensajeSerializado = serializarMensaje(id, *arrayMensajes[]);
 					enviarMensaje(socketCliente, mensajeSerializado);
