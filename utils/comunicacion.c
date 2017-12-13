@@ -32,13 +32,14 @@ int enviarHeaderSolo(int serverSocket, int32_t headerId) {
  */
 int recibirMensaje(char *message, int socketCliente, int packageSize) {
 	//char *message=malloc(packageSize);
-	int cantBytesRecibidos;
-	if ((cantBytesRecibidos = recv(socketCliente, message, packageSize, MSG_WAITALL)) <= 0) {
-		perror("Recepción Mensaje");
+	int cantBytesRecibidos = recv(socketCliente, message, packageSize, MSG_WAITALL);
+	if (cantBytesRecibidos == -1) {
+		perror("Error en recepción mensaje");
 		strcpy(message, "-1");
 	}
+	//printf ("cant bytes recibidos: %d", cantBytesRecibidos);
 	return cantBytesRecibidos;
-}
+	}
 
 /* **************** funciones para serializar y deserializar mensajes ************ */
 char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings) {
@@ -80,7 +81,8 @@ char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings
 int32_t deserializarHeader(int socketCliente) {
 	char idString[LARGO_STRING_HEADER_ID + 1];
 //	recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
-	if (recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID) <= 0) {
+	int bytes = recibirMensaje(idString, socketCliente, LARGO_STRING_HEADER_ID);
+	if (bytes <= 0) {
 		return -1;
 	}
 	idString[LARGO_STRING_HEADER_ID] = '\0';
