@@ -19,8 +19,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <errno.h>
 
 #define SIZE 1024 //tamaño para comunicaciones entre padre e hijos
+#define NULO 0
+#define ERROR -1
 //#define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
 //tamanioData = stat --format=%s "nombre archivo" //tamaño data.bin en bytes
@@ -31,6 +34,8 @@ enum keys {
 };
 char* keysConfigWorker[] = { "IP_PROPIA", "PUERTO_PROPIO", "RUTA_DATABIN", "FS_IP", "FS_PUERTO", "NOMBRE_NODO", NULL };
 char* datosConfigWorker[6];
+
+pid_t pidPadre;
 
 t_log* logWorker;
 
@@ -613,10 +618,30 @@ void almacenamiento_final_worker(int headerId, int socketCliente) {
 }
 
 
+//---------------------- FUNCIONES ZOMBIES ----------------------
+void limpiarZombie(int sig) {
+  int saved_errno = errno;
+  while(waitpid((pid_t)(WAIT_ANY), NULO, WNOHANG) > NULO);
+  errno = saved_errno;
+}
+
+void detectarZombie() {
+	struct sigaction sa;
+	sa.sa_handler = &limpiarZombie;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+	if (sigaction(SIGCHLD, &sa, NULO) == ERROR) {
+	  perror(NULO);
+	  exit(EXIT_FAILURE);
+	}
+}
+
 /*
  * ====================================MAIN====================================
  */
 int main(int argc, char *argv[]) {
+	//signal(SIGINT, configuracionSenial);
+	//pidPadre = getpid();
 	crearCarpetaDeLog(carpeta_log);
 	logWorker = log_create("../log/logWorker.log", "WORKER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 
