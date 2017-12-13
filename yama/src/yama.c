@@ -19,6 +19,15 @@
 #include <commons/string.h>
 #include <commons/log.h>
 #include <errno.h>
+#include <signal.h>
+
+//para el select
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/select.h>
+
+#include <unistd.h>
+
 #include "../../utils/constantes.h"
 #include "../../utils/utils.h"
 #include "../../utils/conexionesSocket.h"
@@ -52,25 +61,31 @@ typedef struct {
 #include <signal.h>
 #include "comunicacionesFS.c"
 
-//para el select
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-int recargarConfig = 0;
-
+//int recargarConfig = 0;
 // mover a utils.h o alguna libreria
 void sig_handler(int signal) {
-
-	if (signal == SIGUSR1) {
-		printf("\nRecieved SIGUSR1, reloading config...\n");
+	switch (signal) {
+	case SIGINT:
+		puts("\nAlguien presionó ctrl+c, saliendo....\n");
+		log_info(logYAMA, "Alguien presionó ctrl+c, se finaliza el proceso");
+		log_info(logYAMA, "Server cerrado");
+		log_destroy(logYAMA);
+		exit(1);
+		break;
+	case SIGUSR1:	//recarga de la configuración
+		puts("\nRecieved SIGUSR1, reloading config...\n");
 		log_info(logYAMA, "Recieved SIGUSR1, reloading config...");
-		recargarConfig = 1;
-	}
-	if (signal == SIGINT) {
-		printf("\nRecieved SIGINT, exiting...\n");
-		log_error(logYAMA, "Recieved SIGINT, exiting...");
-		exit(0);
+		//recargarConfig = 1;
+		if (!getDatosConfiguracion()) {
+			log_error(logYAMA, "No se pudieron recargar los datos del archivo de configuración");
+			puts("Error al recargar los datos del archivo de configuración");
+		} else {
+			strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
+			retardoPlanificacion = atoi(datosConfigYama[RETARDO_PLANIFICACION]);
+		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -329,12 +344,27 @@ liberarCargaJob(int socketConectado, int nodoFallado) {
 
 int main(int argc, char *argv[]) {
 
+	//manejo de señales
+	signal(SIGINT, sig_handler);
+//	signal(SIGUSR1, sig_handler);
+	//manejo de señales con el pselect()
+	struct sigaction sa;
+	sigset_t emptyset, blockset;
+	sigemptyset(&blockset); /* Block SIGUSR1 */
+//	sigaddset(&blockset, SIGINT);
+	sigaddset(&blockset, SIGUSR1);
+	sigprocmask(SIG_BLOCK, &blockset, NULL);
+	sa.sa_handler = sig_handler; /* Establish signal handler */
+	sa.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGUSR1, &sa, NULL);
+//	sigaction(SIGINT, &sa, NULL);
+
 	//sigset_t new_set, old_set;
 	//sigemptyset(&new_set);
 	//sigaddset(&new_set, SIGINT);
 	//sigaddset(&new_set, SIGUSR1);
 	//sigprocmask(SIG_BLOCK, &new_set, &old_set);
-	signal(SIGINT, sig_handler);
 
 	crearCarpetaDeLog(carpeta_log);
 	logYAMA = log_create("../logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
@@ -393,7 +423,6 @@ int main(int argc, char *argv[]) {
 	//FD_SET(socketFS, &socketsLecturaMaster);
 	// keep track of the biggest file descriptor
 	//maxFD = socketFS; // so far, it's this one
-
 	/* ************** inicialización como server ************ */
 	int listenningSocket;
 	if ((listenningSocket = inicializoComoServidor()) < 0) {
@@ -428,21 +457,20 @@ int main(int argc, char *argv[]) {
 	//  *****************************************************************************************************
 	//  *****************************************************************************************************
 	//  *****************************************************************************************************
-
+	puts("antes del primer pselect()");
+	sigemptyset(&emptyset);
+	if (pselect(maxFD + 1, &socketsLecturaMaster, NULL, NULL, NULL, &emptyset) == -1)
+		perror("Error en el pselect()");
+	puts("entro al FOR(;;)");
 	for (;;) {
-		//if(recargarConfig){
-		//recargar config
-		//if (!getDatosConfiguracion()) {
-		//	return EXIT_FAILURE;
-		//}
-		//para la planificación
-		//disponibBase = atoi(datosConfigYama[DISPONIBILIDAD_BASE]);
-		//strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
-
-		//}
+		printf("retardoPlanificacion: %d\n", retardoPlanificacion);
+		printf("algoritmoPlanificacion: %s\n", algoritmoPlanificacion);
+		sleep(1);
 		socketsLecturaTemp = socketsLecturaMaster;
-		//if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &old_set) != -1) { // para el manejo de signals, no borrar!
-		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
+		puts("voy para el select()");
+//		sigemptyset(&emptyset);
+		if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &emptyset) != -1) { // para el manejo de signals, no borrar!
+//		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
 					if (nroSocket == listenningSocket) {	//conexión nueva
@@ -655,7 +683,8 @@ int main(int argc, char *argv[]) {
 									masterJobActual->nodosUsados[k].cantidadVecesUsados--;
 								}
 							}
-
+//							puts("presionar ENTER");
+//							getchar();
 							//pongo la fila en estado FIN_OK
 							if (modificarEstadoFilasTablaEstados(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, nroBloqueRecibido, TRANSFORMACION, EN_PROCESO, FIN_OK) == 0) {
 								log_error(logYAMA, "Ocurrió un error al modificar la tabla de estados en el fin de la transformación OK");
@@ -663,6 +692,7 @@ int main(int argc, char *argv[]) {
 							} else {
 								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la transformación OK");
 							}
+//							puts("pasó del getchar()");
 							//si no queda ninguna fila de ese nodo en proceso inicia la reducción local
 							if (getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, EN_PROCESO) == 0) {
 								//inicia la reducción local del nodo recibido
@@ -1081,11 +1111,11 @@ int main(int argc, char *argv[]) {
 		}
 
 	}
-	if (errno == EINTR) {
-		puts("interrupted by SIGINT");
-	} else {
-		perror("pselect()");
-	}
+//	if (errno == EINTR) {
+//		puts("interrupted by SIGINT");
+//	} else {
+//		perror("pselect()");
+//	}
 	//sigprocmask()
 
 	// END for(;;)
