@@ -457,11 +457,6 @@ int main(int argc, char *argv[]) {
 	//  *****************************************************************************************************
 	//  *****************************************************************************************************
 	//  *****************************************************************************************************
-	puts("antes del primer pselect()");
-	sigemptyset(&emptyset);
-	if (pselect(maxFD + 1, &socketsLecturaMaster, NULL, NULL, NULL, &emptyset) == -1)
-		perror("Error en el pselect()");
-	puts("entro al FOR(;;)");
 	for (;;) {
 		printf("retardoPlanificacion: %d\n", retardoPlanificacion);
 		printf("algoritmoPlanificacion: %s\n", algoritmoPlanificacion);
