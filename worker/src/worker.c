@@ -326,9 +326,11 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	char *reductorString = malloc(string_length(arrayMensajes[0]) + 1);
 	strcpy(reductorString, arrayMensajes[0]);
+	log_info(logWorker, "[Reduccion Local] Recibi reductor: %s", reductorString);
 
 	int cantTemporales;
 	cantTemporales = atoi(arrayMensajes[1]);
+	log_info(logWorker, "[Reduccion Local] Recibi cantidad de temporales: %d", cantTemporales);
 
 	liberar_array(arrayMensajes, cantidadMensajes);
 
@@ -337,6 +339,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	char **arrayTempDestino = deserializarMensaje(socketCliente, 1);
 	char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
 	strcpy(temporalDestino,arrayTempDestino[0]);
+	log_info(logWorker, "[Reduccion Local] Recibi temporal destino: %s", temporalDestino);
 
 	liberar_array(arrayTempDestino, 1);
 
@@ -348,10 +351,13 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	FILE *apareado = fopen(path_apareado, "w");
 	fclose (apareado);
+	log_info(logWorker, "[Reduccion Local] Cree archivo: %s", path_apareado);
 
+	log_info(logWorker, "[Reduccion local] Empezando apareo");
 	for (i = 0; i < cantTemporales; i++) {
 		apareo_archivos(path_apareado,arrayTemporales[i]);
 	}
+	log_info(logWorker, "[Reduccion local] Termine apareo");
 
 	resultado = reduccion(path_script, path_apareado, path_temporal_destino);
 
@@ -359,9 +365,11 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	free(temporalDestino);
 
 	if (resultado >= 0) {
+		log_trace(logWorker, "[Reduccion local] Enviando mensaje de MSJ_REDUCC_LOCAL_OK");
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_OK);
 	}
 	else {
+		log_error(logWorker, "[Reduccion local] Enviando mensaje de MSJ_REDUCC_LOCAL_ERROR");
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_LOCAL_ERROR);
 	}
 }
