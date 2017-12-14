@@ -775,7 +775,7 @@ int main(int argc, char *argv[]) {
 		} else {
 			log_info(logWorker, "Pasó por el padre");
 			close(socketCliente);
-			waitpid(pid, &status, 0);
+			//waitpid(pid, &status, 0);
 		}
 
 		/*
