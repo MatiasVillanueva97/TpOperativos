@@ -375,7 +375,7 @@ int main(int argc, char *argv[]) {
 	//sigprocmask(SIG_BLOCK, &new_set, &old_set);
 
 	crearCarpetaDeLog(carpeta_log);
-	logYAMA = log_create("../logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
+	logYAMA = log_create("../log/logYAMA.log", "YAMA", false, LOG_LEVEL_TRACE); //creo el logger, sin mostrar por pantalla
 	int h, i, j, k;
 	char mensajeHeaderSolo[4];
 	int32_t headerId;

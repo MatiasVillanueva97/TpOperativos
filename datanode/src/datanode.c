@@ -143,7 +143,7 @@ void mandarInfoAFilesystem(int socket, char **datosConfigDataNode) {
 int main(int argc, char *argv[]) {
 
 	crearCarpetaDeLog(carpeta_log);
-	logDataNode = log_create("../logDataNode.log", "DataNode", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
+	logDataNode = log_create("../log/logDataNode.log", "DataNode", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
 	log_trace(logDataNode, "Iniciando proceso DataNode");
 	printf("\n*** Proceso DataNode ***\n");
 	int preparadoEnviarFs = 1, i;
