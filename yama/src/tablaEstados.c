@@ -267,6 +267,21 @@ void getAllTemporalesByJMNEtEs(char **temporales, int nroJob, int nroMaster, int
 	}
 }
 
+void eliminarListaTablaEstadosCompleta() {
+	struct filaTablaEstados *auxiliar;
+	while (primeroTablaEstados != NULL) {
+		if (primeroTablaEstados->siguiente != NULL) {
+			auxiliar = primeroTablaEstados->siguiente;
+			primeroTablaEstados->siguiente = auxiliar->siguiente;
+			free(auxiliar);
+		} else {
+			primeroTablaEstados = NULL;
+			free(primeroTablaEstados);
+		}
+	}
+}
+
+
 //int getNodoReduccGlobal(int nroJob, int nroMaster, int etapa, int estado) {
 //	struct filaTablaEstados *auxiliar;
 //	auxiliar = primeroTablaEstados;

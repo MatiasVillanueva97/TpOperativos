@@ -28,8 +28,6 @@ char* keysConfigYama[] = {
 		NULL };
 char* datosConfigYama[7];
 
-t_log* logYAMA;
-
 int getDatosConfiguracion() {
 	char *nameArchivoConfig = "configYama.txt";
 	if (leerArchivoConfig(nameArchivoConfig, keysConfigYama, datosConfigYama)) { //leerArchivoConfig devuelve 1 si hay error

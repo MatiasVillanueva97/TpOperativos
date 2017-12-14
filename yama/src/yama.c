@@ -61,7 +61,14 @@ typedef struct {
 #include <signal.h>
 #include "comunicacionesFS.c"
 
-//int recargarConfig = 0;
+//limpia toda la memoria de las estructuras administrativas y demás
+//ideal para liberar la memmoria en el cierre del proceso
+void limpiarMemoria() {
+	free(listaGlobalNodos);
+	eliminarListaMasterJobCompleta();
+	eliminarListaTablaEstadosCompleta();
+}
+
 // mover a utils.h o alguna libreria
 void sig_handler(int signal) {
 	switch (signal) {
@@ -70,6 +77,7 @@ void sig_handler(int signal) {
 		log_info(logYAMA, "Alguien presionó ctrl+c, se finaliza el proceso");
 		log_info(logYAMA, "Server cerrado");
 		log_destroy(logYAMA);
+		limpiarMemoria();
 		exit(1);
 		break;
 	case SIGUSR1:	//recarga de la configuración
@@ -771,6 +779,7 @@ int main(int argc, char *argv[]) {
 								eliminarElemDatosMasterJobByFD(socketConectado);
 								cerrarCliente(socketConectado);
 								FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+								mostrarTablaEstados();
 							} else {
 								int nroNodoSuplente = nodoSuplente.nodoSuplente;
 
@@ -1126,5 +1135,6 @@ int main(int argc, char *argv[]) {
 	//cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
 	log_destroy(logYAMA);
+	limpiarMemoria();
 	return EXIT_SUCCESS;
 }

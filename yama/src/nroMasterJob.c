@@ -114,8 +114,6 @@ void asignarDatosMasterJob(int nroMaster, int nroJob, int fileDescriptor) {
 //	listaNrosMasterJob[fileDescriptor].nroMaster = nroMaster;
 }
 
-
-
 void asignarNodoReduccGlobal(int nodoReduccGlobal, int fileDescriptorBuscado) {
 	datosMasterJob *masterJobBuscado;
 	masterJobBuscado = getDatosMasterJobByFD(fileDescriptorBuscado);
@@ -136,4 +134,19 @@ int getNuevoNroMaster() {
 
 int getNuevoNroJob() {
 	return (++maxNroJob);
+}
+
+void eliminarListaMasterJobCompleta() {
+	datosMasterJob *auxiliar;
+	while (primeroDatosMasterJob != NULL) {
+		if (primeroDatosMasterJob->siguiente != NULL) {
+			auxiliar = primeroDatosMasterJob->siguiente;
+			primeroDatosMasterJob->siguiente = auxiliar->siguiente;
+			free(auxiliar->nodosUsados);
+			free(auxiliar);
+		} else {
+			primeroDatosMasterJob = NULL;
+			free(primeroDatosMasterJob);
+		}
+	}
 }

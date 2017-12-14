@@ -69,10 +69,6 @@ int nodoConMayorCarga(int cantNodos, datosPropiosNodo *nodosParaPlanificar) {
 }
 
 void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoParaAsignar *asignacionesNodos, int cantPartesArchivo, int cantNodosArchivo, datosPropiosNodo *nodosParaPlanificar) {
-	puts("Entro a planificación");
-	printf("retardoPlanificacion: %d\n", retardoPlanificacion);
-	printf("algoritmoPlanificacion: %s\n", algoritmoPlanificacion);
-	sleep(5);
 	usleep(retardoPlanificacion * 100);
 //	printf("cantPartesArchivo recibido: %d\n", cantPartesArchivo);
 //	printf("cantNodosArchivo recibido: %d\n", cantNodosArchivo);
