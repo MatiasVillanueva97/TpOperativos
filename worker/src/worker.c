@@ -429,7 +429,7 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[1]);
 		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[2]);
 		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[3]);
-		//printf("\t%d\t%s\t%d\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionGlobal);
+		printf("\t%d\t%s\t%s\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionLocal);
 	}
 	//printf("\n");
 
