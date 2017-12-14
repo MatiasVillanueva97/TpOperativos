@@ -356,7 +356,8 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	log_info(logWorker, "[Reduccion local] Empezando apareo");
 	for (i = 0; i < cantTemporales; i++) {
-		apareo_archivos(path_apareado,arrayTemporales[i]);
+		char* path_archivo_origen = string_from_format("%s/%s", carpeta_resultados, arrayTemporales[i]);
+		apareo_archivos(path_apareado,path_archivo_origen);
 	}
 	log_info(logWorker, "[Reduccion local] Termine apareo");
 
