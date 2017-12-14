@@ -229,6 +229,7 @@ void transformacion_worker(int headerId, int socketCliente) {
 //---------------------- FUNCIONES REDUCCION LOCAL ----------------------
 
 int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UNA LINEA EN BLANCO AL PRINCIPIO CUANDO EL ARCHIVO ESTA VACIO
+	log_info(logWorker, "Entre a funcion apareo. Archivo 1: %s. Archivo 2: %s", path_f1, path_f2);
 	FILE *fr1, *fr2, *faux;
 
 	char* fst = string_new();
@@ -285,13 +286,16 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 		fgets(snd, 1000, fr2);
 		fwrite(snd, 1, string_length(snd), faux);
 	}
+	/*
 	free(fst);
 	free(snd);
 	free(thrd);
 	free(frth);
+	*/
 	fclose(fr1);
 	fclose(fr2);
 	fclose(faux);
+	log_info(logWorker, "salgo funcion apareo");
 	return 0;
 }
 
@@ -320,7 +324,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
 
 	int resultado;
-	int i;
+	int i, j;
 
 	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
@@ -336,6 +340,13 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	liberar_array(arrayMensajes, cantidadMensajes);
 
 	char **arrayTemporales = deserializarMensaje(socketCliente, cantTemporales);
+
+	char** arrayTemporalesConPath = malloc(sizeof(char*) * cantTemporales);
+	for (j=0; j<cantTemporales; j++) {
+		arrayTemporalesConPath[j] = string_from_format("%s/%s", carpeta_resultados, arrayTemporales[j]);
+	}
+
+	liberar_array(arrayTemporales, cantTemporales);
 
 	char **arrayTempDestino = deserializarMensaje(socketCliente, 1);
 	char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
@@ -356,10 +367,12 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	log_info(logWorker, "[Reduccion local] Empezando apareo");
 	for (i = 0; i < cantTemporales; i++) {
-		char* path_archivo_origen = string_from_format("%s/%s", carpeta_resultados, arrayTemporales[i]);
-		apareo_archivos(path_apareado,path_archivo_origen);
+		log_info(logWorker, "archivo para aparear: %s", arrayTemporalesConPath[i]);
+		apareo_archivos(path_apareado,arrayTemporalesConPath[i]);
 	}
 	log_info(logWorker, "[Reduccion local] Termine apareo");
+
+	liberar_array(arrayTemporalesConPath, cantTemporales);
 
 	resultado = reduccion(path_script, path_apareado, path_temporal_destino);
 
