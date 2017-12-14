@@ -382,7 +382,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 typedef struct filaReduccionGlobal {
 	int nodo;
 	char ip[LARGO_IP];
-	char puerto[LARGO_PUERTO];
+	char puerto[LARGO_PUERTO + 1];
 	char temporalReduccionLocal[LARGO_TEMPORAL];
 } filaReduccionGlobal;
 
