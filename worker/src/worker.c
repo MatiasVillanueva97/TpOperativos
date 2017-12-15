@@ -330,9 +330,9 @@ int reduccion(char* path_script, char* path_origen, char* path_destino) {
 	int resultado = ejecutar_system(comando);
 	log_info(logWorker, "[reduccion] El resultado es: %d", resultado);
 	if (resultado < 0) {
-		log_error(logWorker, "No se pudo transformar y ordenar el bloque solicitado.");
+		log_error(logWorker, "No se pudo reducir el bloque solicitado.");
 	} else {
-		log_trace(logWorker, "Se pudo transformar y ordenar correctamente el bloque solicitado.");
+		log_trace(logWorker, "Se pudo reducir correctamente el bloque solicitado.");
 	}
 	return resultado;
 }
@@ -342,6 +342,7 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	//ejecutar reductor
 	//guardar resultado en el temporal que me pasa master (arrayMensajes[2])
 
+	log_trace(logWorker, "Entrando en Reduccion Local");
 	int resultado;
 	int i, j;
 
@@ -377,8 +378,6 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 
 	log_info(logWorker, "[Reduccion local] Termine apareo, resultado = %d", resultado_apareo);
 
-	//liberar_array(arrayTemporalesConPath, cantTemporales);
-
 	resultado = reduccion(path_script, path_apareado, path_temporal_destino);
 
 	free(reductorString);
@@ -404,6 +403,17 @@ typedef struct filaReduccionGlobal {
 	char puerto[LARGO_PUERTO + 1];
 	char temporalReduccionLocal[LARGO_TEMPORAL];
 } filaReduccionGlobal;
+
+void liberar_estructura(filaReduccionGlobal estructura[], int cantidadElementos) {
+	int i;
+	for (i = 0; i < cantidadElementos; i++) {
+		//free(estructura[i].nodo);
+		free(estructura[i].ip);
+		free(estructura[i].puerto);
+		free(estructura[i].temporalReduccionLocal);
+	}
+	free(estructura);
+}
 
 int conectarAWorker(char* ip, char* puerto) {
 	log_trace(logWorker, "Conexión a Worker, IP: %s, Puerto: %s", ip, puerto);
@@ -513,6 +523,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	//ejecutar reductor
 	//guardar resultado en el temporal que me pasa master
 
+	log_trace(logWorker, "Entrando en Reduccion Global");
 	crear_carpeta(carpeta_temporales_reduccionGlob, logWorker);
 
 	int resultado;
@@ -523,9 +534,11 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 
 	char *reductorString = malloc(string_length(arrayMensajes[0]) + 1);
 	strcpy(reductorString, arrayMensajes[0]);
+	log_info(logWorker, "Largo reductor string: %d", string_length(reductorString));
 
 	int cantWorkers;
 	cantWorkers = atoi(arrayMensajes[1]);
+	log_info(logWorker, "Cantidad de workers a conectarse: %d", cantWorkers);
 
 	liberar_array(arrayMensajes, cantidadMensajes);
 
@@ -539,13 +552,13 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	liberar_array(arrayArchDestino, 1);
 
 	char* path_script = guardar_script(reductorString, archivoDestino);
-
+	free(reductorString);
 	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporales_reduccionGlob, archivoDestino);
-/*
-	FILE *apareado = fopen(path_apareado, "w");
-	fclose (apareado);
-*/
+
 	char* path_destino = string_from_format("%s/%s", carpeta_temporales_reduccionGlob, archivoDestino);
+	free(archivoDestino);
+
+	char* arrayTemporales[cantWorkers];
 
 	for (i = 0; i < cantWorkers; i++) {
 		int socketWorker = conectarAWorker(datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
@@ -555,20 +568,28 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 		} else {
 			log_trace(logWorker, "Conectado al worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
 			traer_temporal_worker(socketWorker, datosReduccionGlobal[i].temporalReduccionLocal);
-			//apareo_archivos(path_apareado,datosReduccionGlobal[i].temporalReduccionLocal);
+			//copio los nombres de los temporales a aparear para usarlos en la funcion apareo
+			arrayTemporales[i] = malloc(string_length(datosReduccionGlobal[i].temporalReduccionLocal) + 1);
+			strcpy(arrayTemporales[i], datosReduccionGlobal[i].temporalReduccionLocal);
 		}
 	}
+	liberar_estructura(datosReduccionGlobal, cantWorkers);
+
+	log_info(logWorker, "[Reduccion global] Empezando apareo");
+	int resultado_apareo = apareo(arrayTemporales, cantWorkers, carpeta_temporales_reduccionGlob, path_apareado);
+
+	liberar_array(arrayTemporales, cantWorkers);
+	log_info(logWorker, "[Reduccion global] Termine apareo, resultado = %d", resultado_apareo);
 
 	resultado = reduccion(path_script, path_apareado, path_destino);
 
-	free(reductorString);
-	free(archivoDestino);
-
 	if (resultado >= 0) {
+		log_trace(logWorker, "Enviando header de MSJ_REDUCC_GLOBAL_OK");
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_GLOBAL_OK);
 	}
 	else {
-		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_GLOBAL_OK);
+		log_error(logWorker, "Enviando header de MSJ_REDUCC_GLOBAL_ERROR");
+		enviarHeaderSolo(socketCliente, TIPO_MSJ_REDUCC_GLOBAL_ERROR);
 	}
 }
 
@@ -762,7 +783,8 @@ int main(int argc, char *argv[]) {
 					}
 
 					if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
-						almacenamiento_final_worker(headerId, socketCliente);
+						//almacenamiento_final_worker(headerId, socketCliente);
+						log_info(logWorker, "pillin");
 					}
 				}
 
