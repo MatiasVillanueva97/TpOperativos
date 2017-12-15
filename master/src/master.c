@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <time.h>
 
+#define headerError -1
+
 enum keys {
 	YAMA_IP, YAMA_PUERTO, NODO_IP, NODO_PUERTO
 };
@@ -292,11 +294,13 @@ void conectarAWorkerTransformacion(void *arg) {
 	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
 	if (socketWorker < 0) {
 		puts("No se pudo conectar al worker");
+		envioFinTransformacion(TIPO_MSJ_TRANSFORMACION_ERROR, datosEnHilo->nodo, datosEnHilo->bloque);
 	}
 
 	int32_t headerIdWorker = handshake(socketWorker);
 	if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		puts("Error de handshake con el worker");
+		envioFinTransformacion(TIPO_MSJ_TRANSFORMACION_ERROR, datosEnHilo->nodo, datosEnHilo->bloque);
 	} else {
 		puts("Conectado al worker");
 
@@ -334,8 +338,14 @@ void conectarAWorkerTransformacion(void *arg) {
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		int bytesEnviadosMensaje = envioFinTransformacion(headerId, datosEnHilo->nodo, datosEnHilo->bloque);
-		printf("Datos al final del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporalTransformacion);
+		if (headerIdWorker <= 0){
+			envioFinTransformacion(TIPO_MSJ_TRANSFORMACION_ERROR, datosEnHilo->nodo, datosEnHilo->bloque);
+			printf("Falló Transformación");
+		}else{
+			envioFinTransformacion(headerId, datosEnHilo->nodo, datosEnHilo->bloque);
+			printf("Datos al final del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporalTransformacion);
+		}
+
 	}
 }
 
@@ -344,7 +354,7 @@ void conectarAWorkerReduccionLocal(void *arg) {
 	int i, j;
 	pthread_t idHilo = pthread_self();
 	struct filaReduccionLocal *datosEnHilo = (struct filaReduccionLocal*) arg;
-//	int cantTemporalesTransformacion = sizeof(datosEnHilo->temporalesTransformacion) / LARGO_TEMPORAL;
+	//	int cantTemporalesTransformacion = sizeof(datosEnHilo->temporalesTransformacion) / LARGO_TEMPORAL;
 	int cantTemporalesTransformacion = datosEnHilo->cantTemporales;	//by Guille
 
 	// Leo el archivo reductor
@@ -355,6 +365,7 @@ void conectarAWorkerReduccionLocal(void *arg) {
 	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
 	if (socketWorker < 0) {
 		puts("No se pudo conectar al worker");
+		envioFinReduccion(TIPO_MSJ_REDUCC_LOCAL_ERROR, datosEnHilo->nodo);
 	}
 
 	// Handshake con Worker
@@ -362,6 +373,7 @@ void conectarAWorkerReduccionLocal(void *arg) {
 	printf("header recibido del worker en handshake: %d\n", headerIdWorker);
 	if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		puts("Error de handshake con el worker");
+		envioFinReduccion(TIPO_MSJ_REDUCC_LOCAL_ERROR, datosEnHilo->nodo);
 	} else {
 		puts("Conectado al worker");
 
@@ -406,8 +418,13 @@ void conectarAWorkerReduccionLocal(void *arg) {
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		int bytesEnviadosMensaje = envioFinReduccion(headerIdWorker, datosEnHilo->nodo);
-		printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto);
+		if (headerIdWorker <= 0){
+			envioFinReduccion(TIPO_MSJ_REDUCC_LOCAL_ERROR, datosEnHilo->nodo);
+			printf("Falló Reducción Local");
+		}else{
+			envioFinReduccion(headerIdWorker, datosEnHilo->nodo);
+			printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto);
+		}
 	}
 }
 
@@ -422,7 +439,7 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	if (cantNodos > 1) {
 		cantNodosSinEncargado = cantNodos - 1;
 		i = 1;
-	}else{
+	} else {
 		cantNodosSinEncargado = cantNodos;
 		i = 0;
 	}
@@ -495,12 +512,14 @@ void conectarAWorkerReduccionGlobal(void *arg) {
 	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
 	if (socketWorker < 0) {
 		puts("No se pudo conectar al worker");
+		envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_ERROR, datosEnHilo->nodo);
 	}
 
 	// Handshake con Worker
 	int32_t headerIdWorker = handshake(socketWorker);
 	if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		puts("Error de handshake con el worker");
+		envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_ERROR, datosEnHilo->nodo);
 	} else {
 		puts("Conectado al worker");
 
@@ -517,10 +536,15 @@ void conectarAWorkerReduccionGlobal(void *arg) {
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		int bytesEnviadosMensaje = envioFinReduccion(headerIdWorker, datosEnHilo->nodo);
-		printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto);
-
+		if (headerIdWorker <= 0){
+			envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_ERROR, datosEnHilo->nodo);
+			printf("Falló Reducción Global");
+		}else{
+			envioFinReduccion(headerIdWorker, datosEnHilo->nodo);
+			printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto);
 		}
+
+	}
 }
 
 //LISTO
@@ -533,12 +557,14 @@ void conectarAWorkerAlmacenamientoFinal(void *arg) {
 	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
 	if (socketWorker < 0) {
 		puts("No se pudo conectar al worker");
+		envioFinHeaderSolo(TIPO_MSJ_ALM_FINAL_ERROR);
 	}
 
 	// Handshake con Worker
 	int32_t headerIdWorker = handshake(socketWorker);
 	if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		puts("Error de handshake con el worker");
+		envioFinHeaderSolo(TIPO_MSJ_ALM_FINAL_ERROR);
 	} else {
 		puts("Conectado al worker");
 
@@ -567,8 +593,14 @@ void conectarAWorkerAlmacenamientoFinal(void *arg) {
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		int bytesEnviadosMensaje = envioFinAlmacenamientoFinal(TIPO_MSJ_ALM_FINAL_OK);
-		printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporalReduccionGlobal);
+		if (headerIdWorker <= 0){
+			envioFinHeaderSolo(TIPO_MSJ_ALM_FINAL_ERROR);
+			printf("Falló Almacenamiento Final");
+		}else{
+			envioFinHeaderSolo(TIPO_MSJ_ALM_FINAL_OK);
+			printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporalReduccionGlobal);
+		}
+
 	}
 }
 
@@ -615,7 +647,7 @@ int envioFinReduccion(int headerId, int nroNodo) {
 	strcpy(arrayMensajes[0], nodoString);
 
 	//serializa los mensajes y los envía
-	printf("envio a Yama %d", headerId);
+	printf("Envio a Yama %d", headerId);
 	char *mensajeSerializado = serializarMensaje(headerId, arrayMensajes, cantMensajes);
 	pthread_mutex_lock(&mutexSocketYama);
 	bytesEnviados = enviarMensaje(socketYama, mensajeSerializado);
@@ -627,9 +659,8 @@ int envioFinReduccion(int headerId, int nroNodo) {
 }
 
 //LISTO
-int envioFinAlmacenamientoFinal(int headerId) {
-	//serializa los mensajes y los envía
-	printf("envio a Yama %d", headerId);
+int envioFinHeaderSolo(int headerId) {
+	printf("Envio a Yama %d", headerId);
 	pthread_mutex_lock(&mutexSocketYama);
 	int bytesEnviados = enviarHeaderSolo(socketYama, headerId);
 	pthread_mutex_unlock(&mutexSocketYama);
@@ -697,6 +728,7 @@ int main(int argc, char *argv[]) {
 	headerIdYama = handshake(socketYama);
 	if (headerIdYama != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
 		puts("Error de handshake con YAMA");
+		masterCorriendo = 1;
 	} else {
 		puts("Conectado a YAMA");
 
@@ -727,7 +759,6 @@ int main(int argc, char *argv[]) {
 				for (i = 0; i < cantBloquesTransformacion; i++) {
 					// Por cada tarea se crea un hilo para conectarse al worker q corresponda y se le pasa la fila de la tabla recibida
 					pthread_create(&hilosWorkerTransformacion[i], NULL, conectarAWorkerTransformacion, &tablaTransformacion[i]);
-					sleep(1);
 				}
 
 				for (i = 0; i < cantBloquesTransformacion; i++) {
@@ -813,6 +844,16 @@ int main(int argc, char *argv[]) {
 
 				masterCorriendo = 1;
 
+				break;
+			}
+
+			case TIPO_MSJ_ABORTAR_JOB : {
+				masterCorriendo = 1;
+				break;
+			}
+
+			case headerError : {
+				masterCorriendo = 1;
 				break;
 			}
 
