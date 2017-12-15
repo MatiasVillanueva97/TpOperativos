@@ -11,14 +11,20 @@
 enum etapasTablaEstados {
 	TRANSFORMACION, REDUCC_LOCAL, REDUCC_GLOBAL, ALMAC_FINAL
 };
-const char* etapasMensajesPredefinidos[4] = { "Transformación",
-		"Reducción Local", "Reducción Global", "Alamcentamiento Final" };
+const char* etapasMensajesPredefinidos[4] = {
+		"Transformación",
+		"Reducción Local",
+		"Reducción Global",
+		"Alamcentamiento Final" };
 
 enum estadoTablaEstados {
-	EN_PROCESO, ERROR, FIN_OK
+	EN_PROCESO, ERROR, FIN_OK, FIN_OK_REPLANIFICADO
 };
-const char* estadosMensajesPredefinidos[3] = { "En proceso", "Error",
-		"Finalizó OK" };
+const char* estadosMensajesPredefinidos[4] = {
+		"En proceso",
+		"Error",
+		"Finalizó OK",
+		"Fin Ok Replanificado"};
 
 struct filaTablaEstados {
 	int job;
@@ -180,7 +186,7 @@ int modificarElemTablaEstados(struct filaTablaEstados fila, struct filaTablaEsta
 
 /*
  * modifica el estado de N filas de la tabla de estados
- * recibe el nro de Job, el nro de Master, el nro de Nodo y la etapa que se usan para buscar las filas
+ * recibe el nro de Job, el nro de Master, el nro de Nodo, nro de bloque y la etapa que se usan para buscar las filas
  * recibe el estado nuevo al que hay que actualizar las filas correspondientes
  * devuelve la cantidad de filas que pudo modificar
  */
@@ -190,6 +196,26 @@ int modificarEstadoFilasTablaEstados(int nroJob, int nroMaster, int nroNodo, int
 	auxiliar = primeroTablaEstados;
 	while (auxiliar != NULL) {
 		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->bloque == nroBloque && auxiliar->etapa == etapa && auxiliar->estado == estadoActual) {
+			auxiliar->estado = estadoNuevo;
+			cantFilasModificadas++;
+		}
+		auxiliar = auxiliar->siguiente;
+	}
+	return cantFilasModificadas;
+}
+
+/*
+ * modifica el estado de N filas de la tabla de estados
+ * recibe el nro de Job, el nro de Master, el nro de Nodo y la etapa que se usan para buscar las filas
+ * recibe el estado nuevo al que hay que actualizar las filas correspondientes
+ * devuelve la cantidad de filas que pudo modificar
+ */
+int modificarEstadoFilasTablaEstadosByJMNEtEs(int nroJob, int nroMaster, int nroNodo, int etapa, int estadoActual, int estadoNuevo) {
+	int cantFilasModificadas = 0;
+	struct filaTablaEstados *auxiliar;
+	auxiliar = primeroTablaEstados;
+	while (auxiliar != NULL) {
+		if (auxiliar->job == nroJob && auxiliar->master == nroMaster && auxiliar->nodo == nroNodo && auxiliar->etapa == etapa && auxiliar->estado == estadoActual) {
 			auxiliar->estado = estadoNuevo;
 			cantFilasModificadas++;
 		}
@@ -280,7 +306,6 @@ void eliminarListaTablaEstadosCompleta() {
 		}
 	}
 }
-
 
 //int getNodoReduccGlobal(int nroJob, int nroMaster, int etapa, int estado) {
 //	struct filaTablaEstados *auxiliar;

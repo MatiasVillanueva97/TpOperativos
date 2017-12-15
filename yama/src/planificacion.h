@@ -12,6 +12,8 @@
 
 //void guardarNodosPorBloque(int bloque, int nodo1, int nodo2);
 
+int esCopiaDelBloque(int nroNodo, int nroBloque, int cantBloquesArchivo, int fileDescriptor);
+
 int existeParteArchivoEnNodo(int bloque, int nodo, bloqueArchivo*);
 
 int nodoConDisponibilidad(datosPropiosNodo nodo);

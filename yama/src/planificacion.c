@@ -21,6 +21,22 @@ char algoritmoPlanificacion[10];
 int cargaMaxima = 0, disponibBase, nodoReduccGlobal, retardoPlanificacion;
 
 /*
+ *
+ */
+int esCopiaDelBloque(int nroNodo, int nroBloque, int cantBloquesArchivo, int fileDescriptor) {
+	int i;
+	nodosUsadobloqueArchivo nodoSuplente;
+	for (i = 0; i < cantBloquesArchivo; i++) {
+		if (nroNodo == bloquesArchivoXFD[fileDescriptor][i].nodoSuplente && nroBloque == bloquesArchivoXFD[fileDescriptor][i].bloqueSuplente) {
+			//tomar el nodo suplente para enviarlo
+			nodoSuplente = bloquesArchivoXFD[fileDescriptor][i];
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/*
  * se fija si existe un bloque determinado en un nodo determinado
  */
 int existeParteArchivoEnNodo(int bloque, int nodo, bloqueArchivo *nodosPorPedazoArchivo) { //nodos arrancan de 1
