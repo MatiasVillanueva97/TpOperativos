@@ -749,102 +749,152 @@ int main(int argc, char *argv[]) {
 							} else {
 								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la transformación ERROR");
 							}
-							//replanificar: envía el nodo y bloque de la copia del bloque
-							//de archivo que no se pudo transformar
-							//TODO: hacer de nuevo la replanificación !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-							/*
-							 * tengo que pedir de nuevo los bloques del archivo
-							 * replanificar el bloque que falló
-							 */
-
 							int cantBloquesArchivo = masterJobActual->cantBloquesArchivo;
-							nodosUsadobloqueArchivo nodoSuplente;
-							int nodoSuplenteEncontrado = 0;
-							for (i = 0; i < cantBloquesArchivo; i++) {
-								if (nroNodoRecibido == bloquesArchivoXFD[socketConectado][i].nodoUsado && nroBloqueRecibido == bloquesArchivoXFD[socketConectado][i].bloqueUsado) {
-									//tomar el nodo suplente para enviarlo
-									nodoSuplente = bloquesArchivoXFD[socketConectado][i];
-									nodoSuplenteEncontrado = 1;
-								}
-							}
-							if (!nodoSuplenteEncontrado) {
-								//no se pudo encontrar un bloque alternativo, se aborta el job
+
+							//si el nodo recibido como caído es la copia del bloque implica que ya se había
+							//caído anteriormente y ya no hay copia disponible. Se aborta el Job
+							if (esCopiaDelBloque(nroNodoRecibido, nroBloqueRecibido, cantBloquesArchivo, socketConectado)) {
+								//aborta el job
 								enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
 								liberarCargaJob(socketConectado, nroNodoRecibido);
-								puts("\ncarga de cada nodo luego de un abort\n-----------------------------------------\n");
-								for (i = 0; i < cantNodosArchivo; i++) {
-									printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
-								}
-								//elimino el elemento con el socketConectado de la lista de datosMasterJob
 								eliminarElemDatosMasterJobByFD(socketConectado);
 								cerrarCliente(socketConectado);
 								FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
 								mostrarTablaEstados();
-							} else {
-								int nroNodoSuplente = nodoSuplente.nodoSuplente;
+								log_info(logYAMA, "No se pudo replanificar el Job %d cuando se desconectó el nodo %d", masterJobActual->nroJob, nroNodoRecibido);
+								break;
+							}
 
-								//se actualizan las cargas del nodo caído y del suplente
-								disminuirCargaGlobalNodo(nroNodoRecibido, 1);
-								for (k = 0; k < cantNodosArchivo; k++) {
+							if (getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, EN_PROCESO) == 0) {
+								//busca las copias y las envía a master
+								modificarEstadoFilasTablaEstadosByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK, FIN_OK_REPLANIFICADO);
+
+								int cantFilasTransformacion = getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK_REPLANIFICADO);
+								disminuirCargaGlobalNodo(nroNodoRecibido, cantFilasTransformacion);
+								for (k = 0;
+										k < masterJobActual->cantNodosUsados;
+										k++) {
 									if (masterJobActual->nodosUsados[k].numero == nroNodoRecibido) {
-										masterJobActual->nodosUsados[k].cantidadVecesUsados--;
-									}
-									if (masterJobActual->nodosUsados[k].numero == nroNodoSuplente) {
-										masterJobActual->nodosUsados[k].cantidadVecesUsados++;
+										masterJobActual->nodosUsados[k].cantidadVecesUsados -= cantFilasTransformacion;
 									}
 								}
-								aumentarCargaGlobalNodo(nroNodoSuplente, 1);
+								struct filaTablaEstados filasReplanifTransf[cantFilasTransformacion];
 
-								//se genera la nueva línea en la tabla de estados
-								struct filaTablaEstados fila;
-								fila.job = masterJobActual->nroJob;
-								fila.master = masterJobActual->nroMaster;
-								fila.nodo = nroNodoSuplente;
-								fila.bloque = nodoSuplente.bloqueSuplente;
-								fila.etapa = TRANSFORMACION;
-								char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
-								strcpy(fila.temporal, temporal);
-								fila.estado = EN_PROCESO;
-								fila.siguiente = NULL;
+								struct filaTablaEstados filaBusqueda;
+								filaBusqueda.job = masterJobActual->nroJob;
+								filaBusqueda.master = masterJobActual->nroMaster;
+								filaBusqueda.nodo = nroNodoRecibido;
+								filaBusqueda.bloque = 0;
+								filaBusqueda.etapa = TRANSFORMACION;
+								strcpy(filaBusqueda.temporal, "");
+								filaBusqueda.estado = 0;
+								filaBusqueda.siguiente = NULL;
 
-								if (!agregarElemTablaEstados(fila)) {
-									log_error(logYAMA, "Ocurrió un error al agregar un elemento la tabla de estados en fin de transformación ERROR");
-									perror("Error al agregar elementos a la tabla de estados");
+								int cantFilasEncontradas = buscarMuchosElemTablaEstados(filasReplanifTransf, filaBusqueda);
+								if (cantFilasEncontradas == 0) {
+									puts("no se encontró ninguna fila de la tabla de estados para hacer la replanificación");
+									log_error(logYAMA, "No se encontró ninguna fila de la tabla de estados para hacer la replanificación");
+									break;
 								}
-								//se envía al master la orden de transformación en el nodo donde está la copia
-								nodoParaAsignar dataReplanificacion[1];
-								dataReplanificacion[0].nroNodo = nroNodoSuplente;
-								dataReplanificacion[0].bloque = nodoSuplente.bloqueSuplente;
-								dataReplanificacion[0].bytesOcupados = nodoSuplente.bytes;
-								strcpy(dataReplanificacion[0].temporal, temporal);
-								char *mensajeSerializado = serializarMensajeTransformacion(dataReplanificacion, 1);
-								printf("\nmensaje serializado: \n%s\n", mensajeSerializado);
-								enviarMensaje(socketConectado, mensajeSerializado);
+								if (cantFilasTransformacion != cantFilasEncontradas) {
+									puts("hubo un error en la cantidad de filas encontradas");
+									log_error(logYAMA, "Hubo un error en la cantidad de filas encontradas");
+									break;
+								}
 
-								//elegir otro nodo para reducción global si el caído era el asignado para eso
-								nroNodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
-								if (nroNodoRecibido == nroNodoReduccGlobal) {
-									int cantNodosUsados = masterJobActual->cantNodosUsados;
-									//armo un vector auxiliar para ordenar y elegir el de menor carga
-									datosPropiosNodo nodosUsadosAuxiliar[cantNodosUsados];
-									for (i = 0; i < cantNodosUsados; i++) {
-										nodosUsadosAuxiliar[i].numero = masterJobActual->nodosUsados[i].numero;
-										nodosUsadosAuxiliar[i].carga = getCargaGlobalNodo(nodosUsadosAuxiliar[i].numero);
-
-									}
-									//ordeno los nodos de menor a mayor por carga
-									datosPropiosNodo temp;
-									for (i = 0; i < cantNodosUsados; i++) {
-										for (j = 0; j < (cantNodosUsados - 1);
-												j++) {
-											if (nodosUsadosAuxiliar[j].carga > nodosUsadosAuxiliar[j + 1].carga) {
-												temp = nodosUsadosAuxiliar[j];
-												nodosUsadosAuxiliar[j] = nodosUsadosAuxiliar[j + 1];
-												nodosUsadosAuxiliar[j + 1] = temp;
-											}
+								int nodoSuplenteEncontrado = 0, abortado = 0;
+								nodoParaAsignar asignacionesNodos[cantFilasTransformacion];
+								for (j = 0; j < cantFilasTransformacion; j++) {
+									nodoSuplenteEncontrado = 0;
+									for (i = 0; i < cantBloquesArchivo; i++) {
+										if (filasReplanifTransf[j].nodo == bloquesArchivoXFD[socketConectado][i].nodoUsado && filasReplanifTransf[j].bloque == bloquesArchivoXFD[socketConectado][i].bloqueUsado) {
+											//tomar el nodo suplente para armar el array a enviar
+											asignacionesNodos[j].nroNodo = bloquesArchivoXFD[socketConectado][i].nodoSuplente;
+											asignacionesNodos[j].bloque = bloquesArchivoXFD[socketConectado][i].bloqueSuplente;
+											asignacionesNodos[j].bytesOcupados = bloquesArchivoXFD[socketConectado][i].bytes;
+											nodoSuplenteEncontrado = 1;
 										}
 									}
-									asignarNodoReduccGlobal(nodosUsadosAuxiliar[0].numero, socketConectado);
+									if (!nodoSuplenteEncontrado) {
+										//no se pudo encontrar un bloque alternativo, se aborta el job
+										enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+										liberarCargaJob(socketConectado, nroNodoRecibido);
+//										puts("\ncarga de cada nodo luego de un abort\n-----------------------------------------\n");
+//										for (i = 0; i < cantNodosArchivo; i++) {
+//											printf("carga después de restar, nodo %d - %d: %d\n", masterJobActual->nodosUsados[i].numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero, getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
+//										}
+										//elimino el elemento con el socketConectado de la lista de datosMasterJob
+										eliminarElemDatosMasterJobByFD(socketConectado);
+										cerrarCliente(socketConectado);
+										FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+										mostrarTablaEstados();
+										abortado = 1;
+										break;
+									}
+								}
+
+								if (!abortado) {
+									struct filaTablaEstados fila;
+									for (i = 0; i < cantFilasTransformacion;
+											i++) {
+
+										//le sumo 1 a la cantidad de veces que se usa el nodo reasignado
+										masterJobActual->nodosUsados[asignacionesNodos[i].nroNodo].cantidadVecesUsados++;
+
+										//genera una fila en la tabla de estados
+										fila.job = masterJobActual->nroJob;
+										fila.master = masterJobActual->nroMaster;
+										fila.nodo = asignacionesNodos[i].nroNodo;
+										fila.bloque = asignacionesNodos[i].bloque;
+										fila.etapa = TRANSFORMACION;
+										char* temporal = string_from_format("m%dj%dn%db%de%d", fila.master, fila.job, fila.nodo, fila.bloque, fila.etapa);
+										strcpy(fila.temporal, temporal);
+										fila.estado = EN_PROCESO;
+										fila.siguiente = NULL;
+										if (!agregarElemTablaEstados(fila)) {
+											log_error(logYAMA, "Ocurrió un error al agregar un elemento la tabla de estados en la etapa de replanificación");
+											perror("Error al agregar elementos a la tabla de estados");
+										}
+										//guarda el archivo temporal en el vector que se va a usar
+										//en la tabla de transformación para el master
+										strcpy(asignacionesNodos[i].temporal, temporal);
+									}
+
+									/* ****** envío de nodos para la transformación ******************* */
+									//envía al master la lista de nodos donde trabajar cada bloque
+									char *mensajeSerializado = serializarMensajeTransformacion(asignacionesNodos, cantFilasTransformacion);
+									enviarMensaje(socketConectado, mensajeSerializado);
+									/* **************************************************************** */
+									mostrarTablaEstados();
+
+									//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+									//TODO: revisar esto
+									//elegir otro nodo para reducción global si el caído era el asignado para eso
+									nroNodoReduccGlobal = (int) getDatosMasterJobByFD(socketConectado)->nodoReduccGlobal;
+									if (nroNodoRecibido == nroNodoReduccGlobal) {
+										int cantNodosUsados = masterJobActual->cantNodosUsados;
+										//armo un vector auxiliar para ordenar y elegir el de menor carga
+										datosPropiosNodo nodosUsadosAuxiliar[cantNodosUsados];
+										for (i = 0; i < cantNodosUsados; i++) {
+											nodosUsadosAuxiliar[i].numero = masterJobActual->nodosUsados[i].numero;
+											nodosUsadosAuxiliar[i].carga = getCargaGlobalNodo(nodosUsadosAuxiliar[i].numero);
+
+										}
+										//ordeno los nodos de menor a mayor por carga
+										datosPropiosNodo temp;
+										for (i = 0; i < cantNodosUsados; i++) {
+											for (j = 0;
+													j < (cantNodosUsados - 1);
+													j++) {
+												if (nodosUsadosAuxiliar[j].carga > nodosUsadosAuxiliar[j + 1].carga) {
+													temp = nodosUsadosAuxiliar[j];
+													nodosUsadosAuxiliar[j] = nodosUsadosAuxiliar[j + 1];
+													nodosUsadosAuxiliar[j + 1] = temp;
+												}
+											}
+										}
+										asignarNodoReduccGlobal(nodosUsadosAuxiliar[0].numero, socketConectado);
+									}
 								}
 							}
 							break;
