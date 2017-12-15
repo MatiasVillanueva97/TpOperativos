@@ -16,11 +16,16 @@ DATANODE=datanode
 
 default: all
 
+export LC_ALL=C
+
 .PHONY: all help
 .PHONY: clean-filesystem clean-datanode clean-yama clean-worker clean-master
 .PHONY: compile-filesystem compile-datanode compile-yama compile-worker compile-master
 .PHONY: run-filesystem run-datanode run-yama run-worker run-master run-master-arg
 .PHONY: debug-filesystem debug-datanode debug-yama debug-worker debug-master
+
+test: 
+	/bin/bash
 
 # FILESYSTEM #
 clean-filesystem:
