@@ -227,9 +227,9 @@ void transformacion_worker(int headerId, int socketCliente) {
 
 
 //---------------------- FUNCIONES REDUCCION LOCAL ----------------------
-
+/*
 int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UNA LINEA EN BLANCO AL PRINCIPIO CUANDO EL ARCHIVO ESTA VACIO
-	log_info(logWorker, "Entre a funcion apareo. Archivo 1: %s. Archivo 2: %s", path_f1, path_f2);
+	//log_info(logWorker, "Entre a funcion apareo. Archivo 1: %s. Archivo 2: %s", path_f1, path_f2);
 	FILE *fr1, *fr2, *faux;
 
 	char* fst = string_new();
@@ -240,63 +240,82 @@ int apareo_archivos(char* path_f1, char* path_f2) { //FALTA ARREGLAR QUE DEJA UN
 	int comparacion;
 	bool f1 = true, f2 = true;
 
-	faux = fopen(path_f1, "r+");
 	fr1 = fopen(path_f1, "r");
 	fr2 = fopen(path_f2, "r");
+	faux = fopen(path_f1, "r+");
 
 	while (!feof(fr1) && !feof(fr2)) {
 		if (f1) {
 			fgets(fst, 1000, fr1);
 			thrd = string_duplicate(fst);
 			string_to_lower(thrd);
+			//printf("primer if\n");
 		}
 		if (f2) {
 			fgets(snd, 1000, fr2);
 			frth = string_duplicate(snd);
 			string_to_lower(frth);
+			//printf("segundo if\n");
 		}
 		comparacion = strcmp(thrd, frth);
+		//printf("comparacion: %d\n", comparacion);
 		if (comparacion == 0) {
 			f1 = true;
 			f2 = true;
-			fwrite(fst,1,string_length(fst),faux);
-			fwrite(snd,1,string_length(snd),faux);
+			fputs(fst, faux);
+			fputs(snd, faux);
 		} else if (comparacion > 0) {
 			f1 = false;
 			f2 = true;
-			fwrite (snd,1,string_length(snd),faux);
+			fputs(snd, faux);
 		} else {
-			f2 = false;
 			f1 = true;
-			fwrite(fst, 1, string_length(fst), faux);
+			f2 = false;
+			fputs(fst, faux);
 		}
 	}
+	printf("sali del while\n");
 	fwrite("\n", 1, 1, faux);
 	if (!feof(fr1)) {
-		fwrite(fst, 1, string_length(fst), faux);
+		fputs(fst, faux);
 	}
 	else {
-		fwrite(snd, 1, string_length(snd), faux);
+		fputs(snd, faux);
 	}
 	while (!feof(fr1)) {
 		fgets(fst, 1000, fr1);
-		fwrite(fst, 1, string_length(fst), faux);
+		fputs(fst, faux);
 	}
 	while (!feof(fr2)) {
 		fgets(snd, 1000, fr2);
-		fwrite(snd, 1, string_length(snd), faux);
+		fputs(snd, faux);
 	}
-	/*
-	free(fst);
-	free(snd);
-	free(thrd);
-	free(frth);
-	*/
+	//free(fst);
+	//free(snd);
+	//free(thrd);
+	//free(frth);
 	fclose(fr1);
 	fclose(fr2);
 	fclose(faux);
-	log_info(logWorker, "salgo funcion apareo");
+	//log_info(logWorker, "salgo funcion apareo");
 	return 0;
+}
+*/
+
+char* crear_comando_apareo(char* archivos_a_mergear, char* nombre_mergeado) {
+	char* comando = string_from_format("sort -m %s> %s", archivos_a_mergear, nombre_mergeado);
+	return comando;
+}
+
+int apareo(char** arrayTemporales, int cantTemporales, char* carpetaOrigen, char* pathDestino) {
+	int i;
+	char* stringArchivosAAparear = string_new();
+	for (i = 0; i < cantTemporales; i++) {
+		string_append_with_format(&stringArchivosAAparear, "%s/%s ", carpetaOrigen, arrayTemporales[i]);
+	}
+	char* comando = crear_comando_apareo(stringArchivosAAparear, pathDestino);
+	int resultado_apareo = ejecutar_system(comando);
+	return resultado_apareo;
 }
 
 char* crear_comando_reduccion(char* path_script_reduccionLoc, char* path_origen, char* archivo_destino) {
@@ -340,14 +359,6 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	liberar_array(arrayMensajes, cantidadMensajes);
 
 	char **arrayTemporales = deserializarMensaje(socketCliente, cantTemporales);
-
-	char** arrayTemporalesConPath = malloc(sizeof(char*) * cantTemporales);
-	for (j=0; j<cantTemporales; j++) {
-		arrayTemporalesConPath[j] = string_from_format("%s/%s", carpeta_resultados, arrayTemporales[j]);
-	}
-
-	liberar_array(arrayTemporales, cantTemporales);
-
 	char **arrayTempDestino = deserializarMensaje(socketCliente, 1);
 	char *temporalDestino = malloc(string_length(arrayTempDestino[0]));
 	strcpy(temporalDestino,arrayTempDestino[0]);
@@ -356,23 +367,17 @@ void reduccion_local_worker(int headerId, int socketCliente) {
 	liberar_array(arrayTempDestino, 1);
 
 	char* path_script = guardar_script(reductorString, temporalDestino);
-
 	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal, temporalDestino);
-
 	char* path_temporal_destino = string_from_format("%s/%s", carpeta_temporales_reduccion, temporalDestino);
 
-	FILE *apareado = fopen(path_apareado, "w");
-	fclose (apareado);
-	log_info(logWorker, "[Reduccion Local] Cree archivo: %s", path_apareado);
-
 	log_info(logWorker, "[Reduccion local] Empezando apareo");
-	for (i = 0; i < cantTemporales; i++) {
-		log_info(logWorker, "archivo para aparear: %s", arrayTemporalesConPath[i]);
-		apareo_archivos(path_apareado,arrayTemporalesConPath[i]);
-	}
-	log_info(logWorker, "[Reduccion local] Termine apareo");
+	int resultado_apareo = apareo(arrayTemporales, cantTemporales, carpeta_resultados, path_apareado);
 
-	liberar_array(arrayTemporalesConPath, cantTemporales);
+	liberar_array(arrayTemporales, cantTemporales);
+
+	log_info(logWorker, "[Reduccion local] Termine apareo, resultado = %d", resultado_apareo);
+
+	//liberar_array(arrayTemporalesConPath, cantTemporales);
 
 	resultado = reduccion(path_script, path_apareado, path_temporal_destino);
 
@@ -536,10 +541,10 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	char* path_script = guardar_script(reductorString, archivoDestino);
 
 	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporales_reduccionGlob, archivoDestino);
-
+/*
 	FILE *apareado = fopen(path_apareado, "w");
 	fclose (apareado);
-
+*/
 	char* path_destino = string_from_format("%s/%s", carpeta_temporales_reduccionGlob, archivoDestino);
 
 	for (i = 0; i < cantWorkers; i++) {
@@ -550,7 +555,7 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 		} else {
 			log_trace(logWorker, "Conectado al worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
 			traer_temporal_worker(socketWorker, datosReduccionGlobal[i].temporalReduccionLocal);
-			apareo_archivos(path_apareado,datosReduccionGlobal[i].temporalReduccionLocal);
+			//apareo_archivos(path_apareado,datosReduccionGlobal[i].temporalReduccionLocal);
 		}
 	}
 
