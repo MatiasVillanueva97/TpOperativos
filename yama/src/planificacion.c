@@ -225,6 +225,11 @@ void planificar(int fileDescriptor, bloqueArchivo *nodosPorPedazoArchivo, nodoPa
 	return;
 }
 
+
+
+
+
+
 /*	in_array para c
  * typedef int (*cmpfunc)(void *, void *);
 

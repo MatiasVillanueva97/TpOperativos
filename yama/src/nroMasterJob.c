@@ -10,6 +10,7 @@ int maxNroMaster = 0, maxNroJob = 0;
 struct nodosUsadosPlanificacion {
 	int numero;
 	int cantidadVecesUsados;
+	int cantTransformaciones;
 };
 
 typedef struct datosMasterJob {
