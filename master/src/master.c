@@ -23,7 +23,7 @@ NULL };
 
 struct datosWorker {
 	char ip[LARGO_IP];
-	char puerto[5];
+	char puerto[LARGO_PUERTO];
 };
 
 struct datosReduccionGlobal {
@@ -417,7 +417,17 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	char * reductorString = leerArchivo(archivoReductor);
 	printf("\nScript Reductor leido: %s\n", reductorString);
 
-	int cantStringsASerializar = 1 + 1 + (cantNodos * 4) + 1;
+	// Si son + de 2 nodos resto el primero (el encargado), si es sólo 1 no
+	int cantNodosSinEncargado;
+	if (cantNodos > 1) {
+		cantNodosSinEncargado = cantNodos - 1;
+		i = 1;
+	}else{
+		cantNodosSinEncargado = cantNodos;
+		i = 0;
+	}
+
+	int cantStringsASerializar = 1 + 1 + (cantNodosSinEncargado * 4) + 1;
 	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 	j = 0;
 
@@ -428,16 +438,15 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	printf("\nScript reductor serializado: %s\n", arrayMensajes[j]);
 	j++;
 
-	// Serializo cantidad de nodos (restando el primero/encargado)
-	int cantNodosSinEncargado = cantNodos - 1;
+	// Serializo cantidad de nodos (restando el primero/encargado en caso de q haga +2 workers)
 	char* cantNodosReduccionGlobalString = intToArrayZerosLeft(cantNodosSinEncargado, 4);
 	arrayMensajes[j] = malloc(string_length(cantNodosReduccionGlobalString) + 1);
 	strcpy(arrayMensajes[j], cantNodosReduccionGlobalString);
 	printf("Cantidad de nodos serializado: %s\n", arrayMensajes[j]);
 	j++;
 
-	// Por cada nodo (excepto el primero) serializo nro/ip/puerto/temporal
-	for (i = 1; i < cantNodos; i++) {
+	// Por cada nodo (excepto el primero si son + de 2) serializo nro/ip/puerto/temporal
+	for (; i < cantNodos; i++) {
 		// Serializo nro de nodo
 		arrayMensajes[j] = malloc(4 + 1);
 		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosReduccionGlobal[i].nodo, 4));
