@@ -77,25 +77,44 @@ char* guardar_datos(char* datos, char* carpeta, char* nombre) {
 	return path;
 }
 
-char* leerArchivo(char* pathArchivo) {
-	//log_info(logWorker, "[leerArchivo] Leyendo archivo: %s", pathArchivo);
-	printf("hola");
-	char caracter;
-	printf("cree caracter");
-	char* contenido = string_new();
-	printf("cree char*");
-	printf("antes de abrir");
-	FILE* archivo = fopen(pathArchivo, "r");
-	printf("entra al while");
-	while(1) {
+char * leerArchivo2(char * ubicacionArchivo) {
+	log_info(logWorker, "[leerArchivo] Leyendo archivo: %s", ubicacionArchivo);
+	FILE *fp;
+	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo
+	char *pathArchivo = string_from_format("%s", ubicacionArchivo);
+	fp = fopen(pathArchivo, "r"); // read mode
+	fseek(fp, 0, SEEK_END);
+	long lengthArchivo = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+	char *archivoString = malloc(sizeof(char) * (lengthArchivo + 1));
+	if (archivoString) {
+		fread(archivoString, 1, lengthArchivo, fp);
+	} else {
+		log_error(logWorker, "Malloc al leer archivo");
+	}
+	fclose(fp);
+	log_info(logWorker, "[leerArchivo] Archivo leido: %s, largo string: %d", pathArchivo, string_length(archivoString));
+	return archivoString;
+}
 
+char* leerArchivo(char* pathArchivo) {
+	log_info(logWorker, "[leerArchivo] Leyendo archivo: %s", pathArchivo);
+	//printf("hola\n");
+	char caracter;
+	//printf("cree caracter\n");
+	char* contenido = string_new();
+	//printf("cree char*\n");
+	//printf("antes de abrir\n");
+	FILE* archivo = fopen(pathArchivo, "r");
+	//printf("entra al while\n");
+	while(1) {
 		caracter = fgetc(archivo);
-		if( feof(archivo) ) {
+		if(caracter == EOF) {
 			break ;
 		}
 		string_append_with_format(&contenido, "%c", caracter);
 	}
-	printf("sale del while");
+	printf("sale del while\n");
 	fclose(archivo);
 	log_info(logWorker, "[leerArchivo] Archivo leido: %s", pathArchivo);
 	return contenido;
@@ -509,8 +528,7 @@ int enviar_contenido_archivo(int socketCliente, char* archivo) {
 	char* pathArchivo = string_new();
 	string_append_with_format(&pathArchivo, "%s/%s", carpeta_temporales_reduccion, archivo);
 	log_info(logWorker, "[enviar_contenido_archivo] Path archivo: %s", pathArchivo);
-	char* contenidoArchivo = string_new();
-	contenidoArchivo = leerArchivo(pathArchivo);
+	char* contenidoArchivo = leerArchivo2(pathArchivo);
 
 	char **arrayArchivo = malloc(sizeof(char*));
 	arrayArchivo[0] = malloc(string_length(contenidoArchivo) + 1);
@@ -618,7 +636,7 @@ int conexionAFileSystem() {
 }
 
 int almacenamientoFinal(char* rutaArchivo, char* rutaFinal){
-	char* buffer = leerArchivo(rutaArchivo);
+	char* buffer = leerArchivo2(rutaArchivo);
 	//printf("%s\n",buffer);
 	int socketFS = conexionAFileSystem();
 	int preparadoEnviarFs = 1;
