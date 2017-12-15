@@ -78,9 +78,15 @@ char* guardar_datos(char* datos, char* carpeta, char* nombre) {
 }
 
 char* leerArchivo(char* pathArchivo) {
+	//log_info(logWorker, "[leerArchivo] Leyendo archivo: %s", pathArchivo);
+	printf("hola");
 	char caracter;
+	printf("cree caracter");
 	char* contenido = string_new();
+	printf("cree char*");
+	printf("antes de abrir");
 	FILE* archivo = fopen(pathArchivo, "r");
+	printf("entra al while");
 	while(1) {
 
 		caracter = fgetc(archivo);
@@ -89,7 +95,9 @@ char* leerArchivo(char* pathArchivo) {
 		}
 		string_append_with_format(&contenido, "%c", caracter);
 	}
+	printf("sale del while");
 	fclose(archivo);
+	log_info(logWorker, "[leerArchivo] Archivo leido: %s", pathArchivo);
 	return contenido;
 }
 
@@ -446,21 +454,20 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 	int cantMensajesXFila = 4;
 	int cantStrings = cantMensajesXFila * cantNodos;
 	char **arrayTablaReduccionGlobal = deserializarMensaje(socketMaster, cantStrings);
-	/*
+
 	//recibir la tabla de reduccion global
-	printf("\n ---------- Tabla de reduccion global ---------- \n");
-	printf("\tNodo\tIP\t\tPuerto\t\tTemporal\n");
-	printf("---------------------------------------------------------------------------------------------\n");
-	*/
+	log_info(logWorker, "\n ---------- Tabla de reduccion global ---------- \n");
+	log_info(logWorker, "\tNodo\tIP\t\tPuerto\t\tTemporal\n");
+	log_info(logWorker, "---------------------------------------------------------------------------------------------\n");
+
 	for (i = 0; i < cantNodos; i++) {
 		// cada msje es una fila de la tabla reduccion global
 		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
 		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[1]);
 		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[2]);
 		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[3]);
-		printf("\t%d\t%s\t%s\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionLocal);
+		log_info(logWorker, "\t%d\t%s\t%s\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionLocal);
 	}
-	//printf("\n");
 
 	liberar_array(arrayTablaReduccionGlobal, cantStrings);
 }
@@ -497,8 +504,13 @@ void traer_temporal_worker(int socketWorker, char* nombreArchivo) {
 	liberar_array(arrayArchivo, 1);
 }
 
-int enviar_contenido_archivo(int socketCliente, char* pathArchivo) {
-	char* contenidoArchivo = leerArchivo(pathArchivo);
+int enviar_contenido_archivo(int socketCliente, char* archivo) {
+	log_info(logWorker, "[enviar_contenido_archivo] Archivo: %s", archivo);
+	char* pathArchivo = string_new();
+	string_append_with_format(&pathArchivo, "%s/%s", carpeta_temporales_reduccion, archivo);
+	log_info(logWorker, "[enviar_contenido_archivo] Path archivo: %s", pathArchivo);
+	char* contenidoArchivo = string_new();
+	contenidoArchivo = leerArchivo(pathArchivo);
 
 	char **arrayArchivo = malloc(sizeof(char*));
 	arrayArchivo[0] = malloc(string_length(contenidoArchivo) + 1);
@@ -783,8 +795,7 @@ int main(int argc, char *argv[]) {
 					}
 
 					if (headerId == TIPO_MSJ_DATA_ALMACENAMIENTO_FINAL_WORKER) {
-						//almacenamiento_final_worker(headerId, socketCliente);
-						log_info(logWorker, "pillin");
+						almacenamiento_final_worker(headerId, socketCliente);
 					}
 				}
 
@@ -795,15 +806,15 @@ int main(int argc, char *argv[]) {
 					int32_t headerId = deserializarHeader(socketCliente); //recibe el id del header para saber qué esperar
 					int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 					char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
-					char *pathArchivo = malloc(string_length(arrayMensajes[0]) + 1);
-					strcpy(pathArchivo, arrayMensajes[0]);
+					char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
+					strcpy(archivo, arrayMensajes[0]);
+					log_info(logWorker, "[Reduccion global (server)] Nombre archivo a enviar: %s", archivo);
 
 					liberar_array(arrayMensajes, cantidadMensajes);
 
-					enviar_contenido_archivo(socketCliente, pathArchivo);
-
-					free(pathArchivo);
-
+					int resultado_envio = enviar_contenido_archivo(socketCliente, archivo);
+					free(archivo);
+					log_trace(logWorker, "[Reduccion global (server)] Bytes enviados = %d", resultado_envio);
 				}
 			}
 
