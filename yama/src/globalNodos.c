@@ -35,7 +35,7 @@ setSizeListaGlobalNodos(int cantNodos) {
 }
 
 datosPropiosNodo* getDatosGlobalesNodo(int nodoBuscado) {
-	return &listaGlobalNodos[nodoBuscado - 1];
+	return &listaGlobalNodos[nodoBuscado];
 }
 
 int getLargoListaGlobalNodos() {
@@ -44,17 +44,17 @@ int getLargoListaGlobalNodos() {
 }
 
 int getCargaGlobalNodo(int nroNodo) {
-	return listaGlobalNodos[nroNodo - 1].carga;
+	return listaGlobalNodos[nroNodo].carga;
 }
 
 void actualizarCargaGlobalNodo(int nroNodo, int carga) {
-	listaGlobalNodos[nroNodo - 1].carga = carga;
+	listaGlobalNodos[nroNodo].carga = carga;
 }
 
 void disminuirCargaGlobalNodo(int nroNodo, int cantidadRestar) {
-	listaGlobalNodos[nroNodo - 1].carga -= cantidadRestar;
+	listaGlobalNodos[nroNodo].carga -= cantidadRestar;
 }
 
 void aumentarCargaGlobalNodo(int nroNodo, int cantidadSumar) {
-	listaGlobalNodos[nroNodo - 1].carga += cantidadSumar;
+	listaGlobalNodos[nroNodo].carga += cantidadSumar;
 }
