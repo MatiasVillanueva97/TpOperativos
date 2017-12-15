@@ -438,8 +438,8 @@ int replanificar(datosMasterJob *masterJobActual, int nroNodoRecibido, int socke
 	//disminuye la cantidad de nodos usados por el Job debido al que se cayó
 	masterJobActual->cantNodosUsados--;
 	int cantNodosUsados = masterJobActual->cantNodosUsados;
-	//TODO: marcar la reducción local en los nodos replanificados
-	//de dónde saco la cantidad y los nodos replanificados para llenar el vector
+
+	//marca la reducción local en los nodos replanificados
 	int nodosRecargados[cantNodosRecargados];
 	for (i = 0; i < cantNodosRecargados; i++) {
 		nodosRecargados[i] = nodosRecargadosAuxiliar[i];
@@ -670,14 +670,6 @@ int main(int argc, char *argv[]) {
 							//disminuye la carga de los nodos asociados al master que falló
 							liberarCargaJob(socketConectado, -1);
 							cantNodosUsados = (int) masterJobActual->cantNodosUsados;
-//							puts("\ncarga de cada nodo luego de un abort\n-----------------------------------------\n");
-//							printf("cantNodosArchivo: %d\n", cantNodosArchivo);
-//							for (i = 0; i < cantNodosUsados; i++) {
-//								puts("pasó");
-//								printf("carga después de restar, nodo master actual %d\n", masterJobActual->nodosUsados[i].numero);
-//								printf("carga después de restar, nodo lista global %d\n", getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->numero);
-//								printf("carga después de restar, carga %d\n", getDatosGlobalesNodo(masterJobActual->nodosUsados[i].numero)->carga);
-//							}
 
 							//actualiza el estado en la tabla de estados de las tareas asociadas al master que falló
 							//a las tareas que están en proceso las pone como ERROR
@@ -737,8 +729,6 @@ int main(int argc, char *argv[]) {
 								//guardar los nodos en la listaGlobal
 								datosPropiosNodo nodosParaPlanificar[cantNodosArchivo];
 								masterJobActual->cantNodosUsados = cantNodosArchivo;
-//								struct nodosUsadosPlanificacion nodosUsadosAuxiliar[cantNodosArchivo];
-//								masterJobActual->nodosUsados = &nodosUsadosAuxiliar[0];
 								masterJobActual->nodosUsados = malloc(sizeof(struct nodosUsadosPlanificacion) * cantNodosArchivo);
 								recibirNodosArchivoFS(socketFS, cantNodosArchivo, nodosParaPlanificar);
 								printf("\n ---------- Lista global de nodos ---------- \n");
@@ -802,14 +792,6 @@ int main(int argc, char *argv[]) {
 									//en la tabla de transformación para el master
 									strcpy(asignacionesNodos[i].temporal, temporal);
 								}
-								puts("\ncantidad de veces que se usó cada nodo\n-----------------------------------------\n");
-								for (k = 0; k < cantNodosArchivo; k++) {
-									printf("FD %d - nroNodo %d - veces que está usado %d\n", socketConectado, masterJobActual->nodosUsados[k].numero, masterJobActual->nodosUsados[k].cantidadVecesUsados);
-								}
-
-								/*for (k = 0; k < cantNodosArchivo; k++) {
-								 printf("FD %d - nroNodo %d - veces que está usado %d\n", socketConectado, masterJobActual->nodosUsados[k].numero, masterJobActual->nodosUsados[k].cantidadVecesUsados);
-								 }*/
 								/* ************** fin agregado en tabla de estados *************** */
 
 								/* ****** envío de nodos para la transformación ******************* */
@@ -846,8 +828,6 @@ int main(int argc, char *argv[]) {
 								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la transformación OK");
 							}
 
-							//si no queda ninguna fila de ese nodo en proceso inicia la reducción local
-
 							for (k = 0; k < cantNodosArchivo; k++) {
 								if (masterJobActual->nodosUsados[k].numero == nroNodoRecibido) {
 									cantTransformaciones = masterJobActual->nodosUsados[k].cantTransformaciones;
@@ -856,6 +836,7 @@ int main(int argc, char *argv[]) {
 							int cantidadFilasTransformacionFinOk = getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK);
 							int cantidadFilasTransformacionError = getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, ERROR);
 							int cantidadFilasTransformacionEnProceso = getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, EN_PROCESO);
+							//si no queda ninguna fila de ese nodo en proceso inicia la reducción local
 							if (cantTransformaciones > (cantidadFilasTransformacionFinOk + cantidadFilasTransformacionError + cantidadFilasTransformacionEnProceso)) {
 								puts("Hubo algún error en la asignación de estados en la Tabla de Estados");
 								log_error(logYAMA, "Hubo algún error en la asignación de estados en la Tabla de Estados para las transformaciones del nodo %d", nroNodoRecibido);
