@@ -110,7 +110,7 @@ compile-master: clean-master
 
 run-master: compile-master
 	@echo "Ejecutando MASTER..."
-	@cd $(MASTER)/$(BIN_PATH) &&  ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
+	@cd $(MASTER)/$(BIN_PATH) &&  ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py yamafs:/nombres.csv yamafs:/analisis/resultado.json
 
 run-master-arg: compile-master
 	@echo "Ejecutando MASTER..."
