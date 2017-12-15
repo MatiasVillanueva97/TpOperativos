@@ -428,15 +428,16 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	printf("\nScript reductor serializado: %s\n", arrayMensajes[j]);
 	j++;
 
-	// Serializo cantidad de nodos
-	char* cantNodosReduccionGlobalString = intToArrayZerosLeft(cantNodos, 4);
+	// Serializo cantidad de nodos (restando el primero/encargado)
+	int cantNodosSinEncargado = cantNodos - 1;
+	char* cantNodosReduccionGlobalString = intToArrayZerosLeft(cantNodosSinEncargado, 4);
 	arrayMensajes[j] = malloc(string_length(cantNodosReduccionGlobalString) + 1);
 	strcpy(arrayMensajes[j], cantNodosReduccionGlobalString);
 	printf("Cantidad de nodos serializado: %s\n", arrayMensajes[j]);
 	j++;
 
-	// Por cada nodo serializo nro/ip/puerto/temporal
-	for (i = 0; i < cantNodos; i++) {
+	// Por cada nodo (excepto el primero) serializo nro/ip/puerto/temporal
+	for (i = 1; i < cantNodos; i++) {
 		// Serializo nro de nodo
 		arrayMensajes[j] = malloc(4 + 1);
 		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosReduccionGlobal[i].nodo, 4));
@@ -477,11 +478,12 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 
 void conectarAWorkerReduccionGlobal(void *arg) {
 	int i, j;
-	struct datosReduccionGlobal *datosHilo = (struct datosReduccionGlobal *) arg;
+	pthread_t idHilo = pthread_self();
+	struct datosReduccionGlobal *datosEnHilo = (struct datosReduccionGlobal *) arg;
 	//char * mensaje = (char *) arg;
 
 	// Abrir conexión a Worker
-	int socketWorker = conectarA(datosHilo->ip, string_itoa(datosHilo->puerto));
+	int socketWorker = conectarA(datosEnHilo->ip, string_itoa(datosEnHilo->puerto));
 	if (socketWorker < 0) {
 		puts("No se pudo conectar al worker");
 	}
@@ -497,20 +499,19 @@ void conectarAWorkerReduccionGlobal(void *arg) {
 		//printf("\nmensaje serializado: \n%s\n", datosHilo->mensajeSerializado);
 		//int cantBytesEnviados = enviarMensaje(socketWorker, datosHilo->mensajeSerializado);
 
-		printf("\nmensaje serializado: \n%s\n", datosHilo->mensajeSerializado);
-		int cantBytesEnviados = enviarMensaje(socketWorker, datosHilo->mensajeSerializado);
+		printf("\nmensaje serializado: \n%s\n", datosEnHilo->mensajeSerializado);
+		int cantBytesEnviados = enviarMensaje(socketWorker, datosEnHilo->mensajeSerializado);
 
-		// recibo rta. del worker
-		//int32_t headerIdWorker = deserializarHeader(socketWorker);
+		// Recibo resultado del Worker y cierro conexión
+		int32_t headerIdWorker = deserializarHeader(socketWorker);
 		printf("Header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
-		// Avisar a YAMA
-		int bytesEnviadosMensaje = envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_OK, 1);
-		pthread_t idHilo = pthread_self();
+		cerrarCliente(socketWorker);
 
-		//printf("Resultado transformación hilo %lu en nodo %d sobre bloque %d es: %s\n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, protocoloMensajesPredefinidos[headerId]);
-		//printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, nroNodoEncargado, ipNodoEncargado, puertoNodoEncargado);
-		//printf("Bytes enviados mensaje en el hilo %lu: %d\n\n", idHilo, bytesEnviadosMensaje);
-	}
+		// Aviso a YAMA
+		int bytesEnviadosMensaje = envioFinReduccion(headerIdWorker, datosEnHilo->nodo);
+		printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto);
+
+		}
 }
 
 //LISTO
