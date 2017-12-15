@@ -10,7 +10,7 @@ int enviarMensaje(int serverSocket, char *message) {
 	if (cantBytesEnviados != string_length(message)) {
 
 		puts("Error. No se enviaron todos los bytes del mensaje.\n");
-		printf("Largo mensaje: %d, bytes enviados: %d", string_length(message), cantBytesEnviados);
+		printf("Largo mensaje: %d, bytes enviados: %d\n", string_length(message), cantBytesEnviados);
 		return 0;
 
 	}
