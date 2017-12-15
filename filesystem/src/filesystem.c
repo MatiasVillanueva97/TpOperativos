@@ -1062,7 +1062,7 @@ void registrarNodo(int socketData) {
 
 	if (estadoAnterior == 0) {
 		if (formateado == 0) { //dejo conectar a cualquiera
-
+			printf("Entra Cualquiera \n");
 			crearBitmapDeNodosConectados(nombre, cantBloques);
 			tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(
 					arrayMensajesRecibidos[0]);
@@ -1080,7 +1080,7 @@ void registrarNodo(int socketData) {
 		}
 		if (formateado == 1 && estadoEstable == 1) {
 			if (buscarEnListaDeFormat(arrayMensajesRecibidos[0])) {
-
+				printf("Formateado entra por aca \n");
 				crearBitmapDeNodosConectados(nombre, cantBloques);
 				tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(
 						arrayMensajesRecibidos[0]);
@@ -1102,24 +1102,77 @@ void registrarNodo(int socketData) {
 		}
 	}
 	if (estadoAnterior == 1) {
-		if (buscarEnListaAnterior(arrayMensajesRecibidos[0])) {
 
-			crearBitmapDeNodosConectados(nombre, cantBloques);
-			tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(
-					arrayMensajesRecibidos[0]);
-			ContenidoXNodo * nodo = malloc(sizeof(ContenidoXNodo));
-			nodo->nodo = arrayMensajesRecibidos[0];
-			nodo->ip = arrayMensajesRecibidos[2];
-			nodo->libre = cantidadDeBloquesLibresEnBitmap(
-					nodoConBitmap->bitarray, atoi(arrayMensajesRecibidos[1]));
-			nodo->puerto = arrayMensajesRecibidos[3];
-			nodo->socket = socketData;
-			nodo->total = atoi(arrayMensajesRecibidos[1]);
-			list_add(tablaNodos, nodo);
-		} else {
-			enviarHeaderSolo(socketData, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
+		if(formateado==0){
+			if (buscarEnListaAnterior(arrayMensajesRecibidos[0])) {
+
+				crearBitmapDeNodosConectados(nombre, cantBloques);
+				tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(
+						arrayMensajesRecibidos[0]);
+				ContenidoXNodo * nodo = malloc(sizeof(ContenidoXNodo));
+				nodo->nodo = arrayMensajesRecibidos[0];
+				nodo->ip = arrayMensajesRecibidos[2];
+				nodo->libre = cantidadDeBloquesLibresEnBitmap(
+						nodoConBitmap->bitarray, atoi(arrayMensajesRecibidos[1]));
+				nodo->puerto = arrayMensajesRecibidos[3];
+				nodo->socket = socketData;
+				nodo->total = atoi(arrayMensajesRecibidos[1]);
+				list_add(tablaNodos, nodo);
+				list_add(listaDeNodosDeFormateo, arrayMensajesRecibidos[0]);
+				printf("entro sin formatear ,estado anterior,agrego al nodo %s \n",nodo->nodo);
+			} else {
+				enviarHeaderSolo(socketData, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
+			}
 		}
-	}
+		if(formateado==1){
+			if (buscarEnListaDeFormat(arrayMensajesRecibidos[0])) {
+
+				crearBitmapDeNodosConectados(nombre, cantBloques);
+				tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(
+						arrayMensajesRecibidos[0]);
+				ContenidoXNodo * nodo = malloc(sizeof(ContenidoXNodo));
+				nodo->nodo = arrayMensajesRecibidos[0];
+				nodo->ip = arrayMensajesRecibidos[2];
+				nodo->libre = cantidadDeBloquesLibresEnBitmap(
+						nodoConBitmap->bitarray, atoi(arrayMensajesRecibidos[1]));
+				nodo->puerto = arrayMensajesRecibidos[3];
+				nodo->socket = socketData;
+				nodo->total = atoi(arrayMensajesRecibidos[1]);
+				list_add(tablaNodos, nodo);
+				printf("Entro formateado ,estado anterior, nodo %s \n",nodo->nodo);
+			} else {
+				enviarHeaderSolo(socketData, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
+			}
+		}
+    	if(estadoEstable==1){
+
+    	}else  {
+    		if(estadoEstableFuncion()){
+    		        		config_set_value(configFs,"ESTADO_ESTABLE","1");
+    		        		config_save(configFs);
+    		        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
+    		        		printf("Noasdasdasdcopia de cada archivo , Estado  estable\n");
+    		        	}else{
+    		        		printf("No hay al menos una copia de cada archivo , Estado no estable\n");
+    		        	}
+    	}
+
+    	if(estadoEstable==1){
+
+    	}else  {
+    		if(estadoEstableFuncion()){
+    		        		config_set_value(configFs,"ESTADO_ESTABLE","1");
+    		        		config_save(configFs);
+    		        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
+    		        		printf("Noasdasdasdcopia de cada archivo , Estado  estable\n");
+    		        	}else{
+    		        		printf("No hay al menos una copia de cada archivo , Estado no estable\n");
+    		        	}
+    	}
+
+		}
+
+
 
 }
 
@@ -2291,6 +2344,12 @@ void enviarInfoBloques(int socketCliente, int headerId) {
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes);
 	char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
 	strcpy(archivo, arrayMensajes[0]);
+	printf("%s \n",arrayMensajes[0]);
+	getchar();
+	printf("%s \n",arrayMensajes[1]);
+	getchar();
+	printf("%s \n",arrayMensajes[2]);
+	getchar();
 	free(arrayMensajes);
 	printf("archivo: %s\n", archivo);
 	char * nombre = conseguirNombreDePath(archivo);
@@ -2402,7 +2461,7 @@ void enviarInfoNodos(int socketCliente) {
 bool estadoEstableFuncion() {
 	int countGeneral = 0;
 	void porArchivo(tablaArchivo * elemento) {
-		printf("elemento.nombre %s\n", elemento->nombre);
+		printf("\n elemento.nombre %s\n", elemento->nombre);
 		int i = 0;
 		int vecta = 0;
 		int vectb = 0;
@@ -2527,6 +2586,7 @@ void soyServidor(char * puerto) {
 
 						case worker: {
 							SocketWorker = nuevoSocket;
+							printf("worker conectado\n ");
 							//atender a worker,supongo que almacenar el archivo
 							/*
 							 int32_t headerId = deserializarHeader(SocketWorker);	//recibe el id del header para saber qué esperar
@@ -2686,6 +2746,9 @@ int main(int argc, char *argv[]) {
 			cargarListaDeNodosAnteriores();
 			FILE * directorios = fopen("../metadata/directorios.dat", "a+");
 			FILE * nodos = fopen("../metadata/nodos.bin", "a+");
+			config_set_value(configFs, "ESTADO_ESTABLE", "0");
+			config_save(configFs);
+			estadoEstable = config_get_int_value(configFs, "ESTADO_ESTABLE");
 			PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
 			pthread_create(&hiloConsola, NULL, (void*) IniciarConsola, NULL);
 			soyServidor(PUERTO);

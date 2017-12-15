@@ -58,35 +58,37 @@ void analizarComando(char * linea){
 
         printf("Formateando FileSystem..\n");
 		printf("\n");
-        if(estadoAnterior==0){
-        	uint cantidadNodosSistemas=list_size(tablaNodos);
-        	if(cantidadNodosSistemas>=2){
-        		config_set_value(configFs,"ESTADO_ESTABLE","1");
-        		config_save(configFs);
-        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
-        		config_set_value(configFs,"FORMATEADO","1");
-        		config_save(configFs);
-        		formateado=config_get_int_value(configFs,"FORMATEADO");
-        		printf("FileSystem Formateado\n");
-        		printf("\n");
-        	}else{
-        		printf("No hay suficientes DataNode para dejar el FS en un estado Estable\n");
-        	}
-        }else{
+       if(formateado==0){
+    	   if(estadoAnterior==0){
+    	          	uint cantidadNodosSistemas=list_size(tablaNodos);
+    	          	if(cantidadNodosSistemas>=0){
+    	          		config_set_value(configFs,"ESTADO_ESTABLE","1");
+    	          		config_save(configFs);
+    	          		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
+    	          		config_set_value(configFs,"FORMATEADO","1");
+    	          		config_save(configFs);
+    	          		formateado=config_get_int_value(configFs,"FORMATEADO");
+    	          		printf("FileSystem Formateado\n");
+    	          		printf("\n");
+    	          	}else{
+    	          		printf("No hay suficientes DataNode para dejar el FS en un estado Estable\n");
+    	          	}
+    	          }else{
 
-        	if(estadoEstableFuncion()){
-        		config_set_value(configFs,"ESTADO_ESTABLE","1");
-        		config_save(configFs);
-        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
-        		config_set_value(configFs,"FORMATEADO","1");
-        		config_save(configFs);
-        		formateado=config_get_int_value(configFs,"FORMATEADO");
-        		printf("FileSystem Formateado\n");
-        		printf("\n");
-        	}else{
-        		printf("No hay al menos una copia de cada archivo , Estado no estable\n");
-        	}
-        }
+    	          	// eliminar todas las litas,printear formateo
+    	      		config_set_value(configFs,"FORMATEADO","1");
+    	      		config_save(configFs);
+    	      		formateado=config_get_int_value(configFs,"FORMATEADO");
+    	          	printf("formateo piolancha \n \t ,%d ",formateado);
+
+    	          }
+
+       }else {
+    	   printf("El FileSystem ya se encuentra formateado \n");
+       }
+
+
+
 
 
         break;
@@ -133,37 +135,55 @@ void analizarComando(char * linea){
       }
       break;
 
-      case 7:{
-    	   char * nombreArchivoViejo = comandoDesarmado[1];
-    	   char * nombreArchivoNuevo = comandoDesarmado[2];
-    	   char * flag = comandoDesarmado[3];
-    	   if(nombreArchivoViejo != NULL && nombreArchivoNuevo != NULL && flag != NULL){
-    		  almacenarArchivo(nombreArchivoViejo,nombreArchivoNuevo,atoi(flag));
-    	   }else{
-    		   printf("Faltan parametros para ejecutar el comando cpfrom\n");
-    	   }
+      case 7: {
+
+    	  if(estadoEstable==1){
+    		  char * nombreArchivoViejo = comandoDesarmado[1];
+    		      	   char * nombreArchivoNuevo = comandoDesarmado[2];
+    		      	   char * flag = comandoDesarmado[3];
+    		      	   if(nombreArchivoViejo != NULL && nombreArchivoNuevo != NULL && flag != NULL){
+    		      		  almacenarArchivo(nombreArchivoViejo,nombreArchivoNuevo,atoi(flag));
+    		      	   }else{
+    		      		   printf("Faltan parametros para ejecutar el comando cpfrom\n");
+    		      	   }
+
+    	  }else
+    	  {
+    		  printf("No se puede ejecutar este comando si no hay un establdo estable ");
+    	  }
+
+
+
 
       }
       break;
 
       case 8:{
-    	  char * nombreArchivoViejofs = comandoDesarmado[1];
-    	  char * nombreArchivoNuevolocal = comandoDesarmado[2];
-    	  if(nombreArchivoViejofs != NULL && nombreArchivoNuevolocal != NULL){
-    			 pthread_mutex_lock(&mutex1);
-    			 int a = leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal,0);
-    			 pthread_mutex_unlock(&mutex1);
-    			 if(a==0){
+    	  if(estadoEstable==1){
 
-    			 ContenidoXNodo * elemento = list_get(tablaNodos,0);
-    			 printf("%s\n",elemento->nodo);
-    			 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
-    			 }else {
+        	  char * nombreArchivoViejofs = comandoDesarmado[1];
+        	  char * nombreArchivoNuevolocal = comandoDesarmado[2];
+        	  if(nombreArchivoViejofs != NULL && nombreArchivoNuevolocal != NULL){
+        			 pthread_mutex_lock(&mutex1);
+        			 int a = leerArchivo(nombreArchivoViejofs,nombreArchivoNuevolocal,0);
+        			 pthread_mutex_unlock(&mutex1);
+        			 if(a==0){
 
-    			 }
-    	      	   }else{
-    	      		   printf("Faltan parametros para ejecutar el comando cpto\n");
-    	      	   }
+        			 ContenidoXNodo * elemento = list_get(tablaNodos,0);
+        			 printf("%s\n",elemento->nodo);
+        			 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
+        			 }else {
+
+        			 }
+        	      	   }else{
+        	      		   printf("Faltan parametros para ejecutar el comando cpto\n");
+        	      	   }
+
+    	  }else {
+    		  printf("No se puede ejecutar este comando si no hay un establdo estable ");
+    	  }
+
+
       }
       break;
 
@@ -173,42 +193,52 @@ void analizarComando(char * linea){
       break;
 
       case 10:{
-        char * comandoNuevo = string_new();
-        char * comandoNuevoRm = string_new();
 
-        char * path_yafs = comandoDesarmado[1];
-
-        if(path_yafs == NULL){
-        	printf("Faltan parametros para ejecutar el comando md5sum\n");
-        } else {
-        	char * nombre = conseguirNombreDePath(path_yafs);
-        	char * pathArchivo = string_duplicate("../metadata/");
-
-			 pthread_mutex_lock(&mutex1);
-			 int a = leerArchivo(path_yafs,pathArchivo,1);
-			 pthread_mutex_unlock(&mutex1);
-			 if(a==0){
-			 ContenidoXNodo * elemento = list_get(tablaNodos,0);
-			 printf("%s\n",elemento->nodo);
-			 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
-			 string_append(&comandoNuevo,"md5sum ");
-			 string_append(&comandoNuevo,pathArchivo);
-			 string_append(&comandoNuevo,nombre);
-			 string_append(&comandoNuevo," | awk '{print $1}'");
-			 system(comandoNuevo);
-			 string_append(&comandoNuevoRm,"rm -f ");
-			 string_append(&comandoNuevoRm,pathArchivo);
-			 string_append(&comandoNuevoRm,nombre);
-			 system(comandoNuevoRm);
+    	  if(estadoEstable==1){
 
 
-			 }
-			 else {
 
-			 }
-        }
+    	        char * comandoNuevo = string_new();
+    	        char * comandoNuevoRm = string_new();
 
-    	free(comandoNuevo);
+    	        char * path_yafs = comandoDesarmado[1];
+
+    	        if(path_yafs == NULL){
+    	        	printf("Faltan parametros para ejecutar el comando md5sum\n");
+    	        } else {
+    	        	char * nombre = conseguirNombreDePath(path_yafs);
+    	        	char * pathArchivo = string_duplicate("../metadata/");
+
+    				 pthread_mutex_lock(&mutex1);
+    				 int a = leerArchivo(path_yafs,pathArchivo,1);
+    				 pthread_mutex_unlock(&mutex1);
+    				 if(a==0){
+    				 ContenidoXNodo * elemento = list_get(tablaNodos,0);
+    				 printf("%s\n",elemento->nodo);
+    				 enviarHeaderSolo(elemento->socket,TIPO_MSJ_OK);
+    				 string_append(&comandoNuevo,"md5sum ");
+    				 string_append(&comandoNuevo,pathArchivo);
+    				 string_append(&comandoNuevo,nombre);
+    				 string_append(&comandoNuevo," | awk '{print $1}'");
+    				 system(comandoNuevo);
+    				 string_append(&comandoNuevoRm,"rm -f ");
+    				 string_append(&comandoNuevoRm,pathArchivo);
+    				 string_append(&comandoNuevoRm,nombre);
+    				 system(comandoNuevoRm);
+
+
+    				 }
+    				 else {
+
+    				 }
+    	        }    	free(comandoNuevo);
+
+    	  }else {
+
+    		  printf("No se puede ejecutar este comando si no hay un establdo estable ");
+
+    	  }
+
 
       }
       break;
@@ -256,7 +286,7 @@ void analizarComando(char * linea){
             			string_append(&array,",");
             			string_append(&array,string_itoa(bloquesArchivo->bloque));
             			string_append(&array,"]");
-            			printf("%s = %s \n",bloque_copia,array);
+            			printf("\t %s = %s \t",bloque_copia,array);
             		}
 
             		else{
@@ -342,16 +372,18 @@ void IniciarConsola(){
 
   while(1) {
     linea = (char *) readline(barraDeComando);
-
     if(linea)
     	add_history(linea);
+    if(string_is_empty(linea)){
 
-    if(!strncmp(linea, "exit", 4)) {
-       free(linea);
-       free(barraDeComando);
-       break;
-    } else {
-        analizarComando(linea);
+    }else {
+        if(!strncmp(linea, "exit", 4)) {
+           free(linea);
+           free(barraDeComando);
+           break;
+        } else {
+            analizarComando(linea);
+        }
     }
 
   }
