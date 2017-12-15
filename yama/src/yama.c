@@ -657,7 +657,7 @@ int main(int argc, char *argv[]) {
 						log_info(logYAMA, "Se recibió un mensaje de proceso conectado por FD %d", socketConectado);
 						masterJobActual = getDatosMasterJobByFD(socketConectado);
 						cantNodosArchivo = masterJobActual->cantNodosUsados;
-
+						cantNodosUsados = masterJobActual->cantNodosUsados;
 						printf("\nSocket conectado: %d\n", socketConectado);
 						printf("Master actual: %d\n", masterJobActual->nroMaster);
 						printf("Job actual: %d\n", masterJobActual->nroJob);
@@ -669,7 +669,7 @@ int main(int argc, char *argv[]) {
 							printf("Se desconectó el proceso conectado por FD %d. Se lo deja de escuchar\n", socketConectado);
 							//disminuye la carga de los nodos asociados al master que falló
 							liberarCargaJob(socketConectado, -1);
-							cantNodosUsados = (int) masterJobActual->cantNodosUsados;
+
 
 							//actualiza el estado en la tabla de estados de las tareas asociadas al master que falló
 							//a las tareas que están en proceso las pone como ERROR
@@ -690,16 +690,18 @@ int main(int argc, char *argv[]) {
 							free(arrayMensajes);
 							//pide la metadata del archivo al FS
 							if (pedirMetadataArchivoFS(socketFS, archivo) > 0) {
-
+								puts("pasó 1");
 								/* ************* solicitud de info del archivo al FS *************** */
 								//recibir las partes del archivo
 								int32_t headerId = deserializarHeader(socketFS);
+								printf("header recibido del filesystem: %d - %s\n", headerId, protocoloMensajesPredefinidos[headerId]);
 								if (headerId != TIPO_MSJ_METADATA_ARCHIVO) {
 									log_error(logYAMA, "El FS no mandó los bloques");
 									puts("El FS no mandó los bloques");
 									enviarHeaderSolo(socketConectado, TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS);
 									break;
 								}
+								puts("pasó 2");
 								printf("Header Id: %d\n", headerId);
 								printf("Header mensaje: %s\n", protocoloMensajesPredefinidos[headerId]);
 								masterJobActual->cantBloquesArchivo = getCantidadPartesArchivoFS(socketFS, protocoloCantidadMensajes[headerId]);
@@ -711,7 +713,7 @@ int main(int argc, char *argv[]) {
 										i++) {
 									printf("nodoCopia1 %d - bloqueCopia1 %d - nodoCopia2 %d - bloqueCopia2 %d - bytes %d\n", bloques[i].nodoCopia1, bloques[i].bloqueCopia1, bloques[i].nodoCopia2, bloques[i].bloqueCopia2, bloques[i].bytesBloque);
 								}
-
+								puts("pasó 3");
 								/* ********************* */
 								//recibir la info de los nodos donde están esos archivos
 								headerId = deserializarHeader(socketFS);
@@ -958,7 +960,9 @@ int main(int argc, char *argv[]) {
 							} else {
 								log_info(logYAMA, "Se modificó la tabla de estados en el fin de la Reducción Local OK");
 							}
-
+							//mostrarTablaEstados();
+							printf("cantNodosUsados: %d\n", cantNodosUsados);
+							printf("cantidad de filas encontradas: %d\n",getCantFilasByJMEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, REDUCC_LOCAL, FIN_OK));
 							//verificar que todos los nodos del job y master hayan terminado la reducción local
 //							if (getCantFilasByJMEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, REDUCC_LOCAL, EN_PROCESO) == 0) {
 							if (getCantFilasByJMEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, REDUCC_LOCAL, FIN_OK) == cantNodosUsados) {
@@ -1044,6 +1048,8 @@ int main(int argc, char *argv[]) {
 									puts("\nlista de elementos luego de enviar la tabla de reducción global");
 									mostrarTablaEstados();
 								}
+							}else{
+								puts("Esperando a que todos los nodos terminen la Reducción Local");
 							}
 							break;
 
