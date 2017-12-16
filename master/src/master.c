@@ -124,20 +124,43 @@ void enviarArchivoYama(int socket, char *archivo) {
 }
 
 //LISTO
+//char * leerArchivo(char * ubicacionArchivo) {
+//	FILE *fp;
+//	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo al worker
+//	fp = fopen(ubicacionArchivo, "r"); // read mode
+//	fseek(fp, 0, SEEK_END);
+//	long lengthArchivo = ftell(fp);
+//	fseek(fp, 0, SEEK_SET);
+//	char *archivoString = malloc(lengthArchivo + 1);
+//	if (archivoString) {
+//		fread(archivoString, 1, lengthArchivo, fp);
+//	} else {
+//		perror("Malloc al leer archivo");
+//	}
+//	fclose(fp);
+//	return archivoString;
+//}
+
 char * leerArchivo(char * ubicacionArchivo) {
+	//log_info(logWorker, "[leerArchivo] Leyendo archivo: %s", ubicacionArchivo);
 	FILE *fp;
-	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo al worker
-	fp = fopen(ubicacionArchivo, "r"); // read mode
-	fseek(fp, ftell(fp), SEEK_SET);
+	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo
+	char *pathArchivo = string_from_format("%s", ubicacionArchivo);
+	fp = fopen(pathArchivo, "r"); // read mode
+	if (fp == NULL) {
+		//log_error(logWorker, "El archivo %s no existe", pathArchivo);
+	}
+	fseek(fp, 0, SEEK_END);
 	long lengthArchivo = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	char *archivoString = calloc(lengthArchivo + 1, sizeof(char));
+	char *archivoString = malloc(sizeof(char) * (lengthArchivo + 1));
 	if (archivoString) {
 		fread(archivoString, 1, lengthArchivo, fp);
 	} else {
-		perror("Malloc al leer archivo");
+		//log_error(logWorker, "Malloc al leer archivo");
 	}
 	fclose(fp);
+	//log_info(logWorker, "[leerArchivo] Archivo leido: %s, largo string: %d", pathArchivo, string_length(archivoString));
 	return archivoString;
 }
 
