@@ -109,6 +109,9 @@ char * leerArchivo2(char * ubicacionArchivo) {
 	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo
 	char *pathArchivo = string_from_format("%s", ubicacionArchivo);
 	fp = fopen(pathArchivo, "r"); // read mode
+	if (fp == NULL) {
+		log_error(logWorker, "El archivo %s no existe", pathArchivo);
+	}
 	fseek(fp, 0, SEEK_END);
 	long lengthArchivo = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
@@ -653,6 +656,27 @@ int conexionAFileSystem() {
 	return socketFS;
 }
 
+char* partirPath(char* path) {
+	int i, cantidadStrings = 0;
+	char* pathPartido = string_new();
+	char* elemento = string_new();
+	char** arrayDeStrings = string_split(path, "/");
+	while(1) {
+		elemento = arrayDeStrings[cantidadStrings];
+		if (elemento == NULL) {
+			break;
+		}
+		cantidadStrings += 1;
+	}
+	printf("%d\n", cantidadStrings);
+	for (i = 0; i < cantidadStrings-1; i++) {
+		printf("%s\n", arrayDeStrings[i]);
+		string_append(&pathPartido, arrayDeStrings[i]);
+		string_append(&pathPartido, "/");
+	}
+	return pathPartido;
+}
+
 int almacenamientoFinal(char* rutaArchivo, char* rutaFinal) {
 	char* buffer = leerArchivo2(rutaArchivo);
 	//printf("%s\n",buffer);
@@ -665,14 +689,18 @@ int almacenamientoFinal(char* rutaArchivo, char* rutaFinal) {
 	//se identifica con el FS
 	send(socketFS, &modulo, sizeof(int), MSG_WAITALL);
 	//arma el array de strings para serializar
-	char **arrayMensajes = malloc(sizeof(char*) * 2);
+	int cantidadMensajes = protocoloCantidadMensajes[TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL];
+	char **arrayMensajes = malloc(sizeof(char*) * cantidadMensajes);
 	arrayMensajes[0] = malloc(string_length(rutaFinal) + 1);
 	strcpy(arrayMensajes[0], rutaFinal);
 	arrayMensajes[1] = malloc(string_length(buffer) + 1);
 	strcpy(arrayMensajes[1], buffer);
+	char* pathIncompleto = partirPath(rutaFinal);
+	arrayMensajes[2] = malloc(string_length(pathIncompleto) + 1);
+	strcpy(arrayMensajes[2], pathIncompleto);
 	//serializa los mensajes y los envía
-	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, 2);
-	liberar_array(arrayMensajes, 2);
+	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, cantidadMensajes);
+	liberar_array(arrayMensajes, cantidadMensajes);
 
 	int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado); //envio el mensaje serializado a FS
 	//log_info(logWorker, "Mensaje almacenamiento final serializado: %s",mensajeSerializado);

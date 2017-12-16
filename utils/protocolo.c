@@ -80,7 +80,7 @@ const int protocoloCantidadMensajes[TIPO_MSJ_CONTENIDO_ARCHIVO_REDUC_GLOBAL + 1]
 		2, //30
 		2, //31
 		2, //32
-		2, //33
+		3, //33
 		0, //34
 		1 //35
 };
