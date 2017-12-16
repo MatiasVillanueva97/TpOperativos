@@ -522,9 +522,13 @@ void enviarPathTemporal(int socketWorker, char* nombreArchivo) {
 
 void traer_temporal_worker(int socketWorker, char* nombreArchivo) {
 	enviarPathTemporal(socketWorker, nombreArchivo);
-	char **arrayArchivo = deserializarMensaje(socketWorker, 1);
+	int32_t headerId = deserializarHeader(socketWorker);
+	int cantidadMensajes = protocoloCantidadMensajes[headerId];
+	char **arrayArchivo = deserializarMensaje(socketWorker, cantidadMensajes);
+	printf("array recibido: %s\n", arrayArchivo[0]);
 	char* path_datos = guardar_datos(arrayArchivo[0], carpeta_resultado_reduccion_local, nombreArchivo);
-	liberar_array(arrayArchivo, 1);
+	liberar_array(arrayArchivo, cantidadMensajes);
+	puts("ya libero array");
 }
 
 int enviar_contenido_archivo(int socketCliente, char* archivo) {
@@ -533,6 +537,7 @@ int enviar_contenido_archivo(int socketCliente, char* archivo) {
 	string_append_with_format(&pathArchivo, "%s/%s", carpeta_resultado_reduccion_local, archivo);
 	log_info(logWorker, "[enviar_contenido_archivo] Path archivo: %s", pathArchivo);
 	char* contenidoArchivo = leerArchivo2(pathArchivo);
+	//char* contenidoArchivo = "materia de mierda\n";
 
 	char **arrayArchivo = malloc(sizeof(char*));
 	arrayArchivo[0] = malloc(string_length(contenidoArchivo) + 1);
@@ -589,10 +594,10 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 	char* path_script = guardar_script_reduccion_global(reductorString, archivoDestino);
 	free(reductorString);
 
-	char* arrayTemporales[cantWorkers];
+	char** arrayTemporales = malloc(sizeof(char*) * cantWorkers);
 
 	//guardo archivos de reduccion local de todos los nodos en /resultadoReduccionLocal
-	for (i = 0; i < cantWorkers; i++) {
+	for (i = 1; i < cantWorkers; i++) {
 		int socketWorker = conectarAWorker(datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
 		int32_t headerIdWorker = handshakeWorker(socketWorker);
 		if (headerIdWorker != TIPO_MSJ_HANDSHAKE_RESPUESTA_OK) {
@@ -600,12 +605,16 @@ void reduccion_global_worker(int headerId, int socketCliente) {
 		} else {
 			log_trace(logWorker, "Conectado al worker con IP: %s y Puerto: %s", datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto);
 			traer_temporal_worker(socketWorker, datosReduccionGlobal[i].temporalReduccionLocal);
-			//copio los nombres de los temporales a aparear para usarlos en la funcion apareo
-			arrayTemporales[i] = malloc(string_length(datosReduccionGlobal[i].temporalReduccionLocal) + 1);
-			strcpy(arrayTemporales[i], datosReduccionGlobal[i].temporalReduccionLocal);
 		}
 	}
-	liberar_estructura(datosReduccionGlobal, cantWorkers);
+
+	//copio los nombres de los temporales a aparear para usarlos en la funcion apareo
+	for (j = 0; j < cantWorkers; j++) {
+		arrayTemporales[j] = malloc(string_length(datosReduccionGlobal[j].temporalReduccionLocal) + 1);
+		strcpy(arrayTemporales[j], datosReduccionGlobal[j].temporalReduccionLocal);
+		printf("nombre temporal: %s\n", arrayTemporales[j]);
+	}
+	//liberar_estructura(datosReduccionGlobal, cantWorkers);
 
 	//guardo archivos apareados en /tmpReduccionGlobal
 	char* path_apareado = string_from_format("%s/origen_%s", carpeta_temporal_reduccion_global, archivoDestino);
