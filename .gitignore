@@ -9,10 +9,8 @@ yama/log
 master/log
 datanode/log
 worker/log
-worker/tmp
-worker/reduccionLocal
-worker/reduccionGlobal
-worker/resultados
+worker/tmp*
+worker/resultado*
 
 ### C ###
 # Prerequisites
