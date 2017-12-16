@@ -2528,12 +2528,13 @@ void soyServidor(char * puerto) {
 							char * path = string_duplicate("../metadata/");
 							string_append(&path, nombre);
 							FILE*ARCHIVOFINAL = fopen(path, "w+");
+							fseek(ARCHIVOFINAL, ftell(ARCHIVOFINAL), SEEK_SET);
 							fwrite(arrayMensajesRecibidos[1],
 									string_length(arrayMensajesRecibidos[1]), 1,
 									ARCHIVOFINAL);
+							fclose(ARCHIVOFINAL);
 							almacenarArchivo(path, arrayMensajesRecibidos[2],
 									0);
-							fclose(ARCHIVOFINAL);
 							char * eliminar = string_duplicate("rm -rf ");
 							string_append(&eliminar, path);
 							system(eliminar);
