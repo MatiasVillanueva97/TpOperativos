@@ -385,7 +385,7 @@ void conectarAWorkerReduccionLocal(void *arg) {
 		j = 0;
 
 		// Serializo script reductor
-		arrayMensajes[j] = malloc(string_length(reductorString));
+		arrayMensajes[j] = malloc(string_length(reductorString) + 1);
 		strcpy(arrayMensajes[j], reductorString);
 		printf("reductor string %s\n:", reductorString);
 		free(reductorString);
@@ -843,7 +843,7 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 
-			case TIPO_MSJ_NO_EXISTE_ARCHIVO_EN_FS : {
+			case TIPO_MSJ_FINALIZAR_JOB : {
 				masterCorriendo = 1;
 				break;
 			}
