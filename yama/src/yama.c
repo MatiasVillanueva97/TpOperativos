@@ -623,10 +623,13 @@ int main(int argc, char *argv[]) {
 		getDatosGlobalesNodo(i)->numero = 0;
 	}
 	for (;;) {
+		//		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) == -1) {
 		socketsLecturaTemp = socketsLecturaMaster;
 		sigemptyset(&emptyset);
-		if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &emptyset) != -1) { // para el manejo de signals, no borrar!
-//		if (select(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL) != -1) {
+		if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &emptyset) == -1) { // para el manejo de signals, no borrar!
+			log_error(logYAMA, "Ocurrió un error en el select() principal");
+			perror("Error en select()");
+		} else {
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
 					if (nroSocket == listenningSocket) {	//conexión nueva
@@ -1213,11 +1216,8 @@ int main(int argc, char *argv[]) {
 					}
 					// END handle data from client
 				} //if (FD_ISSET(i, &socketsLecturaTemp)) END got new incoming connection
-			} //for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) END looping through file descriptors
+			}
 
-			//		} else {
-			//			log_error(logYAMA, "Ocurrió un error en el select() principal");
-			//			perror("Error en select()");
 		}
 
 	}
@@ -1226,14 +1226,14 @@ int main(int argc, char *argv[]) {
 //	} else {
 //		perror("pselect()");
 //	}
-	//sigprocmask()
+//sigprocmask()
 
-	// END for(;;)
+// END for(;;)
 
-	//sigprocmask(SIG_SETMASK, &old_set, NULL);
+//sigprocmask(SIG_SETMASK, &old_set, NULL);
 
-	//cerrarServer(listenningSocket);
-	//cerrarServer(socketCliente);
+//cerrarServer(listenningSocket);
+//cerrarServer(socketCliente);
 	log_info(logYAMA, "Server cerrado");
 	log_destroy(logYAMA);
 	limpiarMemoria();
