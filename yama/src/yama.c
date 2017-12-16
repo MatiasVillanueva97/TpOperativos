@@ -356,14 +356,21 @@ liberarCargaJob(int socketConectado, int nodoFallado) {
 		actualizarCargaGlobalNodo(nodoFallado, 0);
 }
 
-int replanificar(datosMasterJob *masterJobActual, int nroNodoRecibido, int socketConectado, fd_set socketsLecturaMaster) {
+int replanificar(datosMasterJob *masterJobActual, int nroNodoRecibido, int socketConectado) {
 	int i, j, k;
 	int cantBloquesArchivo = masterJobActual->cantBloquesArchivo;
 	//busca las copias y las envía a master
 	//modifica las filas con FIN_OK a FIN_OK_REPLANIFICADO
+	printf("masterJobActual->nroJob: %d\n", masterJobActual->nroJob);
+	printf("masterJobActual->nroMaster: %d\n", masterJobActual->nroMaster);
+	printf("nroNodoRecibido: %d\n", nroNodoRecibido);
+
 	int cantFilasOkReplanificadas = modificarEstadoFilasTablaEstadosByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, FIN_OK, FIN_OK_REPLANIFICADO);
+	printf("cantFilasOkReplanificadas: %d\n", cantFilasOkReplanificadas);
 	//busca la cantidad de transformaciones que tenía asignadas el nodo para replanificarlas
-	int cantFilasParaReplanificar = cantFilasOkReplanificadas + getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, ERROR);
+	int lalala = getCantFilasByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoRecibido, TRANSFORMACION, ERROR);
+	printf("lalala: %d\n", lalala);
+	int cantFilasParaReplanificar = cantFilasOkReplanificadas + lalala;
 
 	struct filaTablaEstados filasReplanifTransf[cantFilasParaReplanificar];
 
@@ -378,6 +385,8 @@ int replanificar(datosMasterJob *masterJobActual, int nroNodoRecibido, int socke
 	filaBusqueda.siguiente = NULL;
 	//busca las filas a replanificar en la tabla de estados
 	int cantFilasEncontradas = buscarMuchosElemTablaEstados(filasReplanifTransf, filaBusqueda);
+	printf("cantFilasEncontradas: %d\n", cantFilasEncontradas);
+	printf("cantFilasParaReplanificar: %d\n", cantFilasParaReplanificar);
 	if (cantFilasEncontradas == 0) {
 		puts("no se encontró ninguna fila de la tabla de estados para hacer la replanificación");
 		log_error(logYAMA, "No se encontró ninguna fila de la tabla de estados para hacer la replanificación");
@@ -421,16 +430,23 @@ int replanificar(datosMasterJob *masterJobActual, int nroNodoRecibido, int socke
 			}
 		}
 		//si no se pudo encontrar algún nodo suplente se aborta el job
-		if (!nodoSuplenteEncontrado) {
-			enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
-			liberarCargaJob(socketConectado, nroNodoRecibido);
-			//elimino el elemento con el socketConectado de la lista de datosMasterJob
-			eliminarElemDatosMasterJobByFD(socketConectado);
-			cerrarCliente(socketConectado);
-			FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+		if (nodoSuplenteEncontrado) {
+			puts("No se pudo encontrar un nodo suplente. Se aborta el Job");
+			log_error(logYAMA, "No se pudo encontrar un nodo suplente. Se aborta el Job");
 			mostrarTablaEstados();
 			abortado = 1;
-			break;
+			//disminuye la cantidad de nodos usados por el Job debido al que se cayó
+			masterJobActual->cantNodosUsados--;
+			int cantNodosUsados = masterJobActual->cantNodosUsados;
+
+			//marca la reducción local en los nodos replanificados
+			int nodosRecargados[cantNodosRecargados];
+			for (i = 0; i < cantNodosRecargados; i++) {
+				nodosRecargados[i] = nodosRecargadosAuxiliar[i];
+				//tengo que buscar las filas por master, job, nodo, etapa reduccion local, estado fin_ok y ponerle replanificado
+				modificarEstadoFilasTablaEstadosByJMNEtEs(masterJobActual->nroJob, masterJobActual->nroMaster, nodosRecargados[i], REDUCC_LOCAL, FIN_OK, FIN_OK_REPLANIFICADO);
+			}
+			return -2;
 		}
 	}
 	/*
@@ -516,6 +532,7 @@ int replanificar(datosMasterJob *masterJobActual, int nroNodoRecibido, int socke
 			asignarNodoReduccGlobal(nodosUsadosAuxiliar[0].numero, socketConectado);
 		}
 	}
+	return 1;
 }
 
 int main(int argc, char *argv[]) {
@@ -629,6 +646,7 @@ int main(int argc, char *argv[]) {
 		if (pselect(maxFD + 1, &socketsLecturaTemp, NULL, NULL, NULL, &emptyset) == -1) { // para el manejo de signals, no borrar!
 			log_error(logYAMA, "Ocurrió un error en el select() principal");
 			perror("Error en select()");
+			break;
 		} else {
 			for (nroSocket = 0; nroSocket <= maxFD; nroSocket++) {
 				if (FD_ISSET(nroSocket, &socketsLecturaTemp)) {
@@ -880,10 +898,22 @@ int main(int argc, char *argv[]) {
 								mostrarTablaEstados();
 							} else if (cantidadFilasTransformacionEnProceso == 0 && cantidadFilasTransformacionError > 0) {
 								//replanificar
-								if (replanificar(masterJobActual, nroNodoRecibido, socketConectado, socketsLecturaMaster) < 0) {
+								int resultado = replanificar(masterJobActual, nroNodoRecibido, socketConectado);
+								if (resultado < 0) {
 									puts("error al replanificar");
 									log_error(logYAMA, "Ocurrió un error al replanificar el nodo %d", nroNodoRecibido);
+									if (resultado == -2) {
+										enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+										liberarCargaJob(socketConectado, nroNodoRecibido);
+										//elimino el elemento con el socketConectado de la lista de datosMasterJob
+										eliminarElemDatosMasterJobByFD(socketConectado);
+										cerrarCliente(socketConectado);
+										FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+										mostrarTablaEstados();
+										break;
+									}
 								}
+
 							}
 							break;
 						case TIPO_MSJ_TRANSFORMACION_ERROR:
@@ -936,10 +966,22 @@ int main(int argc, char *argv[]) {
 								 * si no es así verifica que no haya transformaciones en proceso
 								 * en cuyo caso inicia la replanificación
 								 */
-								if (replanificar(masterJobActual, nroNodoRecibido, socketConectado, socketsLecturaMaster) < 0) {
+								int resultado = replanificar(masterJobActual, nroNodoRecibido, socketConectado);
+								if (resultado < 0) {
 									puts("error al replanificar");
 									log_error(logYAMA, "Ocurrió un error al replanificar el nodo %d", nroNodoRecibido);
+									if (resultado == -2) {
+										enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+										liberarCargaJob(socketConectado, nroNodoRecibido);
+										//elimino el elemento con el socketConectado de la lista de datosMasterJob
+										eliminarElemDatosMasterJobByFD(socketConectado);
+										cerrarCliente(socketConectado);
+										FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
+										mostrarTablaEstados();
+										break;
+									}
 								}
+
 							}
 							break;
 
