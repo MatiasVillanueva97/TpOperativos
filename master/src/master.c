@@ -140,7 +140,7 @@ void enviarArchivoYama(int socket, char *archivo) {
 //	fclose(fp);
 //	return archivoString;
 //}
-
+/*
 char * leerArchivo(char * ubicacionArchivo) {
 	//log_info(logWorker, "[leerArchivo] Leyendo archivo: %s", ubicacionArchivo);
 	FILE *fp;
@@ -153,7 +153,7 @@ char * leerArchivo(char * ubicacionArchivo) {
 	fseek(fp, 0, SEEK_END);
 	long lengthArchivo = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	char *archivoString = malloc(sizeof(char) * (lengthArchivo));
+	char *archivoString = malloc(sizeof(char) * (lengthArchivo + 1));
 	if (archivoString) {
 		fread(archivoString, 1, lengthArchivo, fp);
 	} else {
@@ -162,6 +162,29 @@ char * leerArchivo(char * ubicacionArchivo) {
 	fclose(fp);
 	//log_info(logWorker, "[leerArchivo] Archivo leido: %s, largo string: %d", pathArchivo, string_length(archivoString));
 	return archivoString;
+}
+*/
+char* leerArchivo(char* pathArchivo) {
+	//log_info(logWorker, "[leerArchivo] Leyendo archivo: %s", pathArchivo);
+	//printf("hola\n");
+	char caracter;
+	//printf("cree caracter\n");
+	char* contenido = string_new();
+	//printf("cree char*\n");
+	//printf("antes de abrir\n");
+	FILE* archivo = fopen(pathArchivo, "r");
+	//printf("entra al while\n");
+	while (1) {
+		caracter = fgetc(archivo);
+		if (caracter == EOF) {
+			break;
+		}
+		string_append_with_format(&contenido, "%c", caracter);
+	}
+	printf("sale del while\n");
+	fclose(archivo);
+	//log_info(logWorker, "[leerArchivo] Archivo leido: %s", pathArchivo);
+	return contenido;
 }
 
 //LISTO
