@@ -27,6 +27,7 @@ char* obtenerNombreDirectorio(char** rutaDesmembrada) {
 }
 
 void persistirDirectorio() {
+	log_info(logFs,"Persistiendo Directorios");
 	char* path = string_new();
 	char * puerto = config_get_string_value(configFs, "PATH_METADATA");
 	string_append(&path, "../");
@@ -56,6 +57,7 @@ void persistirDirectorio() {
 }
 
 void persistirRegistroArchivo() {
+
 	char* path = string_new();
 	string_append(&path, "../");
 	string_append(&path, config_get_string_value(configFs, "PATH_ARCHIVOS"));
@@ -78,7 +80,7 @@ void persistirRegistroArchivo() {
 }
 
 void persistirArchivos(tablaArchivo * elemento) {
-
+	log_info(logFs,"Persistiendo Archivos");
 	char* path = string_new();
 	string_append(&path, "../");
 	string_append(&path, config_get_string_value(configFs, "PATH_ARCHIVOS"));
@@ -185,6 +187,7 @@ void persistirArchivos(tablaArchivo * elemento) {
 }
 
 void cargarDirectorio(t_config* archivoDirectorio) {
+	log_info(logFs,"Recuperando Directorios");
 	uint32_t cantidadDeDirectorio = config_keys_amount(archivoDirectorio);
 	uint32_t posicion = 0;
 	while (posicion < cantidadDeDirectorio) {
@@ -205,6 +208,7 @@ void cargarDirectorio(t_config* archivoDirectorio) {
 }
 
 void cargarTablaArchivo(char* pathArchivo) {
+	log_info(logFs,"Recuperando Archivos");
 	char** rutaDesmembrada = string_split(pathArchivo, "/");
 	char* nombreArchivo = obtenerNombreDirectorio(rutaDesmembrada);
 
@@ -297,6 +301,7 @@ void cargarEstructuraArchivos(t_config* archivoRegistroArchivos) {
 				archivoRegistroArchivos, etiqueta);
 		cargarTablaArchivo(pathArchivoSeleccionado);
 		posicion++;
+
 	}
 }
 
@@ -620,7 +625,7 @@ int deleteDirectory(char* directoryToDelete) {
 				list_add(listaDirectorios, newDirectory);
 				liberarArrayComando(rutaDesmembrada);
 				persistirDirectorio();
-				printf("Se creo correctamente el directorio");
+				log_info(logFs, "Se creo el directorio %s", ruta);
 				return 1;
 			} else {
 				printf("No se pudo crear el directorio, se llego al limite");
@@ -928,30 +933,32 @@ tablaArchivo * buscarArchivoPorNombre(char * nombreArchivo) {
 	return archivoEncontrado;
 }
 
-tablaArchivo * buscarArchivoPorNombreYRuta (char * nombreArchivo,char * ruta,int tipo) {
+tablaArchivo * buscarArchivoPorNombreYRuta(char * nombreArchivo, char * ruta,
+		int tipo) {
 
-if(tipo==0){
+	if (tipo == 0) {
 
-	bool buscarEnLISTA(tablaArchivo * elemento) {
-		printf("Ruta ADENTRO %s",elemento->rutafs);
-		return strcmp(elemento->nombre, nombreArchivo) == 0 && strcmp(elemento->rutafs,ruta)==0;
-	}
-	tablaArchivo * archivoEncontrado = list_find(tablaArchivos,
-			(void*) buscarEnLISTA);
-	return archivoEncontrado;
-}else{
-	if(tipo==1){
-		char * rutaCompleta = string_duplicate(ruta);
-			string_append(&rutaCompleta,nombreArchivo);
+		bool buscarEnLISTA(tablaArchivo * elemento) {
+			return strcmp(elemento->nombre, nombreArchivo) == 0
+					&& strcmp(elemento->rutafs, ruta) == 0;
+		}
+		tablaArchivo * archivoEncontrado = list_find(tablaArchivos,
+				(void*) buscarEnLISTA);
+		return archivoEncontrado;
+	} else {
+		if (tipo == 1) {
+			char * rutaCompleta = string_duplicate(ruta);
+			string_append(&rutaCompleta, nombreArchivo);
 
 			bool buscarEnLISTA(tablaArchivo * elemento) {
-				return strcmp(elemento->nombre, nombreArchivo) == 0 && strcmp(elemento->rutafs,rutaCompleta)==0;
+				return strcmp(elemento->nombre, nombreArchivo) == 0
+						&& strcmp(elemento->rutafs, rutaCompleta) == 0;
 			}
 			tablaArchivo * archivoEncontrado = list_find(tablaArchivos,
 					(void*) buscarEnLISTA);
 			return archivoEncontrado;
+		}
 	}
-}
 
 }
 
@@ -1063,7 +1070,6 @@ void registrarNodo(int socketData) {
 
 	if (estadoAnterior == 0) {
 		if (formateado == 0) { //dejo conectar a cualquiera
-			printf("Entra Cualquiera \n");
 			crearBitmapDeNodosConectados(nombre, cantBloques);
 			tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(
 					arrayMensajesRecibidos[0]);
@@ -1081,7 +1087,6 @@ void registrarNodo(int socketData) {
 		}
 		if (formateado == 1 && estadoEstable == 1) {
 			if (buscarEnListaDeFormat(arrayMensajesRecibidos[0])) {
-				printf("Formateado entra por aca \n");
 				crearBitmapDeNodosConectados(nombre, cantBloques);
 				tablaBitmapXNodos * nodoConBitmap = buscarNodoPorNombreB(
 						arrayMensajesRecibidos[0]);
@@ -1104,7 +1109,7 @@ void registrarNodo(int socketData) {
 	}
 	if (estadoAnterior == 1) {
 
-		if(formateado==0){
+		if (formateado == 0) {
 			if (buscarEnListaAnterior(arrayMensajesRecibidos[0])) {
 
 				crearBitmapDeNodosConectados(nombre, cantBloques);
@@ -1114,18 +1119,19 @@ void registrarNodo(int socketData) {
 				nodo->nodo = arrayMensajesRecibidos[0];
 				nodo->ip = arrayMensajesRecibidos[2];
 				nodo->libre = cantidadDeBloquesLibresEnBitmap(
-						nodoConBitmap->bitarray, atoi(arrayMensajesRecibidos[1]));
+						nodoConBitmap->bitarray,
+						atoi(arrayMensajesRecibidos[1]));
 				nodo->puerto = arrayMensajesRecibidos[3];
 				nodo->socket = socketData;
 				nodo->total = atoi(arrayMensajesRecibidos[1]);
 				list_add(tablaNodos, nodo);
 				list_add(listaDeNodosDeFormateo, arrayMensajesRecibidos[0]);
-				printf("entro sin formatear ,estado anterior,agrego al nodo %s \n",nodo->nodo);
 			} else {
-				enviarHeaderSolo(socketData, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
+				enviarHeaderSolo(socketData,
+						TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
 			}
 		}
-		if(formateado==1){
+		if (formateado == 1) {
 			if (buscarEnListaDeFormat(arrayMensajesRecibidos[0])) {
 
 				crearBitmapDeNodosConectados(nombre, cantBloques);
@@ -1135,45 +1141,37 @@ void registrarNodo(int socketData) {
 				nodo->nodo = arrayMensajesRecibidos[0];
 				nodo->ip = arrayMensajesRecibidos[2];
 				nodo->libre = cantidadDeBloquesLibresEnBitmap(
-						nodoConBitmap->bitarray, atoi(arrayMensajesRecibidos[1]));
+						nodoConBitmap->bitarray,
+						atoi(arrayMensajesRecibidos[1]));
 				nodo->puerto = arrayMensajesRecibidos[3];
 				nodo->socket = socketData;
 				nodo->total = atoi(arrayMensajesRecibidos[1]);
 				list_add(tablaNodos, nodo);
-				printf("Entro formateado ,estado anterior, nodo %s \n",nodo->nodo);
 			} else {
-				enviarHeaderSolo(socketData, TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
+				enviarHeaderSolo(socketData,
+						TIPO_MSJ_HANDSHAKE_RESPUESTA_DENEGADO);
 			}
 		}
-    	if(estadoEstable==1){
+		if (estadoEstable == 1) {
 
-    	}else  {
-    		if(estadoEstableFuncion()){
-    		        		config_set_value(configFs,"ESTADO_ESTABLE","1");
-    		        		config_save(configFs);
-    		        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
-    		        		printf("Noasdasdasdcopia de cada archivo , Estado  estable\n");
-    		        	}else{
-    		        		printf("No hay al menos una copia de cada archivo , Estado no estable\n");
-    		        	}
-    	}
-
-    	if(estadoEstable==1){
-
-    	}else  {
-    		if(estadoEstableFuncion()){
-    		        		config_set_value(configFs,"ESTADO_ESTABLE","1");
-    		        		config_save(configFs);
-    		        		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
-    		        		printf("Noasdasdasdcopia de cada archivo , Estado  estable\n");
-    		        	}else{
-    		        		printf("No hay al menos una copia de cada archivo , Estado no estable\n");
-    		        	}
-    	}
-
+		} else {
+			if (estadoEstableFuncion()) {
+				config_set_value(configFs, "ESTADO_ESTABLE", "1");
+				config_save(configFs);
+				estadoEstable = config_get_int_value(configFs,
+						"ESTADO_ESTABLE");
+				printf("Con la conexion de %s ,se genero un Estado  estable\n",
+						arrayMensajesRecibidos[0]);
+				log_info(logFs,
+						"Con la conexion de %s ,se genero un Estado  estable\n",
+						arrayMensajesRecibidos[0]);
+			} else {
+				printf(
+						"No hay al menos una copia de cada archivo , Estado no estable\n");
+			}
 		}
 
-
+	}
 
 }
 
@@ -1207,7 +1205,8 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 
 	printf("Se procede a almacenar el archivo %s en %s.\n",
 			nuevoArchivo->nombre, PathDirectorio);
-
+	log_info(logFs, "Se procede a almacenar el archivo %s en %s.\n",
+			nuevoArchivo->nombre, PathDirectorio);
 	nuevoArchivo->bloqueCopias = list_create();
 	nuevoArchivo->tamanio = tamano;
 	nuevoArchivo->directorioPadre = obtenerDirectorioPadre(rutaDirectorio);
@@ -1225,15 +1224,12 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 			if (tamano > 0 && tamano < 1048576) {
 
 				fread(contenidoAEnviar, 1048576, 1, archivo);
-				printf("%d\n", tamano);
 				tablaBitmapXNodos * nodo2 = obtenerNodoConMayorPosicionLibre();
 				ContenidoXNodo * nodoBuscado3 = buscarNodoPorNombreS(
 						nodo2->nodo);
 				int posicion1 = buscarPosicionLibre(nodo2->bitarray,
 						nodo2->cantidadBloques);
 				bitarray_set_bit(nodo2->bitarray, posicion1);
-				printf("Guarde original en %s\n", nodo2->nodo);
-				printf("\n");
 
 				ContenidoBloque * contenido3 = malloc(sizeof(ContenidoBloque));
 				contenido3->bytes = tamano;
@@ -1279,7 +1275,6 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados = enviarMensaje(nodoBuscado3->socket,
 						mensajeSerializado);
-				printf("bytes enviados: %d\n", bytesEnviados);
 				liberarArray(arrayMensajesSerializar, cantStrings);
 				free(mensajeSerializado);
 
@@ -1291,8 +1286,6 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 				int posicion2 = buscarPosicionLibre(nodo3->bitarray,
 						nodo3->cantidadBloques);
 				bitarray_set_bit(nodo3->bitarray, posicion2);
-				printf("Guarde copia en %s\n", nodo3->nodo);
-				printf("\n");
 				ContenidoBloque * contenido4 = malloc(sizeof(ContenidoBloque));
 				contenido4->bytes = tamano;
 				contenido4->bloque = posicion2;
@@ -1337,7 +1330,6 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados1 = enviarMensaje(nodobuscado4->socket,
 						mensajeSerializado1);
-				printf("bytes enviados: %d\n", bytesEnviados1);
 				liberarArray(arrayMensajesSerializar1, cantStrings1);
 				free(mensajeSerializado1);
 				//SEND - Copia
@@ -1351,8 +1343,6 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 				int posicion0 = buscarPosicionLibre(nodo->bitarray,
 						nodo->cantidadBloques);
 				bitarray_set_bit(nodo->bitarray, posicion0);
-				printf("Guarde original en %s\n", nodo->nodo);
-				printf("\n");
 
 				contenido->bytes = 1048576;
 				contenido->bloque = posicion0;
@@ -1400,7 +1390,6 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados = enviarMensaje(nodoBuscado->socket,
 						mensajeSerializado);
-				printf("bytes enviados: %d\n", bytesEnviados);
 				liberarArray(arrayMensajesSerializar, cantStrings);
 				free(mensajeSerializado);
 				//SEND
@@ -1411,8 +1400,6 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 				int posicion7 = buscarPosicionLibre(nodo1->bitarray,
 						nodo1->cantidadBloques);
 				bitarray_set_bit(nodo1->bitarray, posicion7);
-				printf("Guarde copia en %s\n", nodo1->nodo);
-				printf("\n");
 
 				ContenidoBloque * contenido2 = malloc(sizeof(ContenidoBloque));
 				contenido2->bytes = 1048576;
@@ -1458,7 +1445,6 @@ void partirArchivoBinario(char* PATH, char * PathDirectorio) {
 				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados1 = enviarMensaje(nodoBuscado2->socket,
 						mensajeSerializado1);
-				printf("bytes enviados: %d\n", bytesEnviados1);
 				liberarArray(arrayMensajesSerializar1, cantStrings1);
 				free(mensajeSerializado1);
 				//SEND - Copia
@@ -1510,6 +1496,8 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 	char** rutaDirectorio = string_split(PathDirectorio, "/");
 
 	printf("Se procede a almacenar el archivo %s en %s.\n",
+			nuevoArchivo->nombre, PathDirectorio);
+	log_info(logFs, "Se procede a almacenar el archivo %s en %s.\n",
 			nuevoArchivo->nombre, PathDirectorio);
 
 	if (sumatoriaDeBloquesLibres() >= (cantidadBloquesAMandar(PATH)) * 2) {
@@ -1570,8 +1558,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				int posicion0 = buscarPosicionLibre(nodo->bitarray,
 						nodo->cantidadBloques);
 				bitarray_set_bit(nodo->bitarray, posicion0);
-				printf("Guarde original en %s\n", nodo->nodo);
-				printf("\n");
 
 				contenido->bytes = *posicion;
 				contenido->bloque = posicion0;
@@ -1619,7 +1605,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados = enviarMensaje(nodoBuscado->socket,
 						mensajeSerializado);
-				printf("bytes enviados: %d\n", bytesEnviados);
 				liberarArray(arrayMensajesSerializar, cantStrings);
 				free(mensajeSerializado);
 				//SEND
@@ -1630,8 +1615,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				int posicion7 = buscarPosicionLibre(nodo1->bitarray,
 						nodo1->cantidadBloques);
 				bitarray_set_bit(nodo1->bitarray, posicion7);
-				printf("Guarde copia en %s\n", nodo1->nodo);
-				printf("\n");
 
 				ContenidoBloque * contenido2 = malloc(sizeof(ContenidoBloque));
 				contenido2->bytes = *posicion;
@@ -1677,7 +1660,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados1 = enviarMensaje(nodoBuscado2->socket,
 						mensajeSerializado1);
-				printf("bytes enviados: %d\n", bytesEnviados1);
 				liberarArray(arrayMensajesSerializar1, cantStrings1);
 				free(mensajeSerializado1);
 				//SEND - Copia
@@ -1700,8 +1682,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				int posicion1 = buscarPosicionLibre(nodo2->bitarray,
 						nodo2->cantidadBloques);
 				bitarray_set_bit(nodo2->bitarray, posicion1);
-				printf("Guarde original en %s\n", nodo2->nodo);
-				printf("\n");
 
 				ContenidoBloque * contenido3 = malloc(sizeof(ContenidoBloque));
 				contenido3->bytes = (*posicion) - posicionAnterior;
@@ -1744,10 +1724,8 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				i++;
 				char *mensajeSerializado = serializarMensaje(TIPO_MSJ_ARCHIVO,
 						arrayMensajesSerializar, cantStrings);
-				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados = enviarMensaje(nodoBuscado3->socket,
 						mensajeSerializado);
-				printf("bytes enviados: %d\n", bytesEnviados);
 				liberarArray(arrayMensajesSerializar, cantStrings);
 				free(mensajeSerializado);
 				//SEND
@@ -1761,8 +1739,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				int posicion2 = buscarPosicionLibre(nodo3->bitarray,
 						nodo3->cantidadBloques);
 				bitarray_set_bit(nodo3->bitarray, posicion2);
-				printf("Guarde copia en %s\n", nodo3->nodo);
-				printf("\n");
 				ContenidoBloque * contenido4 = malloc(sizeof(ContenidoBloque));
 				contenido4->bytes = (*posicion) - posicionAnterior;
 				contenido4->bloque = posicion2;
@@ -1807,7 +1783,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 				//printf("%s\n",mensajeSerializado);
 				int bytesEnviados1 = enviarMensaje(nodobuscado4->socket,
 						mensajeSerializado1);
-				printf("bytes enviados: %d\n", bytesEnviados1);
 				liberarArray(arrayMensajesSerializar1, cantStrings1);
 				free(mensajeSerializado1);
 				//SEND - Copia
@@ -1835,41 +1810,40 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 
 void almacenarArchivo(char * PATH, char * pathDirectorio, int TipoArchivo) {
 	char * nombre = conseguirNombreDePath(PATH);
-	printf("%s\n",pathDirectorio);
-	tablaArchivo * archivoEcontrado = buscarArchivoPorNombreYRuta(nombre,pathDirectorio,1);
-	if(archivoEcontrado==NULL){
+	printf("%s\n", pathDirectorio);
+	tablaArchivo * archivoEcontrado = buscarArchivoPorNombreYRuta(nombre,
+			pathDirectorio, 1);
+	if (archivoEcontrado == NULL) {
 		FILE * Archivo = fopen(PATH, "r+");
-			if (Archivo == NULL) {
-				printf("Argumento 'Ruta del archivo' no valido\n");
-			} else {
-				if (existeDirectorio(pathDirectorio)) {
-					if (TipoArchivo == 1) {
-						partirArchivoBinario(PATH, pathDirectorio);
-					} else {
-						if (TipoArchivo == 0) {
-
-							partirArchivoDeTexto(PATH, pathDirectorio);
-						} else {
-							printf("Argumento 'Tipo de archivo' no valido\n");
-						}
-					}
+		if (Archivo == NULL) {
+			printf("Argumento 'Ruta del archivo' no valido\n");
+		} else {
+			if (existeDirectorio(pathDirectorio)) {
+				if (TipoArchivo == 1) {
+					partirArchivoBinario(PATH, pathDirectorio);
 				} else {
-					printf("Argumento 'Directorio de yamafs' no valido\n");
-				}
-			}
-	}else{
+					if (TipoArchivo == 0) {
 
-		printf("Ya existe el archivo %s en el directorio %s \n",nombre,pathDirectorio);
+						partirArchivoDeTexto(PATH, pathDirectorio);
+					} else {
+						printf("Argumento 'Tipo de archivo' no valido\n");
+					}
+				}
+			} else {
+				printf("Argumento 'Directorio de yamafs' no valido\n");
+			}
+		}
+	} else {
+
+		printf("Ya existe el archivo %s en el directorio %s \n", nombre,
+				pathDirectorio);
 
 	}
-
 
 }
 
 int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 	char * nombre = conseguirNombreDePath(nombreArchivo);
-	printf("%s\n", nombre);
-	printf("%s\n", PATH);
 	struct stat st = { 0 };
 
 	if (tipo == 0) {
@@ -1886,14 +1860,12 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 				int b[list_size(archivoABuscar->bloqueCopias)];
 
 				bool estadoEstablePorArchivo() {
-					printf("elemento.nombre %s\n", archivoABuscar->nombre);
 					int i = 0;
 					int vecta = 0;
 					int vectb = 0;
 					int count = 0;
 					void porBloquesDeArchivo(ContenidoBloque * elementoInterno) {
 						if (i % 2 == 0) {
-							printf("%s\n", elementoInterno->nodo);
 							ContenidoXNodo * hola = buscarNodoPorNombreS(
 									elementoInterno->nodo);
 							if (hola == NULL) {
@@ -1907,7 +1879,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 
 							ContenidoXNodo * hola = buscarNodoPorNombreS(
 									elementoInterno->nodo);
-							printf("%s\n", elementoInterno->nodo);
 
 							if (hola == NULL) {
 								b[vectb] = 0;
@@ -1945,7 +1916,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 					string_append(&pathconArchivo, PATH);
 					string_append(&pathconArchivo, "/");
 					string_append(&pathconArchivo, nombre);
-					printf("%s\n", pathconArchivo);
 					FILE * archivo = fopen(pathconArchivo, "w+");
 
 					void buscar(ContenidoBloque * elemento) {
@@ -1958,9 +1928,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 							//mando el bloque que quiero leer
 							int cantStrings = 1;
 							int numeroDeBLoqueQueQuiero = elemento->bloque;
-							printf(
-									" numeroDeBLoqueQueQuiero  %d del nodo %s \n",
-									numeroDeBLoqueQueQuiero, elemento->nodo);
 							char * NumeroDeBloqueDondeGuardarString =
 									intToArrayZerosLeft(numeroDeBLoqueQueQuiero,
 											4);
@@ -1985,7 +1952,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 							//printf("%s\n",mensajeSerializado);
 							int bytesEnviados = enviarMensaje(
 									nodoEncontrado->socket, mensajeSerializado);
-							printf("bytes enviados: %d\n", bytesEnviados);
 							liberarArray(arrayMensajesSerializar, cantStrings);
 							free(mensajeSerializado);
 							////mando el bloque que quiero leer
@@ -1999,8 +1965,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 							char ** arrayMensajesRecibidos =
 									deserializarMensaje(nodoEncontrado->socket,
 											cantMensajesRecibidos);
-							printf("llegue aca \n");
-							printf("%d\n", countSplit(arrayMensajesRecibidos));
 							void * contenidoAEscribir =
 									arrayMensajesRecibidos[0];
 							//arrayDeOriginalesYcopias[j] = string_substring(arrayMensajesRecibidos[0],0,elemento->bytes);
@@ -2017,7 +1981,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 										liberarArray(arrayMensajesRecibidos, 1);
 										vectora++;
 									} else {
-										printf("soy par pero a es 0\n");
 									}
 								} else {					//impar
 									if (vectora > vectorb) {
@@ -2034,7 +1997,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 													1);
 											vectorb++;
 										} else {
-											printf("soy impar pero b es 0\n");
 										}
 									}
 
@@ -2050,7 +2012,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 										liberarArray(arrayMensajesRecibidos, 1);
 										vectora++;
 									} else {
-										printf("soy par pero a es 0\n");
 									}
 								} else {					//impar
 									if (vectora > vectorb) {
@@ -2068,7 +2029,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 													1);
 											vectorb++;
 										} else {
-											printf("soy impar pero b es 0\n");
 										}
 									}
 
@@ -2106,7 +2066,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 					int b[list_size(archivoABuscar->bloqueCopias)];
 
 					bool estadoEstablePorArchivo() {
-						printf("elemento.nombre %s\n", archivoABuscar->nombre);
 						int i = 0;
 						int vecta = 0;
 						int vectb = 0;
@@ -2128,7 +2087,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 
 								ContenidoXNodo * hola = buscarNodoPorNombreS(
 										elementoInterno->nodo);
-								printf("%s\n", elementoInterno->nodo);
 
 								if (hola == NULL) {
 									b[vectb] = 0;
@@ -2166,7 +2124,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 						string_append(&pathconArchivo, PATH);
 						string_append(&pathconArchivo, "/");
 						string_append(&pathconArchivo, nombre);
-						printf("%s\n", pathconArchivo);
 						FILE * archivo = fopen(pathconArchivo, "w+");
 
 						void buscar(ContenidoBloque * elemento) {
@@ -2179,10 +2136,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 								//mando el bloque que quiero leer
 								int cantStrings = 1;
 								int numeroDeBLoqueQueQuiero = elemento->bloque;
-								printf(
-										" numeroDeBLoqueQueQuiero  %d del nodo %s \n",
-										numeroDeBLoqueQueQuiero,
-										elemento->nodo);
 								char * NumeroDeBloqueDondeGuardarString =
 										intToArrayZerosLeft(
 												numeroDeBLoqueQueQuiero, 4);
@@ -2209,7 +2162,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 								int bytesEnviados = enviarMensaje(
 										nodoEncontrado->socket,
 										mensajeSerializado);
-								printf("bytes enviados: %d\n", bytesEnviados);
 								liberarArray(arrayMensajesSerializar,
 										cantStrings);
 								free(mensajeSerializado);
@@ -2225,14 +2177,12 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 										deserializarMensaje(
 												nodoEncontrado->socket,
 												cantMensajesRecibidos);
-								printf("llegue aca \n");
-								printf("%d\n",
-										countSplit(arrayMensajesRecibidos));
 								void * contenidoAEscribir =
 										arrayMensajesRecibidos[0];
 								//arrayDeOriginalesYcopias[j] = string_substring(arrayMensajesRecibidos[0],0,elemento->bytes);
 								//printf("%s",arrayMensajesRecibidos[0]);
 								//getchar();
+
 								//recibo el buffer
 
 								if (archivoABuscar->tipo == 1) {
@@ -2246,7 +2196,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 													1);
 											vectora++;
 										} else {
-											printf("soy par pero a es 0\n");
 										}
 									} else {					//impar
 										if (vectora > vectorb) {
@@ -2266,8 +2215,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 														1);
 												vectorb++;
 											} else {
-												printf(
-														"soy impar pero b es 0\n");
 											}
 										}
 
@@ -2284,7 +2231,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 													1);
 											vectora++;
 										} else {
-											printf("soy par pero a es 0\n");
 										}
 									} else {					//impar
 										if (vectora > vectorb) {
@@ -2305,8 +2251,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 														1);
 												vectorb++;
 											} else {
-												printf(
-														"soy impar pero b es 0\n");
 											}
 										}
 
@@ -2336,26 +2280,18 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 }
 
 void enviarInfoBloques(int socketCliente, int headerId) {
-	printf("id: %d\n", headerId);
-	printf("mensaje predefinido: %s\n",
-			protocoloMensajesPredefinidos[headerId]);
 	int cantidadMensajes = protocoloCantidadMensajes[headerId];
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes);
 	char *archivo = malloc(string_length(arrayMensajes[0]) + 1);
 	strcpy(archivo, arrayMensajes[0]);
-	printf("%s \n",arrayMensajes[0]);
-
 
 	char * nombre = conseguirNombreDePath(archivo);
-	printf("archivo: %s\n", nombre);
-	tablaArchivo * archivoRecibido = buscarArchivoPorNombreYRuta(nombre,arrayMensajes[0],0);
-	if(archivoRecibido==NULL){
+	tablaArchivo * archivoRecibido = buscarArchivoPorNombreYRuta(nombre,
+			arrayMensajes[0], 0);
+	if (archivoRecibido == NULL) {
 		//algun header enviarHeaderSolo(socketCliente,)
-	}else {
+	} else {
 
-		printf("NOMBRE archivo %s\n",archivoRecibido->nombre);
-		printf("ruta archivo %s \n",archivoRecibido->rutafs);
-		sleep(1);
 		//int cantBloquesFiles = cantidadBloquesAMandar(archivo);	//path completo yamafs:
 		int cantBloquesFiles = archivoRecibido->cantidadDeBLoquesaMandar;
 		char *cantBloquesFileString = intToArrayZerosLeft(cantBloquesFiles, 4);
@@ -2403,9 +2339,7 @@ void enviarInfoBloques(int socketCliente, int headerId) {
 
 		char *mensajeSerializado = serializarMensaje(TIPO_MSJ_METADATA_ARCHIVO,
 				arrayMensajesSerializar, cantStrings);
-		printf("mensaje serializado: %s\n", mensajeSerializado);
 		int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);
-		printf("bytes enviados: %d\n", bytesEnviados);
 	}
 
 }
@@ -2413,9 +2347,7 @@ void enviarInfoBloques(int socketCliente, int headerId) {
 void enviarInfoNodos(int socketCliente) {
 
 	int cantidadNodos = list_size(tablaNodos);	//path completo yamafs:
-	printf("cantBloquesFiles: %d\n", cantidadNodos);
 	char * cantidadNodosString = intToArrayZerosLeft(cantidadNodos, 4);
-	printf("cantBloquesFileString: %s\n", cantidadNodosString);
 	int cantMensajePorNodo = 3;
 	int cantStrings = 1 + cantMensajePorNodo * cantidadNodos;
 	int i;
@@ -2426,7 +2358,6 @@ void enviarInfoNodos(int socketCliente) {
 	if (!arrayMensajesSerializar[i])
 		perror("error de malloc 1");
 	strcpy(arrayMensajesSerializar[i], cantidadNodosString);
-	printf("arrayMensajesSerializar[0]: %s\n", arrayMensajesSerializar[0]);
 	i++;
 	void impresion(ContenidoXNodo * elemento) {
 
@@ -2456,15 +2387,12 @@ void enviarInfoNodos(int socketCliente) {
 
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_DATOS_CONEXION_NODOS,
 			arrayMensajesSerializar, cantStrings);
-	printf("mensaje serializado: %s\n", mensajeSerializado);
 	int bytesEnviados = enviarMensaje(socketCliente, mensajeSerializado);
-	printf("bytes enviados: %d\n", bytesEnviados);
 }
 
 bool estadoEstableFuncion() {
 	int countGeneral = 0;
 	void porArchivo(tablaArchivo * elemento) {
-		printf("\n elemento.nombre %s\n", elemento->nombre);
 		int i = 0;
 		int vecta = 0;
 		int vectb = 0;
@@ -2473,7 +2401,6 @@ bool estadoEstableFuncion() {
 		int b[list_size(elemento->bloqueCopias)];
 		void porBloquesDeArchivo(ContenidoBloque * elementoInterno) {
 			if (i % 2 == 0) {
-				printf("%s\n", elementoInterno->nodo);
 				ContenidoXNodo * hola = buscarNodoPorNombreS(
 						elementoInterno->nodo);
 				if (hola == NULL) {
@@ -2487,7 +2414,6 @@ bool estadoEstableFuncion() {
 
 				ContenidoXNodo * hola = buscarNodoPorNombreS(
 						elementoInterno->nodo);
-				printf("%s\n", elementoInterno->nodo);
 
 				if (hola == NULL) {
 					b[vectb] = 0;
@@ -2515,10 +2441,8 @@ bool estadoEstableFuncion() {
 	}
 	list_iterate(tablaArchivos, (void*) porArchivo);
 	if (countGeneral == list_size(tablaArchivos)) {
-		printf("Funciono\n");
 		return true;
 	} else {
-		printf("no FUnciono \n");
 		return false;
 	}
 
@@ -2589,7 +2513,29 @@ void soyServidor(char * puerto) {
 
 						case worker: {
 							SocketWorker = nuevoSocket;
-							printf("worker conectado\n ");
+							int32_t headerRecibo = deserializarHeader(
+									SocketWorker);
+							int cantMensajesRecibidos =
+									protocoloCantidadMensajes[headerRecibo];
+							char ** arrayMensajesRecibidos =
+									deserializarMensaje(SocketWorker,
+											cantMensajesRecibidos);
+							char * nombre = conseguirNombreDePath(
+									arrayMensajesRecibidos[1]);
+							char * path = string_duplicate("../metadata/");
+							string_append(&path, nombre);
+							FILE*ARCHIVOFINAL = fopen(path, "w+");
+							fwrite(arrayMensajesRecibidos[1],
+									string_length(arrayMensajesRecibidos[1]), 1,
+									ARCHIVOFINAL);
+							almacenarArchivo(path, arrayMensajesRecibidos[2],
+									0);
+							fclose(ARCHIVOFINAL);
+							char * eliminar = string_duplicate("rm -rf ");
+							string_append(&eliminar, path);
+							system(eliminar);
+							liberarArray(arrayMensajesRecibidos,
+									cantMensajesRecibidos);
 							//atender a worker,supongo que almacenar el archivo
 							/*
 							 int32_t headerId = deserializarHeader(SocketWorker);	//recibe el id del header para saber qué esperar
@@ -2616,21 +2562,16 @@ void soyServidor(char * puerto) {
 					int32_t headerId = deserializarHeader(i); // funciona cuando solo recibe 0?
 					pthread_mutex_unlock(&mutex1);
 					if (headerId == TIPO_MSJ_OK) {
-						printf("no hago nada pero desbloqueo\n");
 					}
 					if (headerId <= 0) { //error o desconexión de un cliente
 						if (i == SocketYama) {
-							printf("cayo Yama\n");
 							cerrarCliente(SocketYama);
 							FD_CLR(SocketYama, &master);
 						} else {
 							if (i == SocketWorker) {
-								printf("cayo Worker\n");
 								cerrarCliente(SocketWorker);
 								FD_CLR(SocketWorker, &master);
 							} else {
-								printf("cayo nodo\n");
-								printf("header id %d", headerId);
 								eliminarDeLasListas(i);
 								cerrarCliente(i); // bye!
 								FD_CLR(i, &master); // remove from master set
@@ -2663,7 +2604,7 @@ void soyServidor(char * puerto) {
 //}
 
 void matarTodo() {
-	printf("RIP \n");
+	eliminarListas();
 }
 
 void inicializarCarpetas() {
@@ -2702,11 +2643,61 @@ void eliminarCarpetas() {
 	free(archivos);
 	free(bitmaps);
 }
+void eliminarCarpetasParaformateo() {
+	char * directorios = string_new();
+	char * archivos = string_new();
+	char * nodos = string_new();
+	string_append(&directorios, "rm -rf ");
+	string_append(&directorios, "../metadata/directorios.dat");
+	string_append(&archivos, "rm -rf ");
+	string_append(&archivos, "../metadata/archivos");
+	string_append(&nodos, "rm -rf ");
+	string_append(&nodos, "../metadata/nodos.bin");
+	system(directorios);
+	system(archivos);
+	system(nodos);
+	free(directorios);
+	free(archivos);
+	free(nodos);
+}
+void inicializarCarpetasParaFormateo() {
+	char * archivos = string_new();
+	string_append(&archivos, "mkdir ");
+	string_append(&archivos, "../metadata/archivos");
+	system(archivos);
+	crearDirectorio("yamafs:");
+	free(archivos);
+
+}
+void limpiarBitmapsYSetearCantidadLibre() {
+	void limpiar(tablaBitmapXNodos * elemento) {
+		int i;
+		for (i = 0; i < elemento->cantidadBloques; i++) {
+			bitarray_clean_bit(elemento->bitarray, i);
+		}
+	}
+	list_iterate(listaDeBitMap, (void*) limpiar);
+
+	void setear(ContenidoXNodo * elemento) {
+		tablaBitmapXNodos * nodoEcontrado = buscarNodoPorNombreB(
+				elemento->nodo);
+		elemento->libre = cantidadDeBloquesLibresEnBitmap(
+				nodoEcontrado->bitarray, nodoEcontrado->cantidadBloques);
+	}
+	list_iterate(tablaNodos, (void*) setear);
+}
+void eliminarListasParaFormateo() {
+	list_clean_and_destroy_elements(tablaArchivos, free);
+	//list_clean_and_destroy_elements(listaDeNodosDeFormateo, free);
+	list_clean_and_destroy_elements(listaDeNodosDeEstadoAnterior, free);
+	list_clean_and_destroy_elements(listaDirectorios, free);
+	list_clean_and_destroy_elements(registroArchivos, free);
+}
 
 /*void listaDestruirConElementos(t_list lista, void(*funcion)(void*)) {
-	if(lista != NULL)
-		list_destroy_and_destroy_elements(lista, funcion);
-}*/
+ if(lista != NULL)
+ list_destroy_and_destroy_elements(lista, funcion);
+ }*/
 
 void eliminarListas() {
 	list_clean_and_destroy_elements(listaDeBitMap, free);
@@ -2736,7 +2727,7 @@ int main(int argc, char *argv[]) {
 	directorios = config_create("../metadata/directorios.dat");
 	registroArchivo = config_create("../metadata/archivos/registro.dat");
 
-	log_trace(logFs, "Iniciando FileSystem");
+	log_info(logFs, "Iniciando FileSystem");
 	printf("\n*** Proceso FileSystem ***\n");
 
 	pthread_t hiloConsola;
@@ -2749,21 +2740,37 @@ int main(int argc, char *argv[]) {
 	if (argv[1] == NULL) {
 		if (estadoAnterior == 1) {
 			//cargar estado anterior, directorios y archivos
-			cargarEstructuraArchivos(registroArchivo);
-			cargarDirectorio(directorios);
-			cargarListaDeNodosAnteriores();
-			FILE * directorios = fopen("../metadata/directorios.dat", "a+");
-			FILE * nodos = fopen("../metadata/nodos.bin", "a+");
-			config_set_value(configFs, "ESTADO_ESTABLE", "0");
-			config_save(configFs);
-			estadoEstable = config_get_int_value(configFs, "ESTADO_ESTABLE");
-			PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
-			pthread_create(&hiloConsola, NULL, (void*) IniciarConsola, NULL);
-			soyServidor(PUERTO);
-			pthread_join(hiloConsola, NULL);
+			FILE*ARCHIVOS = fopen("../metadata/archivos/registro.dat", "r+");
+			FILE*DIRECTORIOS = fopen("../metadata/directorios.dat", "r+");
+			FILE*NODOS = fopen("../medatada/nodos.bin", "r+");
+			if (ARCHIVOS == NULL || DIRECTORIOS == NULL || NODOS == NULL) {
+				printf(
+						"No se puede recurar el estado anterior,fallo en los archivos \n");
+				log_error(logFs,
+						"No se puede recurar el estado anterior,fallo en los archivos");
+
+			} else {
+				log_info(logFs,
+						"Se inicia el FileSystem en un estado anterior");
+				cargarEstructuraArchivos(registroArchivo);
+				cargarDirectorio(directorios);
+				cargarListaDeNodosAnteriores();
+				FILE * directorios = fopen("../metadata/directorios.dat", "a+");
+				FILE * nodos = fopen("../metadata/nodos.bin", "a+");
+				config_set_value(configFs, "ESTADO_ESTABLE", "0");
+				config_save(configFs);
+				estadoEstable = config_get_int_value(configFs,
+						"ESTADO_ESTABLE");
+				PUERTO = config_get_string_value(configFs, "PUERTO_PROPIO");
+				pthread_create(&hiloConsola, NULL, (void*) IniciarConsola,
+				NULL);
+				soyServidor(PUERTO);
+				pthread_join(hiloConsola, NULL);
+			}
 
 		} else {
 			//se ejecuta por primera vez
+			log_info(logFs, "Se ejecuta FileSystem por primera vez");
 			config_set_value(configFs, "ESTADO_ANTERIOR", "1");
 			config_save(configFs);
 			FILE * directorios = fopen("../metadata/directorios.dat", "w+");
@@ -2778,6 +2785,7 @@ int main(int argc, char *argv[]) {
 		if (!strcmp(argv[1], "--clean")) {
 
 			//elimino estructuras, carpetas y levanto
+			log_info(logFs, "Se ejecuta FileSystem con la flag --clean");
 			eliminarListas();
 			eliminarCarpetas();
 			inicializarCarpetas();
@@ -2793,7 +2801,10 @@ int main(int argc, char *argv[]) {
 			soyServidor(PUERTO);
 			pthread_join(hiloConsola, NULL);
 		} else {
+			log_info(logFs,
+					"Se quiso iniciar el programa con un argumento invalido");
 			printf("Argumento no válido para ejecutar el programa\n");
+			log_error(logFs, "Se aborta la ejecucion");
 			EXIT_FAILURE;
 		}
 	}

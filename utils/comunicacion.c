@@ -19,10 +19,10 @@ int enviarMensaje(int serverSocket, char *message) {
 
 int enviarMensaje2(int socket, char* mensaje) {
 	int bytes_enviados;
-	int total = 0;
+	int32_t total = 0;
 	int tamanio = string_length(mensaje);
 	while (total < tamanio) {
-		bytes_enviados = send(socket, mensaje + total, tamanio, MSG_WAITALL);
+		bytes_enviados = send(socket, mensaje + total, 1048576, MSG_WAITALL);
 
 		if (bytes_enviados < 0) {
 			printf("Error al enviar");
