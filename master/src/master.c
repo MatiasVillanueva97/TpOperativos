@@ -129,7 +129,7 @@ char * leerArchivo(char * ubicacionArchivo) {
 	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo al worker
 
 	fp = fopen(ubicacionArchivo, "r"); // read mode
-	fseek(fp, ftell(fp), SEEK_END);
+	fseek(fp, ftell(fp), SEEK_SET);
 
 	long lengthArchivo = ftell(fp);
 
