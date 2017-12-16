@@ -2741,16 +2741,6 @@ int main(int argc, char *argv[]) {
 	if (argv[1] == NULL) {
 		if (estadoAnterior == 1) {
 			//cargar estado anterior, directorios y archivos
-			FILE*ARCHIVOS = fopen("../metadata/archivos/registro.dat", "r+");
-			FILE*DIRECTORIOS = fopen("../metadata/directorios.dat", "r+");
-			FILE*NODOS = fopen("../medatada/nodos.bin", "r+");
-			if (ARCHIVOS == NULL || DIRECTORIOS == NULL || NODOS == NULL) {
-				printf(
-						"No se puede recuperar el estado anterior,fallo en los archivos \n");
-				log_error(logFs,
-						"No se puede recuperar el estado anterior,fallo en los archivos");
-
-			} else {
 				log_info(logFs,
 						"Se inicia el FileSystem en un estado anterior");
 				cargarEstructuraArchivos(registroArchivo);
@@ -2767,7 +2757,7 @@ int main(int argc, char *argv[]) {
 				NULL);
 				soyServidor(PUERTO);
 				pthread_join(hiloConsola, NULL);
-			}
+
 
 		} else {
 			//se ejecuta por primera vez
