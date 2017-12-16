@@ -769,6 +769,7 @@ int main(int argc, char *argv[]) {
 				for (i = 0; i < cantBloquesTransformacion; i++) {
 					// Por cada tarea se crea un hilo para conectarse al worker q corresponda y se le pasa la fila de la tabla recibida
 					pthread_create(&hilosWorkerTransformacion[i], NULL, (void*)conectarAWorkerTransformacion, &tablaTransformacion[i]);
+					cantTransformacion++;
 				}
 
 				for (i = 0; i < cantBloquesTransformacion; i++) {
@@ -777,7 +778,6 @@ int main(int argc, char *argv[]) {
 				}
 				clock_t endTransformacion = clock();
 				tiempoTranscurridoTransformacion += (float) (endTransformacion - startTransformacion) / CLOCKS_PER_SEC;
-				cantTransformacion++;
 			}
 				break;
 
@@ -795,6 +795,7 @@ int main(int argc, char *argv[]) {
 				for (i = 0; i < cantNodosReduccionLocal; i++) {
 					// Por cada tarea se crea un hilo para conectarse al worker q corresponda y se le pasa la fila de la tabla recibida
 					pthread_create(&hilosWorkerReduccionLocal[i], NULL, (void*) conectarAWorkerReduccionLocal, &tablaReduccionLocal[i]);
+					cantReduccionLocal++;
 				}
 
 				for (i = 0; i < cantNodosReduccionLocal; i++) {
@@ -803,7 +804,6 @@ int main(int argc, char *argv[]) {
 				}
 				clock_t endReduccionLocal = clock();
 				tiempoTranscurridoReduccionLocal += (float) (endReduccionLocal - startReduccionLocal) / CLOCKS_PER_SEC;
-				cantReduccionLocal++;
 			}
 				break;
 
@@ -861,8 +861,8 @@ int main(int argc, char *argv[]) {
 				pthread_join(hiloWorkerAlmacenamientoFinal, NULL);
 
 				clock_t endAlmacenamientoFinal = clock();
-				cantAlmacenamientoFinal++;
 				tiempoTranscurridoAlmacenamientoFinal += (float) (endAlmacenamientoFinal - startAlmacenamientoFinal) / CLOCKS_PER_SEC;
+				cantAlmacenamientoFinal++;
 				break;
 			}
 
@@ -891,10 +891,10 @@ int main(int argc, char *argv[]) {
 	clock_t endTotal = clock();
 	float tiempoTranscurridoTotal = (float) (endTotal - startTotal) / CLOCKS_PER_SEC;
 	calcularMetricas(tiempoTranscurridoTotal);
-	log_info(logMASTER, "\nHubo %d Transformaciones ejecutadas que duraron en promedio %f y en total %f\n", cantTransformacion, tiempoTranscurridoTransformacion / cantTransformacion, tiempoTranscurridoTransformacion);
-	log_info(logMASTER, "\nHubo %d Reducciones Locales ejecutadas que duraron en promedio %f y en total %f\n", cantReduccionLocal, tiempoTranscurridoReduccionLocal / cantReduccionLocal, tiempoTranscurridoReduccionLocal);
-	log_info(logMASTER, "\nHubo %d Reducciones Globales ejecutadas que duraron en promedio %f y en total %f\n", cantReduccionGlobal, tiempoTranscurridoReduccionGlobal / cantReduccionGlobal, tiempoTranscurridoReduccionGlobal);
-	log_info(logMASTER, "\nHubo %d Almacenamientos Finales ejecutadas que duraron en promedio %f y en total %f\n", cantAlmacenamientoFinal, tiempoTranscurridoAlmacenamientoFinal / cantAlmacenamientoFinal, tiempoTranscurridoAlmacenamientoFinal);
+	log_info(logMASTER, "\nHubo %d Transformaciones ejecutadas que duraron en promedio %f y en total %f segundos\n", cantTransformacion, tiempoTranscurridoTransformacion / cantTransformacion, tiempoTranscurridoTransformacion);
+	log_info(logMASTER, "\nHubo %d Reducciones Locales ejecutadas que duraron en promedio %f y en total %f segundos\n", cantReduccionLocal, tiempoTranscurridoReduccionLocal / cantReduccionLocal, tiempoTranscurridoReduccionLocal);
+	log_info(logMASTER, "\nHubo %d Reducciones Globales ejecutadas que duraron en promedio %f y en total %f segundos\n", cantReduccionGlobal, tiempoTranscurridoReduccionGlobal / cantReduccionGlobal, tiempoTranscurridoReduccionGlobal);
+	log_info(logMASTER, "\nHubo %d Almacenamientos Finales ejecutadas que duraron en promedio %f y en total %f segundos\n", cantAlmacenamientoFinal, tiempoTranscurridoAlmacenamientoFinal / cantAlmacenamientoFinal, tiempoTranscurridoAlmacenamientoFinal);
 
 	log_info(logMASTER, "Master finalizado.");
 	printf("Master finalizado.\n");
