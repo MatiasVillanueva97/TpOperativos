@@ -2007,7 +2007,7 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 												string_length(
 														arrayMensajesRecibidos[0]),
 												1, archivo);
-										fseek(archivo, 0, SEEK_END);
+										fseek(archivo, ftell(archivo), SEEK_SET);
 										liberarArray(arrayMensajesRecibidos, 1);
 										vectora++;
 									} else {
@@ -2023,7 +2023,7 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 													string_length(
 															arrayMensajesRecibidos[0]),
 													1, archivo);
-											fseek(archivo, 0, SEEK_END);
+											fseek(archivo, ftell(archivo), SEEK_SET);
 											liberarArray(arrayMensajesRecibidos,
 													1);
 											vectorb++;
