@@ -119,7 +119,7 @@ run-master-arg: compile-master
 
 debug-master: compile-master
 	@echo "Ejecutando MASTER en modo DEBUG..."
-	@cd $(MASTER)/$(BIN_PATH) &&  valgrind --leak-check=full ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py ../../scripts/nombres.csv yamafs:/analisis/resultado.json
+	@cd $(MASTER)/$(BIN_PATH) &&  valgrind --leak-check=full ./$(MASTER) ../../scripts/transformador.py ../../scripts/reductor.py yamafs:/nombres.csv yamafs:/analisis/resultado.json
 
 all: compile-filesystem compile-datanode compile-worker compile-yama compile-master
 
