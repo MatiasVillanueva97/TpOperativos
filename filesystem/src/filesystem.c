@@ -2532,7 +2532,7 @@ void soyServidor(char * puerto) {
 									ARCHIVOFINAL);
 							fclose(ARCHIVOFINAL);
 							almacenarArchivo(path, arrayMensajesRecibidos[2],
-									0);
+									1);
 							char * eliminar = string_duplicate("rm -rf ");
 							string_append(&eliminar, path);
 							system(eliminar);
