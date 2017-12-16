@@ -49,12 +49,21 @@ int getCargaGlobalNodo(int nroNodo) {
 
 void actualizarCargaGlobalNodo(int nroNodo, int carga) {
 	listaGlobalNodos[nroNodo].carga = carga;
+	if (listaGlobalNodos[nroNodo].carga < 0)
+		listaGlobalNodos[nroNodo].carga = 0;
 }
 
 void disminuirCargaGlobalNodo(int nroNodo, int cantidadRestar) {
 	listaGlobalNodos[nroNodo].carga -= cantidadRestar;
+	if (listaGlobalNodos[nroNodo].carga < 0)
+		listaGlobalNodos[nroNodo].carga = 0;
 }
 
 void aumentarCargaGlobalNodo(int nroNodo, int cantidadSumar) {
 	listaGlobalNodos[nroNodo].carga += cantidadSumar;
+}
+
+void repararCargaNegativa(int nroNodo) {
+	if (listaGlobalNodos[nroNodo].carga < 0)
+		listaGlobalNodos[nroNodo].carga = 0;
 }
