@@ -484,13 +484,17 @@ void recibirTablaReduccionGlobal(filaReduccionGlobal* datosReduccionGlobal, int 
 	log_info(logWorker, "\n ---------- Tabla de reduccion global ---------- \n");
 	log_info(logWorker, "\tNodo\tIP\t\tPuerto\t\tTemporal\n");
 	log_info(logWorker, "---------------------------------------------------------------------------------------------\n");
-
+	int j = 0;
 	for (i = 0; i < cantNodos; i++) {
 		// cada msje es una fila de la tabla reduccion global
-		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[0]);
-		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[1]);
-		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[2]);
-		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[3]);
+		datosReduccionGlobal[i].nodo = atoi(arrayTablaReduccionGlobal[j]);
+		j++;
+		strcpy(datosReduccionGlobal[i].ip, arrayTablaReduccionGlobal[j]);
+		j++;
+		strcpy(datosReduccionGlobal[i].puerto, arrayTablaReduccionGlobal[j]);
+		j++;
+		strcpy(datosReduccionGlobal[i].temporalReduccionLocal, arrayTablaReduccionGlobal[j]);
+		j++;
 		log_info(logWorker, "\t%d\t%s\t%s\t%s\n", datosReduccionGlobal[i].nodo, datosReduccionGlobal[i].ip, datosReduccionGlobal[i].puerto, datosReduccionGlobal[i].temporalReduccionLocal);
 	}
 
@@ -674,15 +678,22 @@ int almacenamientoFinal(char* rutaArchivo, char* rutaFinal) {
 	//log_info(logWorker, "Mensaje almacenamiento final serializado: %s",mensajeSerializado);
 	log_trace(logWorker, "[almacenamiento_final]: Envie contenido del archivo a FS");
 
+	int resultado;
+	if (bytesEnviados == string_length(mensajeSerializado)) {
+		resultado = 0;
+	}
+	else {
+		resultado = -1;
+	}
 	free(mensajeSerializado);
 
-	return bytesEnviados;
+	return resultado;
 }
 
 void almacenamiento_final_worker(int headerId, int socketCliente) {
 	int resultado;
 
-	log_trace(logWorker, "Entrando en almacenamiento final");
+	log_trace(logWorker, "Entrando en almacenamiento final...");
 	int cantidadMensajes = protocoloCantidadMensajes[headerId]; //averigua la cantidad de mensajes que le van a llegar
 	char **arrayMensajes = deserializarMensaje(socketCliente, cantidadMensajes); //recibe los mensajes en un array de strings
 	//char* archivoReducGlobal = malloc(string_length(arrayMensajes[0]) + 1);
@@ -700,10 +711,10 @@ void almacenamiento_final_worker(int headerId, int socketCliente) {
 
 	resultado = almacenamientoFinal(archivoReducGlobal, archivoFinal);
 
-	free(archivoReducGlobal);
+	//free(archivoReducGlobal);
 	free(archivoFinal);
 
-	if (resultado > 0) {
+	if (resultado >= 0) {
 		log_trace(logWorker, "Enviando header de ALM_FINAL_OK");
 		enviarHeaderSolo(socketCliente, TIPO_MSJ_ALM_FINAL_OK);
 	} else {
