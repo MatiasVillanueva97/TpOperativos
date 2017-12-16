@@ -13,6 +13,7 @@
 #include "../../utils/includes.h"
 #include <unistd.h>
 #include <time.h>
+#include <pthread.h>
 
 #define headerError -1
 
@@ -347,6 +348,7 @@ void conectarAWorkerTransformacion(void *arg) {
 		}
 
 	}
+	//pthread_detach(pthread_self);
 }
 
 //LISTO
@@ -435,17 +437,7 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	char * reductorString = leerArchivo(archivoReductor);
 	printf("\nScript Reductor leido: %s\n", reductorString);
 
-	// Si son + de 2 nodos resto el primero (el encargado), si es sólo 1 no
-	int cantNodosSinEncargado;
-	if (cantNodos > 1) {
-		cantNodosSinEncargado = cantNodos - 1;
-		i = 1;
-	} else {
-		cantNodosSinEncargado = cantNodos;
-		i = 0;
-	}
-
-	int cantStringsASerializar = 1 + 1 + (cantNodosSinEncargado * 4) + 1;
+	int cantStringsASerializar = 1 + 1 + (cantNodos * 4) + 1;
 	char **arrayMensajes = malloc(sizeof(char*) * cantStringsASerializar);
 	j = 0;
 
@@ -456,16 +448,16 @@ char * serializarMensajeReduccionGlobal(struct filaReduccionGlobal *datosReducci
 	printf("\nScript reductor serializado: %s\n", arrayMensajes[j]);
 	j++;
 
-	// Serializo cantidad de nodos (restando el primero/encargado en caso de q haga +2 workers)
-	char* cantNodosReduccionGlobalString = intToArrayZerosLeft(cantNodosSinEncargado, 4);
+	// Serializo cantidad de nodos
+	char* cantNodosReduccionGlobalString = intToArrayZerosLeft(cantNodos, 4);
 	arrayMensajes[j] = malloc(string_length(cantNodosReduccionGlobalString) + 1);
 	strcpy(arrayMensajes[j], cantNodosReduccionGlobalString);
 	printf("Cantidad de nodos serializado: %s\n", arrayMensajes[j]);
 	j++;
 
-	// Por cada nodo (excepto el primero si son + de 2) serializo nro/ip/puerto/temporal
-	for (; i < cantNodos; i++) {
-		// Serializo nro de nodo
+	// Por cada nodo serializo nro/ip/puerto/temporal
+	for (i = 0; i < cantNodos; i++) {
+	// Serializo nro de nodo
 		arrayMensajes[j] = malloc(4 + 1);
 		strcpy(arrayMensajes[j], intToArrayZerosLeft(datosReduccionGlobal[i].nodo, 4));
 		printf("Nro de nodo serializado: %s\n", arrayMensajes[j]);
@@ -751,7 +743,27 @@ int main(int argc, char *argv[]) {
 			case TIPO_MSJ_TABLA_TRANSFORMACION: {
 				// Leo cantidad de filas (bloques) que voy a recibir
 				cantBloquesTransformacion = getCantFilas(socketYama, protocoloCantidadMensajes[headerIdYama]);
+
+
+////pthread_t      tid;  // thread ID
+//pthread_attr_t attr; // thread attribute
+//
+//// set thread detachstate attribute to DETACHED
+//pthread_attr_init(&attr);
+//pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+// create the thread
+
+
+				//pthread_attr_t atributosHilo;
+				//pthread_attr_init(&atributosHilo);
+
+//				int detachstate;
+//				int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+//				int pthread_attr_getdetachstate(const pthread_attr_t *attr,    int *detachstate);
+
 				pthread_t hilosWorkerTransformacion[cantBloquesTransformacion];
+				//pthread_attr_setdetachstate(&atributosHilo, PTHREAD_CREATE_JOINABLE);
 
 				// Creo y recibo tablaTransformacion, que es un array de structs filaTransformacion
 				struct filaTransformacion tablaTransformacion[cantBloquesTransformacion];
@@ -759,12 +771,13 @@ int main(int argc, char *argv[]) {
 
 				for (i = 0; i < cantBloquesTransformacion; i++) {
 					// Por cada tarea se crea un hilo para conectarse al worker q corresponda y se le pasa la fila de la tabla recibida
-					pthread_create(&hilosWorkerTransformacion[i], NULL, conectarAWorkerTransformacion, &tablaTransformacion[i]);
+					pthread_create(&hilosWorkerTransformacion[i], NULL, (void*)conectarAWorkerTransformacion, &tablaTransformacion[i]);
 				}
 
 				for (i = 0; i < cantBloquesTransformacion; i++) {
 					//TODO: está bien hecho así? no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
 					pthread_join(hilosWorkerTransformacion[i], NULL);
+					//pthread_attr_destroy(&atributosHilo);
 				}
 			}
 				break;
@@ -781,7 +794,7 @@ int main(int argc, char *argv[]) {
 
 				for (i = 0; i < cantNodosReduccionLocal; i++) {
 					// Por cada tarea se crea un hilo para conectarse al worker q corresponda y se le pasa la fila de la tabla recibida
-					pthread_create(&hilosWorkerReduccionLocal[i], NULL, conectarAWorkerReduccionLocal, &tablaReduccionLocal[i]);
+					pthread_create(&hilosWorkerReduccionLocal[i], NULL, (void*) conectarAWorkerReduccionLocal, &tablaReduccionLocal[i]);
 				}
 
 				for (i = 0; i < cantNodosReduccionLocal; i++) {
@@ -823,7 +836,7 @@ int main(int argc, char *argv[]) {
 
 				//datosHilosReduccionGlobal.mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
 
-				pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, &datosHiloReduccionGlobal);
+				pthread_create(&hiloWorkerReduccionGlobal, NULL, (void*) conectarAWorkerReduccionGlobal, &datosHiloReduccionGlobal);
 
 				//char * mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
 				//pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, mensajeSerializado);
@@ -840,10 +853,10 @@ int main(int argc, char *argv[]) {
 				struct filaAlmacenamientoFinal tablaAlmacenamientoFinal[cantNodosAlmacenamientoFinal];
 				recibirTablaAlmacenamientoFinal(tablaAlmacenamientoFinal, socketYama, cantNodosAlmacenamientoFinal);
 
-				pthread_create(&hiloWorkerAlmacenamientoFinal, NULL, conectarAWorkerAlmacenamientoFinal, &tablaAlmacenamientoFinal);
+				pthread_create(&hiloWorkerAlmacenamientoFinal, NULL, (void*) conectarAWorkerAlmacenamientoFinal, &tablaAlmacenamientoFinal);
 				pthread_join(hiloWorkerAlmacenamientoFinal, NULL);
 
-				masterCorriendo = 1;
+				//masterCorriendo = 1;
 
 				break;
 			}
