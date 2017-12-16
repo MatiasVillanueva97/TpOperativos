@@ -172,7 +172,7 @@ void analizarComando(char * linea){
 
     	     	  }else {
 
-    	     		  printf("No se puede ejecutar este comando si no hay un establdo estable ");
+    	     		  printf("No se puede ejecutar este comando si no hay un establdo estable \n");
 
     	     	  }
 
@@ -296,7 +296,7 @@ void analizarComando(char * linea){
 
     	  }else {
 
-    		  printf("No se puede ejecutar este comando si no hay un establdo estable ");
+    		  printf("No se puede ejecutar este comando si no hay un establdo estable \n");
 
     	  }
 
@@ -305,8 +305,7 @@ void analizarComando(char * linea){
       break;
 
       case 11:{
-        system(linea);
-        printf("\n");
+    	  printf("Comando en proceso! Todavia no se puede ejecutar! (ls)\n");
       }
       break;
 

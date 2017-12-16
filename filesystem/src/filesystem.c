@@ -1810,7 +1810,6 @@ void partirArchivoDeTexto(char* PATH, char * PathDirectorio) {
 
 void almacenarArchivo(char * PATH, char * pathDirectorio, int TipoArchivo) {
 	char * nombre = conseguirNombreDePath(PATH);
-	printf("%s\n", pathDirectorio);
 	tablaArchivo * archivoEcontrado = buscarArchivoPorNombreYRuta(nombre,
 			pathDirectorio, 1);
 	if (archivoEcontrado == NULL) {
@@ -2073,7 +2072,6 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 						void porBloquesDeArchivo(
 								ContenidoBloque * elementoInterno) {
 							if (i % 2 == 0) {
-								printf("%s\n", elementoInterno->nodo);
 								ContenidoXNodo * hola = buscarNodoPorNombreS(
 										elementoInterno->nodo);
 								if (hola == NULL) {
@@ -2540,6 +2538,7 @@ void soyServidor(char * puerto) {
 							system(eliminar);
 							liberarArray(arrayMensajesRecibidos,
 									cantMensajesRecibidos);
+							enviarHeaderSolo(SocketWorker, TIPO_MSJ_ALM_FINAL_OK);
 							//atender a worker,supongo que almacenar el archivo
 							/*
 							 int32_t headerId = deserializarHeader(SocketWorker);	//recibe el id del header para saber qué esperar
@@ -2586,10 +2585,8 @@ void soyServidor(char * puerto) {
 						if (i == SocketYama) {
 							enviarInfoBloques(SocketYama, headerId);
 							enviarInfoNodos(SocketYama);
-							puts("soy yama");
 						}
 						if (i == SocketWorker) {
-							puts("soy worker");
 						}
 					}
 				}
@@ -2749,9 +2746,9 @@ int main(int argc, char *argv[]) {
 			FILE*NODOS = fopen("../medatada/nodos.bin", "r+");
 			if (ARCHIVOS == NULL || DIRECTORIOS == NULL || NODOS == NULL) {
 				printf(
-						"No se puede recurar el estado anterior,fallo en los archivos \n");
+						"No se puede recuperar el estado anterior,fallo en los archivos \n");
 				log_error(logFs,
-						"No se puede recurar el estado anterior,fallo en los archivos");
+						"No se puede recuperar el estado anterior,fallo en los archivos");
 
 			} else {
 				log_info(logFs,

@@ -709,13 +709,19 @@ int almacenamientoFinal(char* rutaArchivo, char* rutaFinal) {
 	log_trace(logWorker, "[almacenamiento_final]: Envie contenido del archivo a FS, bytes enviados: %d\n", bytesEnviados);
 
 	int resultado;
-	if (bytesEnviados == string_length(mensajeSerializado)) {
+	if (bytesEnviados < string_length(mensajeSerializado)) {
+		log_error(logWorker, "No se pudo enviar el mensaje completo a FS");
+		resultado = -1;
+	}
+	free(mensajeSerializado);
+
+	int32_t respuestaFS = deserializarHeader(socketFS);
+	if (respuestaFS == TIPO_MSJ_ALM_FINAL_OK) {
 		resultado = 0;
 	}
 	else {
 		resultado = -1;
 	}
-	free(mensajeSerializado);
 
 	return resultado;
 }
