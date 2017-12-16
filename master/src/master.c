@@ -586,7 +586,7 @@ void conectarAWorkerAlmacenamientoFinal(void *arg) {
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		if (headerIdWorker <= 0){
+		if (headerId <= 0){
 			envioFinHeaderSolo(TIPO_MSJ_ALM_FINAL_ERROR);
 			printf("Falló Almacenamiento Final");
 		}else{
@@ -666,6 +666,10 @@ int main(int argc, char *argv[]) {
 	uint32_t preparadoEnviarYama = 1;
 	int32_t headerIdYama;
 
+//    pthread_attr_t atributosHilo;
+//    pthread_attr_init(&atributosHilo);
+//    pthread_attr_setdetachstate(&atributosHilo, PTHREAD_CREATE_DETACHED);
+
 	t_log* logMASTER;
 	mkdir("../log", 0775);
 	logMASTER = log_create("../log/logMASTER.log", "MASTER", true, LOG_LEVEL_TRACE); //creo el logger, mostrando por pantalla
@@ -744,26 +748,7 @@ int main(int argc, char *argv[]) {
 				// Leo cantidad de filas (bloques) que voy a recibir
 				cantBloquesTransformacion = getCantFilas(socketYama, protocoloCantidadMensajes[headerIdYama]);
 
-
-////pthread_t      tid;  // thread ID
-//pthread_attr_t attr; // thread attribute
-//
-//// set thread detachstate attribute to DETACHED
-//pthread_attr_init(&attr);
-//pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-// create the thread
-
-
-				//pthread_attr_t atributosHilo;
-				//pthread_attr_init(&atributosHilo);
-
-//				int detachstate;
-//				int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
-//				int pthread_attr_getdetachstate(const pthread_attr_t *attr,    int *detachstate);
-
 				pthread_t hilosWorkerTransformacion[cantBloquesTransformacion];
-				//pthread_attr_setdetachstate(&atributosHilo, PTHREAD_CREATE_JOINABLE);
 
 				// Creo y recibo tablaTransformacion, que es un array de structs filaTransformacion
 				struct filaTransformacion tablaTransformacion[cantBloquesTransformacion];
@@ -777,7 +762,6 @@ int main(int argc, char *argv[]) {
 				for (i = 0; i < cantBloquesTransformacion; i++) {
 					//TODO: está bien hecho así? no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
 					pthread_join(hilosWorkerTransformacion[i], NULL);
-					//pthread_attr_destroy(&atributosHilo);
 				}
 			}
 				break;
@@ -834,12 +818,7 @@ int main(int argc, char *argv[]) {
 				strcpy(datosHiloReduccionGlobal.mensajeSerializado, aux);
 				free(aux);
 
-				//datosHilosReduccionGlobal.mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
-
 				pthread_create(&hiloWorkerReduccionGlobal, NULL, (void*) conectarAWorkerReduccionGlobal, &datosHiloReduccionGlobal);
-
-				//char * mensajeSerializado = serializarMensajeReduccionGlobal(tablaReduccionGlobal, cantNodosReduccionGlobal, temporalGlobal);
-				//pthread_create(&hiloWorkerReduccionGlobal, NULL, conectarAWorkerReduccionGlobal, mensajeSerializado);
 				pthread_join(hiloWorkerReduccionGlobal, NULL);
 			}
 				break;
@@ -855,8 +834,6 @@ int main(int argc, char *argv[]) {
 
 				pthread_create(&hiloWorkerAlmacenamientoFinal, NULL, (void*) conectarAWorkerAlmacenamientoFinal, &tablaAlmacenamientoFinal);
 				pthread_join(hiloWorkerAlmacenamientoFinal, NULL);
-
-				//masterCorriendo = 1;
 
 				break;
 			}
@@ -888,6 +865,7 @@ int main(int argc, char *argv[]) {
 	calcularMetricas(tiempoTranscurrido);
 	log_info(logMASTER, "Master finalizado.");
 	printf("Master finalizado.\n");
+	//pthread_attr_destroy(&atributosHilo);
 	log_destroy(logMASTER);
 	cerrarCliente(socketYama);
 	return EXIT_SUCCESS;
