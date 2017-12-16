@@ -84,7 +84,7 @@ debug-yama: compile-yama
 # WORKER #
 clean-worker:
 	@echo "Limpiando WORKER..."
-	@rm -rf $(WORKER)/$(BIN_PATH) && rm -rf $(WORKER)/*.log
+	@rm -rf $(WORKER)/$(BIN_PATH) && rm -rf $(WORKER)/log/* && rm -rf ${WORKER}/tmp* && rm -rf ${WORKER}/resultado*
 
 compile-worker: clean-worker
 	@echo "Compilando WORKER..."
