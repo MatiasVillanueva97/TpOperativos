@@ -59,9 +59,7 @@ char* guardar_script_transformacion(char* codigo_script, char* nombre) {
 	char* path = string_from_format("%s/script_%s", carpeta_temporal_transformacion, nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
-		//string_substring_until(codigo_script, string_length(codigo_script) - 1);
-		//string_substring(codigo_script,0,(string_length(codigo_script)-1));
-		fputs(string_substring(codigo_script,0,(string_length(codigo_script)-1)), fp);
+		fputs(codigo_script, fp);
 		fclose(fp);
 	}
 	log_info(logWorker, "[guardar_script]: Path script guardado: %s", path);
@@ -73,9 +71,7 @@ char* guardar_script_reduccion_local(char* codigo_script, char* nombre) {
 	char* path = string_from_format("%s/script_%s", carpeta_temporal_reduccion_local, nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
-		//fputs(string_substring_until(codigo_script, string_length(codigo_script) - 1), fp);
-		fputs(string_substring(codigo_script,0,(string_length(codigo_script)-1)), fp);
-		//fputs(codigo_script, fp);
+		fputs(codigo_script, fp);
 		fclose(fp);
 	}
 	log_info(logWorker, "[guardar_script]: Path script guardado: %s", path);
@@ -87,9 +83,7 @@ char* guardar_script_reduccion_global(char* codigo_script, char* nombre) {
 	char* path = string_from_format("%s/script_%s", carpeta_temporal_reduccion_global, nombre);
 	FILE *fp = fopen(path, "w");
 	if (fp != NULL) {
-		fputs(string_substring(codigo_script,0,(string_length(codigo_script)-1)), fp);
-		//fputs(string_substring_until(codigo_script, string_length(codigo_script) - 1), fp);
-		//fputs(codigo_script, fp);
+		fputs(codigo_script, fp);
 		fclose(fp);
 	}
 	log_info(logWorker, "[guardar_script]: Path script guardado: %s", path);
