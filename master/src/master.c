@@ -127,12 +127,11 @@ void enviarArchivoYama(int socket, char *archivo) {
 char * leerArchivo(char * ubicacionArchivo) {
 	FILE *fp;
 	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo al worker
-	char *pathArchivo = string_from_format("%s", ubicacionArchivo);
-	fp = fopen(pathArchivo, "r"); // read mode
+	fp = fopen(ubicacionArchivo, "r"); // read mode
 	fseek(fp, 0, SEEK_END);
 	long lengthArchivo = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	char *archivoString = malloc(lengthArchivo);
+	char *archivoString = malloc(lengthArchivo + 1);
 	if (archivoString) {
 		fread(archivoString, 1, lengthArchivo, fp);
 	} else {
@@ -361,6 +360,8 @@ void conectarAWorkerReduccionLocal(void *arg) {
 
 	// Leo el archivo reductor
 	char * reductorString = leerArchivo(archivoReductor);
+	printf("largo reductor: %d\n\n", string_length(reductorString));
+	printf("%s\n\n", reductorString);
 
 	// Abrir conexión a Worker
 	printf("me conecto a %s : %d\n", datosEnHilo->ip, datosEnHilo->puerto);

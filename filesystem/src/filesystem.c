@@ -2540,6 +2540,7 @@ void soyServidor(char * puerto) {
 							system(eliminar);
 							liberarArray(arrayMensajesRecibidos,
 									cantMensajesRecibidos);
+							enviarHeaderSolo(SocketWorker, TIPO_MSJ_ALM_FINAL_OK);
 							//atender a worker,supongo que almacenar el archivo
 							/*
 							 int32_t headerId = deserializarHeader(SocketWorker);	//recibe el id del header para saber qué esperar
