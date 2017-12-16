@@ -679,6 +679,7 @@ char* partirPath(char* path) {
 
 int almacenamientoFinal(char* rutaArchivo, char* rutaFinal) {
 	char* buffer = leerArchivo2(rutaArchivo);
+	log_info(logWorker, "[Almacenamiento final] Archivo leido, bytes: %d", string_length(buffer));
 	//printf("%s\n",buffer);
 	int socketFS = conexionAFileSystem();
 	int preparadoEnviarFs = 1;
@@ -700,11 +701,12 @@ int almacenamientoFinal(char* rutaArchivo, char* rutaFinal) {
 	strcpy(arrayMensajes[2], pathIncompleto);
 	//serializa los mensajes y los envía
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_WORKER_ALMACENAMIENTO_FINAL, arrayMensajes, cantidadMensajes);
+	printf("[Almacenamiento final] Logitud mensaje serializado: %d\n", string_length(mensajeSerializado));
 	liberar_array(arrayMensajes, cantidadMensajes);
 
 	int bytesEnviados = enviarMensaje(socketFS, mensajeSerializado); //envio el mensaje serializado a FS
 	//log_info(logWorker, "Mensaje almacenamiento final serializado: %s",mensajeSerializado);
-	log_trace(logWorker, "[almacenamiento_final]: Envie contenido del archivo a FS");
+	log_trace(logWorker, "[almacenamiento_final]: Envie contenido del archivo a FS, bytes enviados: %d\n", bytesEnviados);
 
 	int resultado;
 	if (bytesEnviados == string_length(mensajeSerializado)) {

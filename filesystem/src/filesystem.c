@@ -2521,7 +2521,10 @@ void soyServidor(char * puerto) {
 									deserializarMensaje(SocketWorker,
 											cantMensajesRecibidos);
 							char * nombre = conseguirNombreDePath(
-									arrayMensajesRecibidos[1]);
+									arrayMensajesRecibidos[0]);
+							printf("Recibi ruta final: %s\n", arrayMensajesRecibidos[0]);
+							printf("Recibi buffer, largo %d\n", string_length(arrayMensajesRecibidos[1]));
+							printf("Recibi path incompleto: %s\n", arrayMensajesRecibidos[2]);
 							char * path = string_duplicate("../metadata/");
 							string_append(&path, nombre);
 							FILE*ARCHIVOFINAL = fopen(path, "w+");
