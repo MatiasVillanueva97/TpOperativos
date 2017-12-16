@@ -17,6 +17,28 @@ int enviarMensaje(int serverSocket, char *message) {
 	return cantBytesEnviados;
 }
 
+int enviarMensaje2(int socket, char* mensaje) {
+	int bytes_enviados;
+	int total = 0;
+	int tamanio = string_length(mensaje);
+	while (total < tamanio) {
+		bytes_enviados = send(socket, mensaje + total, tamanio, MSG_WAITALL);
+
+		if (bytes_enviados < 0) {
+			printf("Error al enviar");
+			break;
+		}
+		total += bytes_enviados;
+		tamanio -= bytes_enviados;
+	}
+	if (bytes_enviados == 0) {
+		printf("Bytes enviados igual a cero \n");
+	}
+	//manejarError("[ERROR] Funcion send");
+
+	return total;
+}
+
 int enviarHeaderSolo(int serverSocket, int32_t headerId) {
 	int32_t largoStringId = LARGO_STRING_HEADER_ID;
 	char idString[largoStringId];
@@ -39,7 +61,27 @@ int recibirMensaje(char *message, int socketCliente, int packageSize) {
 	}
 	//printf ("cant bytes recibidos: %d", cantBytesRecibidos);
 	return cantBytesRecibidos;
+}
+
+int recibirMensaje2(void * mensaje, int socket, int tamanio) {
+	int total = 0;
+	int bytesRecibidos;
+	while (total < tamanio) {
+		bytesRecibidos = recv(socket, mensaje + total, tamanio, MSG_WAITALL);
+		if (bytesRecibidos == -1) {
+			// Error
+			perror("[ERROR] Funcion recv");
+			break;
+		}
+		if (bytesRecibidos == 0) {
+			// Desconexion
+			break;
+		}
+		total += bytesRecibidos;
+		tamanio -= bytesRecibidos;
 	}
+	return total;
+}
 
 /* **************** funciones para serializar y deserializar mensajes ************ */
 char* serializarMensaje(int32_t idMensaje, char **arrayMensajes, int cantStrings) {
@@ -112,6 +154,28 @@ char** deserializarMensaje(int socketCliente, int cantMensajes) {
 		if (!arrayMensajes[i])
 			perror("Error de malloc");
 		cantBytesRecibidos += recibirMensaje(arrayMensajes[i], socketCliente, tamMensaje);
+		arrayMensajes[i][tamMensaje] = '\0';
+	}
+	//printf("cantBytesRecibidos: %d\n", cantBytesRecibidos);
+	return arrayMensajes;
+}
+
+char** deserializarMensaje2(int socketCliente, int cantMensajes) {
+	int i, cantBytesRecibidos = 0;
+
+	char **arrayMensajes = malloc(sizeof(char*) * cantMensajes);
+	if (!arrayMensajes)
+		perror("error de malloc");
+	for (i = 0; i < cantMensajes; i++) {
+		char tamMensajeString[LARGO_STRING_TAM_MENSAJE + 1];
+		cantBytesRecibidos += recibirMensaje2(tamMensajeString, socketCliente, LARGO_STRING_TAM_MENSAJE);
+		tamMensajeString[LARGO_STRING_TAM_MENSAJE] = '\0';
+		int tamMensaje = atoi(tamMensajeString);
+
+		arrayMensajes[i] = malloc(tamMensaje + 1);
+		if (!arrayMensajes[i])
+			perror("Error de malloc");
+		cantBytesRecibidos += recibirMensaje2(arrayMensajes[i], socketCliente, tamMensaje);
 		arrayMensajes[i][tamMensaje] = '\0';
 	}
 	//printf("cantBytesRecibidos: %d\n", cantBytesRecibidos);
