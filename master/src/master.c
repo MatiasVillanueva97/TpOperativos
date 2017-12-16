@@ -334,16 +334,16 @@ void conectarAWorkerTransformacion(void *arg) {
 		int cantBytesEnviados = enviarMensaje(socketWorker, mensajeSerializado);
 
 		// Recibo resultado del Worker y cierro conexión
-		int32_t headerId = deserializarHeader(socketWorker);
-		printf("Header recibido por parte del worker en hilo %lu: %d\n", idHilo, headerId);
+		int32_t headerIdWorkerTransformacion = deserializarHeader(socketWorker);
+		printf("Header recibido por parte del worker en hilo %lu: %d\n", idHilo, headerIdWorkerTransformacion);
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		if (headerIdWorker <= 0){
+		if (headerIdWorkerTransformacion <= 0){
 			envioFinTransformacion(TIPO_MSJ_TRANSFORMACION_ERROR, datosEnHilo->nodo, datosEnHilo->bloque);
 			printf("Falló Transformación");
 		}else{
-			envioFinTransformacion(headerId, datosEnHilo->nodo, datosEnHilo->bloque);
+			envioFinTransformacion(headerIdWorkerTransformacion, datosEnHilo->nodo, datosEnHilo->bloque);
 			printf("Datos al final del hilo %lu: nodo %d, bloque %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->bloque, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporalTransformacion);
 		}
 
@@ -416,16 +416,16 @@ void conectarAWorkerReduccionLocal(void *arg) {
 		int cantBytesEnviados = enviarMensaje(socketWorker, mensajeSerializado);
 
 		// Recibo resultado del Worker y cierro conexión
-		int32_t headerIdWorker = deserializarHeader(socketWorker);
-		printf("Header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
+		int32_t headerIdWorkerReduccionLocal = deserializarHeader(socketWorker);
+		printf("Header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorkerReduccionLocal]);
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		if (headerIdWorker <= 0){
+		if (headerIdWorkerReduccionLocal <= 0){
 			envioFinReduccion(TIPO_MSJ_REDUCC_LOCAL_ERROR, datosEnHilo->nodo);
 			printf("Falló Reducción Local");
 		}else{
-			envioFinReduccion(headerIdWorker, datosEnHilo->nodo);
+			envioFinReduccion(headerIdWorkerReduccionLocal, datosEnHilo->nodo);
 			printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto);
 		}
 	}
@@ -524,16 +524,16 @@ void conectarAWorkerReduccionGlobal(void *arg) {
 		int cantBytesEnviados = enviarMensaje(socketWorker, datosEnHilo->mensajeSerializado);
 
 		// Recibo resultado del Worker y cierro conexión
-		int32_t headerIdWorker = deserializarHeader(socketWorker);
-		printf("Header recibido de worker %d %s", headerIdWorker, protocoloMensajesPredefinidos[headerIdWorker]);
+		int32_t headerIdWorkerReduccionGlobal = deserializarHeader(socketWorker);
+		printf("Header recibido de worker %d %s", headerIdWorkerReduccionGlobal, protocoloMensajesPredefinidos[headerIdWorkerReduccionGlobal]);
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		if (headerIdWorker <= 0){
+		if (headerIdWorkerReduccionGlobal <= 0){
 			envioFinReduccion(TIPO_MSJ_REDUCC_GLOBAL_ERROR, datosEnHilo->nodo);
 			printf("Falló Reducción Global");
 		}else{
-			envioFinReduccion(headerIdWorker, datosEnHilo->nodo);
+			envioFinReduccion(headerIdWorkerReduccionGlobal, datosEnHilo->nodo);
 			printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto);
 		}
 
@@ -581,16 +581,16 @@ void conectarAWorkerAlmacenamientoFinal(void *arg) {
 		int cantBytesEnviados = enviarMensaje(socketWorker, mensajeSerializado);
 
 		// Recibo resultado del Worker y cierro conexión
-		int32_t headerId = deserializarHeader(socketWorker);
-		printf("Header recibido por parte del worker en hilo %lu: %d\n", idHilo, headerId);
+		int32_t headerIdWorkerAlmacenamientoFinal = deserializarHeader(socketWorker);
+		printf("Header recibido por parte del worker en hilo %lu: %d\n", idHilo, headerIdWorkerAlmacenamientoFinal);
 		cerrarCliente(socketWorker);
 
 		// Aviso a YAMA
-		if (headerId <= 0){
+		if (headerIdWorkerAlmacenamientoFinal <= 0){
 			envioFinHeaderSolo(TIPO_MSJ_ALM_FINAL_ERROR);
 			printf("Falló Almacenamiento Final");
 		}else{
-			envioFinHeaderSolo(TIPO_MSJ_ALM_FINAL_OK);
+			envioFinHeaderSolo(headerIdWorkerAlmacenamientoFinal);
 			printf("Datos al final del hilo %lu: nodo %d, ip %s, puerto %d, temporal %s \n", idHilo, datosEnHilo->nodo, datosEnHilo->ip, datosEnHilo->puerto, datosEnHilo->temporalReduccionGlobal);
 		}
 
