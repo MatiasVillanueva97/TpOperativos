@@ -131,7 +131,7 @@ char * leerArchivo(char * ubicacionArchivo) {
 	fseek(fp, ftell(fp), SEEK_SET);
 	long lengthArchivo = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
-	char *archivoString = malloc(lengthArchivo + 2);
+	char *archivoString = calloc(lengthArchivo + 1);
 	if (archivoString) {
 		fread(archivoString, 1, lengthArchivo, fp);
 	} else {
