@@ -2023,8 +2023,7 @@ int leerArchivo(char * nombreArchivo, char * PATH, int tipo) {
 													string_length(
 															arrayMensajesRecibidos[0]),
 													1, archivo);
-											fseek(archivo, ftell(archivo), SEEK_SET);
-											liberarArray(arrayMensajesRecibidos,
+											fseek(archivo, ftell(archivo), SEEK_SET); liberarArray(arrayMensajesRecibidos,
 													1);
 											vectorb++;
 										} else {
@@ -2532,7 +2531,7 @@ void soyServidor(char * puerto) {
 									ARCHIVOFINAL);
 							fclose(ARCHIVOFINAL);
 							almacenarArchivo(path, arrayMensajesRecibidos[2],
-									1);
+									0);
 							char * eliminar = string_duplicate("rm -rf ");
 							string_append(&eliminar, path);
 							system(eliminar);
