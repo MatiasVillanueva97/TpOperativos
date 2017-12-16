@@ -661,10 +661,20 @@ int envioFinHeaderSolo(int headerId) {
 }
 
 int main(int argc, char *argv[]) {
-	clock_t start = clock();
+	clock_t startTotal = clock();
 	int i, j, k, h;
 	uint32_t preparadoEnviarYama = 1;
 	int32_t headerIdYama;
+
+	int cantTransformacion = 0;
+	int cantReduccionLocal = 0;
+	int cantReduccionGlobal = 0;
+	int cantAlmacenamientoFinal = 0;
+
+	float tiempoTranscurridoTransformacion = 0;
+	float tiempoTranscurridoReduccionLocal = 0;
+	float tiempoTranscurridoReduccionGlobal = 0;
+	float tiempoTranscurridoAlmacenamientoFinal = 0;
 
 //    pthread_attr_t atributosHilo;
 //    pthread_attr_init(&atributosHilo);
@@ -745,6 +755,8 @@ int main(int argc, char *argv[]) {
 
 			// 3º) Etapa de Transformación: crear hilo, conectarse al worker, esperar y notificar a YAMA
 			case TIPO_MSJ_TABLA_TRANSFORMACION: {
+				clock_t startTransformacion = clock();
+
 				// Leo cantidad de filas (bloques) que voy a recibir
 				cantBloquesTransformacion = getCantFilas(socketYama, protocoloCantidadMensajes[headerIdYama]);
 
@@ -763,11 +775,15 @@ int main(int argc, char *argv[]) {
 					//TODO: está bien hecho así? no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
 					pthread_join(hilosWorkerTransformacion[i], NULL);
 				}
+				clock_t endTransformacion = clock();
+				tiempoTranscurridoTransformacion += (float) (endTransformacion - startTransformacion) / CLOCKS_PER_SEC;
+				cantTransformacion++;
 			}
 				break;
 
 				// 4º) Etapa de Reducción Local: crear hilo, conectarse al worker, esperar y notificar a YAMA
 			case TIPO_MSJ_TABLA_REDUCCION_LOCAL: {
+				clock_t startReduccionLocal = clock();
 				// Leo cantidad de filas (nodos) que voy a recibir
 				cantNodosReduccionLocal = getCantFilas(socketYama, protocoloCantidadMensajes[headerIdYama]);
 				pthread_t hilosWorkerReduccionLocal[cantNodosReduccionLocal];
@@ -785,12 +801,15 @@ int main(int argc, char *argv[]) {
 					//TODO: está bien hecho así? no se quedaría esperando que terminen todas las transformaciones en vez de seguir??????
 					pthread_join(hilosWorkerReduccionLocal[i], NULL);
 				}
-
+				clock_t endReduccionLocal = clock();
+				tiempoTranscurridoReduccionLocal += (float) (endReduccionLocal - startReduccionLocal) / CLOCKS_PER_SEC;
+				cantReduccionLocal++;
 			}
 				break;
 
 				// 5º) Etapa de Reducción Global: crear hilo, conectarse al worker, esperar y notificar a YAMA
 			case TIPO_MSJ_TABLA_REDUCCION_GLOBAL: {
+				clock_t startReduccionGlobal = clock();
 				// Leo cantidad de filas (nodos) que voy a recibir
 				cantNodosReduccionGlobal = getCantFilas(socketYama, protocoloCantidadMensajes[headerIdYama]);
 				pthread_t hiloWorkerReduccionGlobal;
@@ -820,11 +839,17 @@ int main(int argc, char *argv[]) {
 
 				pthread_create(&hiloWorkerReduccionGlobal, NULL, (void*) conectarAWorkerReduccionGlobal, &datosHiloReduccionGlobal);
 				pthread_join(hiloWorkerReduccionGlobal, NULL);
+
+				clock_t endReduccionGlobal = clock();
+				tiempoTranscurridoReduccionGlobal += (float) (endReduccionGlobal - startReduccionGlobal) / CLOCKS_PER_SEC;
+				cantReduccionGlobal++;
 			}
 				break;
 
 				// 6º) Etapa de Almacenamiento Final: crear hilo, conectarse al worker, esperar y notificar a YAMA
 			case TIPO_MSJ_TABLA_ALMACENAMIENTO_FINAL: {
+				clock_t startAlmacenamientoFinal = clock();
+
 				cantNodosAlmacenamientoFinal = 1;
 				pthread_t hiloWorkerAlmacenamientoFinal;
 
@@ -835,6 +860,9 @@ int main(int argc, char *argv[]) {
 				pthread_create(&hiloWorkerAlmacenamientoFinal, NULL, (void*) conectarAWorkerAlmacenamientoFinal, &tablaAlmacenamientoFinal);
 				pthread_join(hiloWorkerAlmacenamientoFinal, NULL);
 
+				clock_t endAlmacenamientoFinal = clock();
+				cantAlmacenamientoFinal++;
+				tiempoTranscurridoAlmacenamientoFinal += (float) (endAlmacenamientoFinal - startAlmacenamientoFinal) / CLOCKS_PER_SEC;
 				break;
 			}
 
@@ -860,9 +888,14 @@ int main(int argc, char *argv[]) {
 	} // fin if
 
 	// 7º) Calcular métricas, finalizar Master y desconectar Yama
-	clock_t end = clock();
-	float tiempoTranscurrido = (float) (end - start) / CLOCKS_PER_SEC;
-	calcularMetricas(tiempoTranscurrido);
+	clock_t endTotal = clock();
+	float tiempoTranscurridoTotal = (float) (endTotal - startTotal) / CLOCKS_PER_SEC;
+	calcularMetricas(tiempoTranscurridoTotal);
+	log_info(logMASTER, "\nHubo %d Transformaciones ejecutadas que duraron en promedio %f y en total %f\n", cantTransformacion, tiempoTranscurridoTransformacion / cantTransformacion, tiempoTranscurridoTransformacion);
+	log_info(logMASTER, "\nHubo %d Reducciones Locales ejecutadas que duraron en promedio %f y en total %f\n", cantReduccionLocal, tiempoTranscurridoReduccionLocal / cantReduccionLocal, tiempoTranscurridoReduccionLocal);
+	log_info(logMASTER, "\nHubo %d Reducciones Globales ejecutadas que duraron en promedio %f y en total %f\n", cantReduccionGlobal, tiempoTranscurridoReduccionGlobal / cantReduccionGlobal, tiempoTranscurridoReduccionGlobal);
+	log_info(logMASTER, "\nHubo %d Almacenamientos Finales ejecutadas que duraron en promedio %f y en total %f\n", cantAlmacenamientoFinal, tiempoTranscurridoAlmacenamientoFinal / cantAlmacenamientoFinal, tiempoTranscurridoAlmacenamientoFinal);
+
 	log_info(logMASTER, "Master finalizado.");
 	printf("Master finalizado.\n");
 	//pthread_attr_destroy(&atributosHilo);
