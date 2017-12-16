@@ -91,9 +91,9 @@ void sig_handler(int signal) {
 			strcpy(algoritmoPlanificacion, datosConfigYama[ALGORITMO_BALANCEO]);
 			retardoPlanificacion = atoi(datosConfigYama[RETARDO_PLANIFICACION]);
 		}
-		log_info(logYAMA,"Se recargó la configuración");
-		log_info(logYAMA,"Retardo de planificación: %d",retardoPlanificacion);
-		log_info(logYAMA,"Algoritmo de planificación: %d",algoritmoPlanificacion);
+		log_info(logYAMA, "Se recargó la configuración");
+		log_info(logYAMA, "Retardo de planificación: %d", retardoPlanificacion);
+		log_info(logYAMA, "Algoritmo de planificación: %d", algoritmoPlanificacion);
 		puts("Se recargó la configuración del YAMA");
 		printf("retardoPlanificacion: %d\n", retardoPlanificacion);
 		printf("algoritmoPlanificacion: %s\n", algoritmoPlanificacion);
@@ -295,7 +295,7 @@ char* serializarMensajeReduccGlobal(int cantNodosReduccGlobal, struct filaTablaE
 	return mensajeSerializadoRedGlobal;
 }
 
-char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalAlmFinal) {
+char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalReduccGlobal) {
 	int i, j;
 	int cantStrings = 4;
 	char **arrayMensajesSerializar = malloc(sizeof(char*) * cantStrings);
@@ -320,10 +320,10 @@ char* serializarMensajeAlmFinal(int nroNodoReduccGlobal, char *temporalAlmFinal)
 	strcpy(arrayMensajesSerializar[j], intToArrayZerosLeft(getDatosGlobalesNodo(nroNodoReduccGlobal)->puerto, LARGO_PUERTO));
 	j++;
 	//temporal de la fila
-	arrayMensajesSerializar[j] = malloc(string_length(temporalAlmFinal) + 1);
+	arrayMensajesSerializar[j] = malloc(string_length(temporalReduccGlobal) + 1);
 	if (!arrayMensajesSerializar[j])
 		perror("error de malloc");
-	strcpy(arrayMensajesSerializar[j], temporalAlmFinal);
+	strcpy(arrayMensajesSerializar[j], temporalReduccGlobal);
 	j++;
 
 	char *mensajeSerializado = serializarMensaje(TIPO_MSJ_TABLA_ALMACENAMIENTO_FINAL, arrayMensajesSerializar, cantStrings);
@@ -1107,8 +1107,8 @@ int main(int argc, char *argv[]) {
 							fila.nodo = nroNodoReduccGlobal;
 							fila.bloque = 0;
 							fila.etapa = ALMAC_FINAL;
-							char* temporalAlmFinal = string_from_format("m%dj%de%d", fila.master, fila.job, fila.etapa);
-							strcpy(fila.temporal, temporalAlmFinal);
+//							char* temporalAlmFinal = string_from_format("m%dj%de%d", fila.master, fila.job, fila.etapa);
+							strcpy(fila.temporal, "");
 							fila.estado = EN_PROCESO;
 							fila.siguiente = NULL;
 
@@ -1117,7 +1117,9 @@ int main(int argc, char *argv[]) {
 								perror("Error al agregar elementos a la tabla de estados");
 							}
 							/* ******* envío de la tabla para reducción global ****** */
-							char *mensajeSerializadoAlmFinal = serializarMensajeAlmFinal(nroNodoReduccGlobal, temporalAlmFinal);
+							char **temporales = malloc(sizeof(char*) * 1);
+							getAllTemporalesByJMNEtEs(temporales, masterJobActual->nroJob, masterJobActual->nroMaster, nroNodoReduccGlobal, REDUCC_GLOBAL, FIN_OK);
+							char *mensajeSerializadoAlmFinal = serializarMensajeAlmFinal(nroNodoReduccGlobal, temporales[0]);
 //							printf("\nmensaje serializado para almacenamiento final: %s\n", mensajeSerializadoAlmFinal);
 							enviarMensaje(socketConectado, mensajeSerializadoAlmFinal);
 							log_info(logYAMA, "Se da inicio al Almacenamiento Final en el nodo %d", nroNodoReduccGlobal);
@@ -1141,6 +1143,7 @@ int main(int argc, char *argv[]) {
 							}
 							//abortar el job
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+							liberarCargaJob(socketConectado, nroNodoRecibido);
 							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
@@ -1165,6 +1168,7 @@ int main(int argc, char *argv[]) {
 								log_info(logYAMA, "Se modificó la tabla de estados en el fin del Almacenamiento Final OK");
 							}
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_FINALIZAR_JOB);
+							liberarCargaJob(socketConectado, nroNodoRecibido);
 							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado); // bye!
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set
@@ -1191,6 +1195,7 @@ int main(int argc, char *argv[]) {
 
 							//abortar el job
 							enviarHeaderSolo(socketConectado, TIPO_MSJ_ABORTAR_JOB);
+							liberarCargaJob(socketConectado, nroNodoRecibido);
 							eliminarElemDatosMasterJobByFD(socketConectado);
 							cerrarCliente(socketConectado);
 							FD_CLR(socketConectado, &socketsLecturaMaster); // remove from master set

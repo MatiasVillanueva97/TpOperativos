@@ -15,7 +15,7 @@ const char* etapasMensajesPredefinidos[4] = {
 		"Transformación",
 		"Reducción Local",
 		"Reducción Global",
-		"Alamcentamiento Final" };
+		"Almacentamiento Final" };
 
 enum estadoTablaEstados {
 	EN_PROCESO, ERROR, FIN_OK, FIN_OK_REPLANIFICADO
