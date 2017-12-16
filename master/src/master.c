@@ -127,18 +127,24 @@ void enviarArchivoYama(int socket, char *archivo) {
 char * leerArchivo(char * ubicacionArchivo) {
 	FILE *fp;
 	// Lee el archivo (transformador o reductor) y lo pasa a string para poder enviarlo al worker
+
 	fp = fopen(ubicacionArchivo, "r"); // read mode
-	fseek(fp, 0, SEEK_END);
+	fseek(fp, ftell(fp), SEEK_END);
+
 	long lengthArchivo = ftell(fp);
+
 	fseek(fp, 0, SEEK_SET);
-	char *archivoString = malloc(lengthArchivo + 1);
-	if (archivoString) {
-		fread(archivoString, 1, lengthArchivo, fp);
-	} else {
-		perror("Malloc al leer archivo");
-	}
+
+	char *archivo = string_new();
+
+	char *archivoString = string_new();
+
+	fread(archivoString, 1, lengthArchivo, fp);
+
+	string_append(&archivo, archivoString);
+
 	fclose(fp);
-	return archivoString;
+	return archivo;
 }
 
 //LISTO
