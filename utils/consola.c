@@ -61,7 +61,7 @@ void analizarComando(char * linea){
     	          	uint cantidadNodosSistemas=list_size(tablaNodos);
        if(formateado==0){
     	   if(estadoAnterior==0){
-    	          	if(cantidadNodosSistemas>=0){
+    	          	if(cantidadNodosSistemas>=2){
     	          		config_set_value(configFs,"ESTADO_ESTABLE","1");
     	          		config_save(configFs);
     	          		estadoEstable=config_get_int_value(configFs,"ESTADO_ESTABLE");
